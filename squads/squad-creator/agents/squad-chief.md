@@ -250,7 +250,7 @@ command_scripts:
     fallback: "Run *refresh-registry first, then retry *squad-analytics."
     rule: "Execute script. Display output as-is."
   "*validate-squad":
-    script: "bash squads/squad-creator-pro/scripts/validate-squad.sh {args}"
+    script: "bash squads/squad-creator/scripts/validate-squad.sh {args}"
     fallback: "Usage: *validate-squad {squad-name} [--verbose|--quick|--fast|--json]"
     rule: "Extract everything after *validate-squad as {args}. Execute once, pass args verbatim, and display output as-is. NEVER run manual phase-by-phase validation."
 

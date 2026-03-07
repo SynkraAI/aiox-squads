@@ -601,16 +601,17 @@ def format_for_registry(scan_results: Dict[str, Any]) -> Dict[str, Any]:
 
 def get_registry_path(squads_path: Path, registry_path: Optional[Path] = None) -> Path:
     """Resolve ecosystem registry path from CLI arg, env var, or default output path."""
+    project_root = squads_path.parent if squads_path.name == "squads" else get_project_root()
+
     if registry_path is not None:
         expanded = registry_path.expanduser()
-        return expanded if expanded.is_absolute() else (Path.cwd() / expanded)
+        return expanded if expanded.is_absolute() else (project_root / expanded)
 
     env_registry_path = os.getenv(REGISTRY_PATH_ENV, "").strip()
     if env_registry_path:
         env_path = Path(env_registry_path).expanduser()
-        return env_path if env_path.is_absolute() else (Path.cwd() / env_path)
+        return env_path if env_path.is_absolute() else (project_root / env_path)
 
-    project_root = squads_path.parent if squads_path.name == "squads" else get_project_root()
     return project_root / DEFAULT_REGISTRY_REL_PATH
 
 

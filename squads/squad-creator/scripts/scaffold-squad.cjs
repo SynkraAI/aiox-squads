@@ -174,6 +174,8 @@ function outputError(code, message, details = {}) {
 
 function resolveSlug(cliSlug) {
   if (cliSlug && !cliSlug.startsWith('-')) return cliSlug;
+  const positional = process.argv.slice(2).find(a => !a.startsWith('-'));
+  if (positional) return positional;
   return readActiveSquadFromRuntime();
 }
 

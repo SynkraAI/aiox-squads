@@ -629,7 +629,7 @@ elicit_outputs:
     primary:
       name: "sales-page-draft"
       format: "markdown"
-      location: ".aiox/squad-runtime/{project}/sales-page-v1.md"
+      location: "{runtime_output_dir}/sales-page-v1.md"
       structure:
         - "Headline"
         - "Subheadline"
@@ -643,7 +643,7 @@ elicit_outputs:
     secondary:
       name: "headline-options"
       format: "yaml"
-      location: ".aiox/squad-runtime/{project}/headlines.yaml"
+      location: "{runtime_output_dir}/headlines.yaml"
 ```
 
 ### Step 1.7: Define Field 8 (Validation)

@@ -49,7 +49,7 @@ try {
 
 const SQUADS_PATH = './squads';
 const REGISTRY_PATH_ENV = 'AIOX_ECOSYSTEM_REGISTRY_PATH';
-const DEFAULT_REGISTRY_REL_PATH = path.join('outputs', 'squad-creator', 'ecosystem-registry.yaml');
+const DEFAULT_REGISTRY_REL_PATH = path.join('.aiox', 'squad-runtime', 'ecosystem-registry.yaml');
 const TIMEOUT_MS = 200;
 
 function resolveRegistryPath() {

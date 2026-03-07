@@ -260,7 +260,8 @@ runtime_state_phase_start() {
 
 runtime_state_phase_complete() {
   local phase="$1"
-  runtime_state_call phase --squad "$SQUAD_NAME" --phase "$phase" --status completed
+  local status="${2:-completed}"
+  runtime_state_call phase --squad "$SQUAD_NAME" --phase "$phase" --status "$status"
 }
 
 runtime_state_complete() {
@@ -594,9 +595,6 @@ check_security() {
     --exclude-dir=.git
     --exclude-dir=__pycache__
     --exclude-dir=node_modules
-    --exclude-dir=tests
-    --exclude='test_*.py'
-    --exclude='test_*.sh'
   )
 
   log_subsection "2.1 API Keys & Tokens"

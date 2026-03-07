@@ -52,6 +52,14 @@ function getCanonicalActiveSquadPath() {
   return path.join(resolveRuntimeRoot(), 'active-squad.json');
 }
 
+function getLegacyActiveSquadPath() {
+  return path.join(WORKSPACE_ROOT, 'outputs', 'squad-creator', 'active-squad.json');
+}
+
+function getLegacyStatePath(slug, workflow = DEFAULT_WORKFLOW) {
+  return path.join(WORKSPACE_ROOT, 'outputs', 'squad-creator', workflow, slug, 'state.json');
+}
+
 function readJsonFile(filePath) {
   try {
     if (!fs.existsSync(filePath)) return null;
@@ -87,6 +95,18 @@ function readActiveSquadRecord() {
     }
   }
 
+  // Legacy fallback
+  const legacyPath = getLegacyActiveSquadPath();
+  const legacy = readJsonFile(legacyPath);
+  if (legacy && !legacy.__corrupted) {
+    if (typeof legacy === 'string' && legacy.trim()) {
+      return { slug: legacy.trim(), workflow: DEFAULT_WORKFLOW, source: 'legacy-string' };
+    }
+    if (typeof legacy.slug === 'string' && legacy.slug.trim()) {
+      return { ...legacy, slug: legacy.slug.trim(), source: 'legacy' };
+    }
+  }
+
   return null;
 }
 
@@ -113,11 +133,23 @@ function readStateWithLegacyFallback(slug, options = {}) {
   const canonicalPath = getCanonicalStatePath(slug, workflow);
   const canonical = readJsonFile(canonicalPath);
 
-  if (canonical) {
+  if (canonical && !canonical.__corrupted) {
     return {
       state: canonical,
       source: 'canonical',
       path: canonicalPath,
+      migrated: false,
+    };
+  }
+
+  // Legacy fallback
+  const legacyPath = getLegacyStatePath(slug, workflow);
+  const legacy = readJsonFile(legacyPath);
+  if (legacy && !legacy.__corrupted) {
+    return {
+      state: legacy,
+      source: 'legacy',
+      path: legacyPath,
       migrated: false,
     };
   }

@@ -9,6 +9,9 @@ const {
 
 const WORKFLOW = 'validate-squad';
 
+const VALID_STATUSES = ['pending', 'in_progress', 'completed', 'failed', 'skipped'];
+const VALID_RESULTS = ['pass', 'fail', 'waived', 'concerns', null];
+
 function parseArgs(argv) {
   const out = {};
   for (let i = 0; i < argv.length; i += 1) {
@@ -33,16 +36,19 @@ function toBool(value) {
 
 function readState(filePath) {
   if (!fs.existsSync(filePath)) return null;
-  try {
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  } catch {
-    return null;
-  }
+  const raw = fs.readFileSync(filePath, 'utf8');
+  return JSON.parse(raw);
 }
 
 function writeState(filePath, state) {
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, JSON.stringify(state, null, 2));
+  const dir = path.dirname(filePath);
+  fs.mkdirSync(dir, { recursive: true });
+  const tmpPath = path.join(dir, `.tmp-${process.pid}-${Date.now()}.json`);
+  const fd = fs.openSync(tmpPath, 'w');
+  fs.writeSync(fd, JSON.stringify(state, null, 2));
+  fs.fsyncSync(fd);
+  fs.closeSync(fd);
+  fs.renameSync(tmpPath, filePath);
 }
 
 function ensurePhase(state, phase, now) {
@@ -121,6 +127,9 @@ function cmdPhase(flags) {
   if (!squad) throw new Error('Missing --squad');
   if (!phase) throw new Error('Missing --phase');
   if (!status) throw new Error('Missing --status');
+  if (!VALID_STATUSES.includes(status)) {
+    throw new Error(`Invalid --status "${status}". Must be one of: ${VALID_STATUSES.join(', ')}`);
+  }
 
   const now = new Date().toISOString();
   const filePath = getCanonicalStatePath(squad, WORKFLOW);
@@ -157,6 +166,15 @@ function cmdPhase(flags) {
 function cmdComplete(flags) {
   const squad = (flags.squad || '').trim();
   if (!squad) throw new Error('Missing --squad');
+
+  const statusVal = (flags.status || '').trim();
+  if (statusVal && !VALID_STATUSES.includes(statusVal)) {
+    throw new Error(`Invalid --status "${statusVal}". Must be one of: ${VALID_STATUSES.join(', ')}`);
+  }
+  const resultVal = (flags.result || '').trim() || null;
+  if (resultVal && !VALID_RESULTS.includes(resultVal)) {
+    throw new Error(`Invalid --result "${resultVal}". Must be one of: ${VALID_RESULTS.filter(Boolean).join(', ')}`);
+  }
 
   const now = new Date().toISOString();
   const filePath = getCanonicalStatePath(squad, WORKFLOW);
