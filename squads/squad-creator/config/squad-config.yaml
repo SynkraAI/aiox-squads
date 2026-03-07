@@ -86,7 +86,7 @@ squad_config:
       destinations:
         local_file:
           type: file
-          base_path: "outputs/sops/"
+          base_path: ".aiox/squad-runtime/sops/"
           filename_pattern: "{process_code}_{timestamp}.md"
 
         supabase:
@@ -152,7 +152,7 @@ squad_config:
       status: ready
       config:
         templates_dir: ../templates
-        output_dir: outputs/sops
+        output_dir: .aiox/squad-runtime/sops
 
   # =========================================
   # Logging
@@ -168,7 +168,7 @@ squad_config:
   # Paths Configuration
   # =========================================
   # All paths are RELATIVE to project root (detected via git or package.json)
-  # NEVER use absolute paths like /Users/...
+  # NEVER use absolute paths like /abs/path/...
   paths:
     # Squad-creator internal paths (relative to squads/squad-creator/)
     squad_root: "squads/squad-creator"
@@ -177,12 +177,12 @@ squad_config:
     config: "squads/squad-creator/config"
     scripts: "squads/squad-creator/scripts"
 
-    # Output paths (relative to project root)
+    # Runtime artifact paths (relative to project root)
     outputs:
-      root: "outputs"
-      minds: "outputs/minds"
-      llm_tests: "outputs/llm-tests"
-      llm_test_inputs: "outputs/llm-tests/inputs"
+      root: ".aiox/squad-runtime"
+      minds: ".aiox/squad-runtime/minds"
+      llm_tests: ".aiox/squad-runtime/llm-tests"
+      llm_test_inputs: ".aiox/squad-runtime/llm-tests/inputs"
 
     # Infrastructure paths
     infrastructure:

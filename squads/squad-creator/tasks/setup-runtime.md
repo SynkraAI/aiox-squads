@@ -1,7 +1,6 @@
 # Task: Setup Runtime Connections (Generic Template)
 
 **Task ID:** setup-runtime
-**Version:** 1.0.0
 **Execution Type:** Hybrid (Script + Human)
 **Purpose:** Configure all API connections required for operational squad execution
 **Orchestrator:** @squad-chief (delegates to squad's chief agent)

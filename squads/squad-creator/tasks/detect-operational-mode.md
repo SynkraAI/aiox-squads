@@ -1,7 +1,6 @@
 # Task: Detect Operational Mode
 
 **Task ID:** detect-operational-mode
-**Version:** 1.0.0
 **Execution Type:** Autonomous
 **Purpose:** Analyze squad briefing to determine if squad requires operational mode (external API connections) or textual mode (recommendations only)
 **Orchestrator:** @squad-chief

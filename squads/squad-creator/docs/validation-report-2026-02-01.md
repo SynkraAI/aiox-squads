@@ -191,13 +191,13 @@ Both agents follow complete structure:
 
 | Workflow | Lines | Phases | Checkpoints | Frameworks | Status |
 |----------|-------|--------|-------------|------------|--------|
-| mind-research-loop.md | 400+ | 5 iterations | ✅ | ✅ 3 frameworks | ✅ PASS |
-| research-then-create-agent.md | 800+ | Multi-phase | ✅ | ✅ | ✅ PASS |
+| wf-mind-research-loop.yaml | 400+ | 5 iterations | ✅ | ✅ 3 frameworks | ✅ PASS |
+| wf-research-then-create-agent.yaml | 800+ | Multi-phase | ✅ | ✅ | ✅ PASS |
 | wf-create-squad.yaml | 600+ | 6 phases | ✅ | ✅ | ✅ PASS |
 
 ### 4.2 Framework Integration
 
-| Framework | mind-research-loop | research-then-create | wf-create-squad |
+| Framework | wf-mind-research-loop | wf-research-then-create-agent | wf-create-squad |
 |-----------|-------------------|---------------------|-----------------|
 | tier-system-framework.md | ✅ Iteration 3, Final | ✅ | ✅ Phase 3 |
 | quality-dimensions-framework.md | ✅ Iteration 3 | ✅ | ✅ Phase 5 |

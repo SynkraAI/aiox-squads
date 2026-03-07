@@ -1,7 +1,6 @@
 # Task: Reexecute Squad Phase
 
 **Task ID:** reexecute-squad-phase
-**Version:** 1.0.0
 **Execution Type:** Interactive Hybrid
 **Purpose:** Re-run one workflow phase with backup and deterministic rollback path
 **Orchestrator:** @squad-chief

@@ -12,6 +12,7 @@ workflow:
     selection, architecture, agent creation, integration, and validation.
     For advanced creation (mind-cloning, DNA extraction, multi-agent
     orchestration), install squad-creator-pro.
+  type: orchestration
   governance_protocol: "squads/squad-creator/protocols/ai-first-governance.md"
 
   # ========================================================================
@@ -115,15 +116,16 @@ workflow:
       phase_id: phase_0
       agent: squad-chief
       task: select-template
+      action: select_templates
       description: "Detect squad type and select appropriate templates"
       inputs:
         - squad_name
         - domain
         - squad_type_hint       # optional: expert|pipeline|hybrid|operational
       outputs:
-        - outputs/{squad_slug}/template-selection.yaml
-        - outputs/{squad_slug}/squad-type-detection.md
-        - outputs/{squad_slug}/workspace-integration-level.yaml
+        - .aiox/squad-runtime/create-squad/{squad_slug}/template-selection.yaml
+        - .aiox/squad-runtime/create-squad/{squad_slug}/squad-type-detection.md
+        - .aiox/squad-runtime/create-squad/{squad_slug}/workspace-integration-level.yaml
       steps:
         - detect_squad_type     # Expert, Pipeline, Hybrid, Operational
         - classify_workspace_integration  # none|read_only|read_write|workspace_first
@@ -141,13 +143,14 @@ workflow:
       phase_id: phase_1
       agent: squad-chief
       task: define-architecture
+      action: define_architecture
       description: "Define agent structure, roles, and tier assignments"
       inputs:
-        - outputs/{squad_slug}/template-selection.yaml
+        - .aiox/squad-runtime/create-squad/{squad_slug}/template-selection.yaml
       outputs:
-        - outputs/{squad_slug}/architecture/agent-roster.yaml
-        - outputs/{squad_slug}/architecture/tier-assignments.yaml
-        - outputs/{squad_slug}/architecture/dependency-map.yaml
+        - .aiox/squad-runtime/create-squad/{squad_slug}/architecture/agent-roster.yaml
+        - .aiox/squad-runtime/create-squad/{squad_slug}/architecture/tier-assignments.yaml
+        - .aiox/squad-runtime/create-squad/{squad_slug}/architecture/dependency-map.yaml
       steps:
         - define_agents         # Names, roles, responsibilities
         - assign_tiers          # Tier 1 (core), Tier 2 (support), Tier 3 (utility)
@@ -163,10 +166,11 @@ workflow:
       phase_id: phase_2
       agent: squad-chief
       task: create-squad-assets
+      action: create_squad_assets
       description: "Create agents, tasks, and workflows from templates"
       inputs:
-        - outputs/{squad_slug}/architecture/*.yaml
-        - outputs/{squad_slug}/template-selection.yaml
+        - .aiox/squad-runtime/create-squad/{squad_slug}/architecture/*.yaml
+        - .aiox/squad-runtime/create-squad/{squad_slug}/template-selection.yaml
       outputs:
         - squads/{squad_slug}/agents/*.md
         - squads/{squad_slug}/tasks/*.md
@@ -191,6 +195,7 @@ workflow:
       phase_id: phase_3
       agent: squad-chief
       task: integrate-squad
+      action: integrate_squad_assets
       description: "Wire dependencies, generate docs, finalize config"
       inputs:
         - squads/{squad_slug}/**/*
@@ -198,7 +203,7 @@ workflow:
         - squads/{squad_slug}/README.md
         - squads/{squad_slug}/CHANGELOG.md
         - squads/{squad_slug}/config.yaml      # Updated with full metadata
-        - squads/{squad_slug}/outputs/README.md # Bootstrap runtime outputs dir
+        - .aiox/squad-runtime/create-squad/{squad_slug}/README.md # Bootstrap runtime outputs dir
       steps:
         - wire_dependencies     # Cross-references between agents and tasks
         - generate_workspace_contract  # config + README integration contract
@@ -218,12 +223,13 @@ workflow:
       phase_id: phase_4
       agent: squad-chief
       task: validate-squad
+      action: validate_squad_quality
       description: "Run validate-squad pipeline and quality scoring"
       inputs:
         - squads/{squad_slug}/**/*
       outputs:
-        - outputs/{squad_slug}/validation/validation-report.md
-        - outputs/{squad_slug}/validation/quality-score.yaml
+        - .aiox/squad-runtime/create-squad/{squad_slug}/validation/validation-report.md
+        - .aiox/squad-runtime/create-squad/{squad_slug}/validation/quality-score.yaml
       steps:
         - run_structure_check   # config, agents, references exist
         - run_workspace_integration_check # level + contract + required scripts
@@ -247,12 +253,13 @@ workflow:
       phase_id: phase_4b
       agent: squad-chief
       task: fix-validation-issues
+      action: remediate_validation_failures
       description: "Apply targeted fixes for validation failures and re-validate"
       inputs:
-        - outputs/{squad_slug}/validation/validation-report.md
+        - .aiox/squad-runtime/create-squad/{squad_slug}/validation/validation-report.md
         - squads/{squad_slug}/**/*
       outputs:
-        - outputs/{squad_slug}/validation/fix-cycle-log.md
+        - .aiox/squad-runtime/create-squad/{squad_slug}/validation/fix-cycle-log.md
       steps:
         - analyze_failures       # Parse validation report for actionable items
         - apply_fixes            # Targeted corrections to failing assets
@@ -272,12 +279,13 @@ workflow:
       phase_id: phase_5
       agent: squad-chief
       task: smoke-test-agent
+      action: run_smoke_test
       description: "Basic activation test for the created squad"
       inputs:
         - squads/{squad_slug}/agents/*.md
         - squads/{squad_slug}/config.yaml
       outputs:
-        - outputs/{squad_slug}/validation/smoke-test-report.md
+        - .aiox/squad-runtime/create-squad/{squad_slug}/validation/smoke-test-report.md
       test_scenarios:
         - activation: "Entry agent responds with correct greeting"
         - help: "Entry agent lists available commands"
@@ -326,7 +334,7 @@ workflow:
   # RESUME CONFIGURATION
   # ========================================================================
   resume:
-    state_file: .state.json
+    state_file: .aiox/squad-runtime/create-squad/{squad_slug}/state.json
     supported: true
     preserve_outputs: true
     allowed_phases:

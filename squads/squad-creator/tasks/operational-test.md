@@ -1,7 +1,6 @@
 # Task: Operational Test (E2E Validation - Generic Template)
 
 **Task ID:** operational-test
-**Version:** 1.0.0
 **Execution Type:** Hybrid (Autonomous execution + Human validation)
 **Purpose:** Execute real E2E test to validate squad is fully operational
 **Orchestrator:** @squad-chief (delegates to squad's chief agent)
@@ -148,7 +147,7 @@ test_flow_template:
     on_success:
       log: "T1 PASS - Fetched {count} records"
       store:
-        path: "squads/{squad_name}/outputs/operational-test/t1-data.json"
+        path: ".aiox/squad-runtime/operational-test/{squad_name}/t1-data.json"
 
     on_failure:
       log: "T1 FAIL - {error.message}"
@@ -173,7 +172,7 @@ test_flow_template:
     on_success:
       log: "T2 PASS - {processing_summary}"
       store:
-        path: "squads/{squad_name}/outputs/operational-test/t2-processed.json"
+        path: ".aiox/squad-runtime/operational-test/{squad_name}/t2-processed.json"
 
   # T3: Output Generation Test
   t3_output:
@@ -194,7 +193,7 @@ test_flow_template:
     on_success:
       log: "T3 PASS - Output generated ({size} chars)"
       store:
-        path: "squads/{squad_name}/outputs/operational-test/t3-output.md"
+        path: ".aiox/squad-runtime/operational-test/{squad_name}/t3-output.md"
 
   # T4: Notification Test (if configured)
   t4_notify:
@@ -344,9 +343,9 @@ baseline_registration:
         ready_for_production: "{boolean}"
 
       artifacts_generated:
-        - "outputs/operational-test/t1-data.json"
-        - "outputs/operational-test/t2-processed.json"
-        - "outputs/operational-test/t3-output.md"
+        - ".aiox/squad-runtime/operational-test/{squad_name}/t1-data.json"
+        - ".aiox/squad-runtime/operational-test/{squad_name}/t2-processed.json"
+        - ".aiox/squad-runtime/operational-test/{squad_name}/t3-output.md"
 
       next_validation:
         recommended: "{timestamp + 7 days}"
@@ -382,9 +381,9 @@ RESULTADOS:
 SCORE: {passed}/{total} ({percentage}%) - SQUAD OPERACIONAL
 
 ARTEFATOS GERADOS:
-- squads/{squad_name}/outputs/operational-test/t1-data.json
-- squads/{squad_name}/outputs/operational-test/t2-processed.json
-- squads/{squad_name}/outputs/operational-test/t3-output.md
+- .aiox/squad-runtime/operational-test/{squad_name}/t1-data.json
+- .aiox/squad-runtime/operational-test/{squad_name}/t2-processed.json
+- .aiox/squad-runtime/operational-test/{squad_name}/t3-output.md
 - squads/{squad_name}/data/operational-baseline.yaml
 
 PROXIMO PASSO:
@@ -444,9 +443,9 @@ partial_failure_handling:
 
 | Output | Location | Description |
 |--------|----------|-------------|
-| Raw Data | `outputs/operational-test/t1-data.json` | Raw API response |
-| Processed Data | `outputs/operational-test/t2-processed.json` | Core skill output |
-| Generated Output | `outputs/operational-test/t3-output.md` | Final artifact |
+| Raw Data | `.aiox/squad-runtime/operational-test/{squad_name}/t1-data.json` | Raw API response |
+| Processed Data | `.aiox/squad-runtime/operational-test/{squad_name}/t2-processed.json` | Core skill output |
+| Generated Output | `.aiox/squad-runtime/operational-test/{squad_name}/t3-output.md` | Final artifact |
 | Operational Baseline | `data/operational-baseline.yaml` | Known-good state |
 
 ---

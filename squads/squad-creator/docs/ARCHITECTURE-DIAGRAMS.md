@@ -1653,7 +1653,7 @@ flowchart TD
 |--------|------|----------|
 | v4.0.0 | 2026-03-06 | **Base/Pro Architecture!** Adicionado Base vs Pro split (secao 0), pro_detection boot-time, base mode diagrams, v4.0.0 consistency chain (secao 1.2), validate-squad v5.0.0 com 7 fases (secao 10), file structure atualizada para Base vs Pro (secao 6). Secoes PRO marcadas com [PRO]. |
 | v3.0 | 2026-02-28 | Separacao Base/Pro fisica em diretorios distintos (squad-creator vs squad-creator-pro). Adicionado thiago_finch como 4o agente PRO. Consolidacao de tasks base para 24. |
-| v2.1 | 2026-02-05 | Atualizado referencias: todos workflows agora em .yaml (mind-research-loop.md -> wf-mind-research-loop.yaml, research-then-create-agent.md -> wf-research-then-create-agent.yaml). Secao 6 atualizada com lista completa de workflows. |
+| v2.1 | 2026-02-05 | Atualizado referencias: todos workflows agora em .yaml (mind-research-loop legado -> wf-mind-research-loop.yaml, research-then-create-agent legado -> wf-research-then-create-agent.yaml). Secao 6 atualizada com lista completa de workflows. |
 | v2.0 | 2026-02-05 | **100% Coverage!** Adicionados 5 workflows faltantes: mind-research-loop (secoes 8, 8.1), wf-discover-tools (secoes 9, 9.1), validate-squad (secoes 10, 10.1), wf-squad-fusion (secoes 11, 11.1), research-then-create-agent (secoes 12, 12.1) |
 | v1.1 | 2026-02-05 | Adicionado: wf-auto-acquire-sources (secoes 4, 4.1, 4.2), Tool Fallback Chain, Integration diagram |
 | v1.0 | 2026-02-01 | Versao inicial com fluxos principais |

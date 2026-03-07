@@ -1,7 +1,6 @@
 # Task: Discover Tools for Squad
 
 **Task ID:** discover-tools
-**Version:** 3.0
 **Execution Type:** Agent
 **Purpose:** Research and discover MCP servers that can potentialize a squad's deliverables
 **Orchestrator:** @squad-chief
@@ -93,7 +92,7 @@ OUTPUT: Tool Discovery Report + Capability Map
 - [ ] squad-chief agent is active
 - [ ] WebSearch/EXA tool available (for research)
 - [ ] WebFetch tool available (for page analysis)
-- [ ] Write permissions for squad data directory
+- [ ] Write permissions for `.aiox/squad-runtime/discovery/{domain}/`
 - [ ] Domain and use cases clearly defined
 - [ ] Domain scope resolved from canonical sources (not inferred from name)
 
@@ -129,7 +128,7 @@ scope_resolution:
     - "squads/{domain}/squad.yaml"
     - "squads/{domain}/config.yaml"
     - "squads/{domain}/README.md"
-    - "squads/squad-registry.yaml"
+    - "{registry_path}"
     - "related squad workflows/tasks/agents"
 
   rules:
@@ -637,7 +636,7 @@ integration_plan:
 **Actions:**
 ```yaml
 generate_report:
-  file: "squads/{squad_name}/docs/tool-discovery-report.md"
+  file: ".aiox/squad-runtime/discovery/{domain}/tool-discovery-report.md"
 
   sections:
     - executive_summary: "1-paragraph summary of findings"
@@ -677,9 +676,9 @@ criteria:
 
 | Output | Location | Description |
 |--------|----------|-------------|
-| Tool Discovery Report | `squads/{squad_name}/docs/tool-discovery-report.md` | MCP research findings |
-| Capability Map | `squads/{squad_name}/data/capability-tools.yaml` | Squad-specific capability to tool mapping |
-| Integration Plan | `squads/{squad_name}/docs/tool-integration-plan.md` | Prioritized implementation steps |
+| Tool Discovery Report | `.aiox/squad-runtime/discovery/{domain}/tool-discovery-report.md` | MCP research findings |
+| Capability Map | `.aiox/squad-runtime/discovery/{domain}/capability-tools.yaml` | Domain capability to tool mapping |
+| Integration Plan | `.aiox/squad-runtime/discovery/{domain}/tool-integration-plan.md` | Prioritized implementation steps |
 
 ---
 
@@ -692,7 +691,6 @@ criteria:
 
 **Generated:** {date}
 **Domain:** {domain}
-**Version:** Base (MCP-focused)
 **Gaps Analyzed:** {N}
 **MCP Servers Discovered:** {total}
 

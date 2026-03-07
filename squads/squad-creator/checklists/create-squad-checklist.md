@@ -118,12 +118,12 @@ creation_checks:
   - id: directory-structure
     check: "All required directories created"
     type: blocking
-    directories: ["agents/", "tasks/", "workflows/", "templates/", "checklists/", "data/", "docs/", "outputs/"]
+    directories: ["agents/", "tasks/", "workflows/", "templates/", "checklists/", "data/", "docs/"]
 
   - id: outputs-bootstrap
-    check: "outputs/ contains bootstrap artifact for runtime evidence"
+    check: "Canonical runtime state exists for the squad creation run"
     type: blocking
-    validation: "outputs/README.md exists OR outputs/.gitkeep exists"
+    validation: ".aiox/squad-runtime/create-squad/{squad_name}/state.json exists"
 
   - id: orchestrator-created
     check: "Orchestrator agent file exists"
@@ -245,6 +245,5 @@ final_metrics:
 
 ---
 
-**Version:** 1.0.0
 **Created:** 2026-02-10
 **Task Reference:** tasks/create-squad.md

@@ -35,6 +35,7 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SQUAD_CREATOR_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 SQUADS_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)/squads"
+RUNTIME_STATE_HELPER="$SCRIPT_DIR/lib/validate-runtime-state.cjs"
 
 # Model configuration
 MODEL_DEFAULT="opus"    # Best quality (default)
@@ -78,15 +79,22 @@ M_DOCUMENTATION=0
 M_QUALITY_SCORE="N/A"
 M_IMPROVEMENTS=""
 M_PROD_SCORE=0
+M_WORKFLOW_CONTRACT_FILES=0
+M_WORKFLOW_CONTRACT_ERRORS=0
+M_WORKFLOW_CONTRACT_WARNINGS=0
 
 # Phase results
 TIER1_FAIL=0
 SEC_FAIL=0
 XREF_FAIL=0
+WF_CONTRACT_FAIL=0
 PROD_SCORE=0
 PROD_MAX=5
 FINAL_SCORE=0
 ENTRY_AGENT=""
+VALIDATION_RESULT="FAIL"
+EXIT_CODE=1
+CURRENT_PHASE="init"
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # ARGUMENT PARSING
@@ -215,6 +223,62 @@ log_subsection() {
   echo -e "${CYAN}--- $1 ---${NC}"
 }
 
+# Runtime state helper (best-effort, non-blocking)
+runtime_state_call() {
+  if [[ ! -f "$RUNTIME_STATE_HELPER" ]]; then
+    return 0
+  fi
+
+  if ! node "$RUNTIME_STATE_HELPER" "$@" >/dev/null 2>&1; then
+    echo -e "${YELLOW}⚠ Runtime state update failed (${*})${NC}" >&2
+    return 1
+  fi
+
+  return 0
+}
+
+runtime_state_start() {
+  local mode="hybrid"
+  if [[ "$QUICK_MODE" == "true" ]]; then
+    mode="quick"
+  fi
+
+  runtime_state_call start \
+    --squad "$SQUAD_NAME" \
+    --mode "$mode" \
+    --model "$MODEL_QUALITY" \
+    --quick "$QUICK_MODE" \
+    --verbose "$VERBOSE" \
+    --json "$JSON_OUTPUT"
+}
+
+runtime_state_phase_start() {
+  local phase="$1"
+  CURRENT_PHASE="$phase"
+  runtime_state_call phase --squad "$SQUAD_NAME" --phase "$phase" --status in_progress
+}
+
+runtime_state_phase_complete() {
+  local phase="$1"
+  runtime_state_call phase --squad "$SQUAD_NAME" --phase "$phase" --status completed
+}
+
+runtime_state_complete() {
+  local status="$1"
+  runtime_state_call complete \
+    --squad "$SQUAD_NAME" \
+    --status "$status" \
+    --result "$VALIDATION_RESULT" \
+    --final-score "$FINAL_SCORE" \
+    --exit-code "$EXIT_CODE" \
+    --warnings "$WARN_COUNT" \
+    --tier1-fail "$TIER1_FAIL" \
+    --security-fail "$SEC_FAIL" \
+    --workflow-contract-fail "$WF_CONTRACT_FAIL" \
+    --xref-fail "$XREF_FAIL" \
+    --phase "$CURRENT_PHASE"
+}
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # SCORING/JSON HELPERS
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -310,6 +374,64 @@ fields = {
 for key, value in fields.items():
     print(f"{key}\t{value}")
 PY
+}
+
+parse_workflow_contract_totals() {
+  node -e '
+const fs = require("fs");
+const raw = fs.readFileSync(0, "utf8").trim();
+const ansiStripped = raw.replace(/\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g, "");
+
+function extractFirstJsonObject(text) {
+  for (let start = 0; start < text.length; start += 1) {
+    if (text[start] !== "{") continue;
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+    for (let i = start; i < text.length; i += 1) {
+      const ch = text[i];
+      if (inString) {
+        if (escaped) {
+          escaped = false;
+        } else if (ch === "\\\\") {
+          escaped = true;
+        } else if (ch === "\"") {
+          inString = false;
+        }
+        continue;
+      }
+      if (ch === "\"") {
+        inString = true;
+        continue;
+      }
+      if (ch === "{") depth += 1;
+      if (ch === "}") {
+        depth -= 1;
+        if (depth === 0) return text.slice(start, i + 1);
+      }
+    }
+  }
+  return "{}";
+}
+
+let data = {};
+const firstObject = extractFirstJsonObject(ansiStripped);
+try {
+  data = firstObject ? JSON.parse(firstObject) : {};
+} catch {
+  data = {};
+}
+const totals = data.totals || {};
+const fields = {
+  files_checked: Number(totals.files_checked) || 0,
+  errors: Number(totals.errors) || 0,
+  warnings: Number(totals.warnings) || 0,
+  invalid_files: Number(totals.invalid_files) || 0,
+};
+for (const [key, value] of Object.entries(fields)) {
+  console.log(`${key}\t${value}`);
+}
+'
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -468,11 +590,19 @@ check_structure() {
 check_security() {
   log_section "PHASE 2: Security Scan (Bash)"
   local sec_fail=0
+  local security_excludes=(
+    --exclude-dir=.git
+    --exclude-dir=__pycache__
+    --exclude-dir=node_modules
+    --exclude-dir=tests
+    --exclude='test_*.py'
+    --exclude='test_*.sh'
+  )
 
   log_subsection "2.1 API Keys & Tokens"
 
   # API Keys (excluding placeholders, examples, documentation, fake values)
-  local api_keys=$(grep -rE "(api[_-]?key|apikey)[[:space:]]*[:=][[:space:]]*['\"][^'\"\$\{]{8,}" "$SQUAD_DIR" 2>/dev/null | grep -vE "(\{\{|\\\$\{|process\.env|[Ee]xample|placeholder|grep|pattern|EXAMPLE|sk-1234|your-key|#.*api)" || true)
+  local api_keys=$(grep -rE "${security_excludes[@]}" "(api[_-]?key|apikey)[[:space:]]*[:=][[:space:]]*['\"][^'\"\$\{]{8,}" "$SQUAD_DIR" 2>/dev/null | grep -vE "(\{\{|\\\$\{|process\.env|[Ee]xample|placeholder|grep|pattern|EXAMPLE|sk-1234|your-key|#.*api)" || true)
   if [[ -n "$api_keys" ]]; then
     log_fail "SEC-001: Potential API keys found"
     sec_fail=$((sec_fail + 1))
@@ -481,7 +611,7 @@ check_security() {
   fi
 
   # Secrets (excluding examples, documentation, fake values, obvious test secrets)
-  local secrets=$(grep -rE "(secret|password)[[:space:]]*[:=][[:space:]]*['\"][^'\"\$\{]{8,}" "$SQUAD_DIR" 2>/dev/null | grep -vE "(\{\{|\\\$\{|process\.env|[Ee]xample|placeholder|grep|pattern|EXAMPLE|secret_key|your-secret|#.*secret|#.*password|mySecret|super-secret|-secret-|-here)" || true)
+  local secrets=$(grep -rE "${security_excludes[@]}" "(secret|password)[[:space:]]*[:=][[:space:]]*['\"][^'\"\$\{]{8,}" "$SQUAD_DIR" 2>/dev/null | grep -vE "(\{\{|\\\$\{|process\.env|[Ee]xample|placeholder|grep|pattern|EXAMPLE|secret_key|your-secret|#.*secret|#.*password|mySecret|super-secret|-secret-|-here)" || true)
   if [[ -n "$secrets" ]]; then
     log_fail "SEC-002: Potential secrets found"
     sec_fail=$((sec_fail + 1))
@@ -492,7 +622,7 @@ check_security() {
   log_subsection "2.2 Cloud Credentials"
 
   # AWS Access Key (excluding examples, grep patterns, documentation)
-  local aws_access=$(grep -rE "AKIA[A-Z0-9]{16}" "$SQUAD_DIR" 2>/dev/null | grep -vE "(EXAMPLE|grep|pattern|\.sh:|\.md:.*grep)" || true)
+  local aws_access=$(grep -rE "${security_excludes[@]}" "AKIA[A-Z0-9]{16}" "$SQUAD_DIR" 2>/dev/null | grep -vE "(EXAMPLE|grep|pattern|\.sh:|\.md:.*grep)" || true)
   if [[ -n "$aws_access" ]]; then
     log_fail "SEC-003: AWS Access Key found"
     sec_fail=$((sec_fail + 1))
@@ -501,7 +631,7 @@ check_security() {
   fi
 
   # GCP Service Account
-  local gcp_key=$(grep -rE '"type"[[:space:]]*:[[:space:]]*"service_account"' "$SQUAD_DIR" 2>/dev/null || true)
+  local gcp_key=$(grep -rE "${security_excludes[@]}" '"type"[[:space:]]*:[[:space:]]*"service_account"' "$SQUAD_DIR" 2>/dev/null || true)
   if [[ -n "$gcp_key" ]]; then
     log_fail "SEC-004: GCP Service Account found"
     sec_fail=$((sec_fail + 1))
@@ -511,7 +641,7 @@ check_security() {
 
   log_subsection "2.3 Private Keys"
 
-  local priv_key=$(grep -rE "-----BEGIN.*(PRIVATE|RSA|DSA|EC).*KEY-----" "$SQUAD_DIR" 2>/dev/null || true)
+  local priv_key=$(grep -rE "${security_excludes[@]}" "-----BEGIN.*(PRIVATE|RSA|DSA|EC).*KEY-----" "$SQUAD_DIR" 2>/dev/null || true)
   if [[ -n "$priv_key" ]]; then
     log_fail "SEC-005: Private key content found"
     sec_fail=$((sec_fail + 1))
@@ -530,7 +660,7 @@ check_security() {
   log_subsection "2.4 Database & Sensitive Files"
 
   # Exclude: placeholders, examples, documentation, localhost, generic passwords
-  local db_urls=$(grep -rE "(postgres|mysql|mongodb|redis)://[^:]+:[^@]+@" "$SQUAD_DIR" 2>/dev/null | grep -vE "(\{\{|\[PASSWORD\]|[Ee]xample|localhost|user:pass|:password@|:secret@|grep|pattern)" || true)
+  local db_urls=$(grep -rE "${security_excludes[@]}" "(postgres|mysql|mongodb|redis)://[^:]+:[^@]+@" "$SQUAD_DIR" 2>/dev/null | grep -vE "(\{\{|\[PASSWORD\]|[Ee]xample|localhost|user:pass|:password@|:secret@|grep|pattern)" || true)
   if [[ -n "$db_urls" ]]; then
     log_fail "SEC-007: Database URL with password found"
     sec_fail=$((sec_fail + 1))
@@ -606,6 +736,71 @@ check_cross_references() {
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# PHASE 3.5: WORKFLOW CONTRACTS (Deterministic - CI parity)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+check_workflow_contracts() {
+  log_section "PHASE 3.5: Workflow Contract Validation (CI parity)"
+  local workflow_fail=0
+
+  if [[ ! -d "$SQUAD_DIR/workflows" ]]; then
+    log_info "No workflows/ directory, skipping workflow contract validation"
+    WF_CONTRACT_FAIL=0
+    M_WORKFLOW_CONTRACT_FILES=0
+    M_WORKFLOW_CONTRACT_ERRORS=0
+    M_WORKFLOW_CONTRACT_WARNINGS=0
+    return 0
+  fi
+
+  local workflow_files=0
+  workflow_files=$(find "$SQUAD_DIR/workflows" -maxdepth 1 -type f \( -name "*.yaml" -o -name "*.yml" \) 2>/dev/null | wc -l | tr -d ' ')
+
+  if [[ "$workflow_files" -eq 0 ]]; then
+    log_info "No workflow files found in workflows/, skipping workflow contract validation"
+    WF_CONTRACT_FAIL=0
+    M_WORKFLOW_CONTRACT_FILES=0
+    M_WORKFLOW_CONTRACT_ERRORS=0
+    M_WORKFLOW_CONTRACT_WARNINGS=0
+    return 0
+  fi
+
+  local contract_output=""
+  if contract_output=$(npm run -s validate:workflow-contracts:strict -- --squads "$SQUAD_NAME" --json 2>&1); then
+    :
+  else
+    workflow_fail=1
+  fi
+
+  local files_checked=0
+  local errors_count=0
+  local warnings_count=0
+  local invalid_files_count=0
+  while IFS=$'\t' read -r key value; do
+    case "$key" in
+      files_checked) files_checked="$value" ;;
+      errors) errors_count="$value" ;;
+      warnings) warnings_count="$value" ;;
+      invalid_files) invalid_files_count="$value" ;;
+    esac
+  done < <(printf "%s" "$contract_output" | parse_workflow_contract_totals)
+
+  M_WORKFLOW_CONTRACT_FILES="$files_checked"
+  M_WORKFLOW_CONTRACT_ERRORS="$errors_count"
+  M_WORKFLOW_CONTRACT_WARNINGS="$warnings_count"
+
+  if [[ "$workflow_fail" -eq 0 ]]; then
+    log_pass "WF-001: Workflow contracts valid (files=$files_checked, errors=$errors_count, warnings=$warnings_count)"
+  else
+    log_fail "WF-001: Workflow contract validation failed (files=$files_checked, errors=$errors_count, warnings=$warnings_count, invalid=$invalid_files_count)"
+    if [[ "$VERBOSE" == "true" ]]; then
+      echo "$contract_output"
+    fi
+  fi
+
+  WF_CONTRACT_FAIL="$workflow_fail"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # PHASE 4: SQUAD TYPE DETECTION (Deterministic - Bash)
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -677,35 +872,27 @@ check_production() {
   local prod_score=0
 
   log_subsection "5.1 Outputs Directory"
-  # Check for outputs/ in squad or in global outputs/
+  # Canonical runtime evidence must live in .aiox/squad-runtime
   local has_outputs=false
-  if [ -d "$SQUAD_DIR/outputs" ]; then
-    local output_count=$(find "$SQUAD_DIR/outputs" -type f 2>/dev/null | wc -l | tr -d ' ')
-    if [ "$output_count" -gt 0 ]; then
-      log_pass "outputs/ exists with $output_count files"
-      has_outputs=true
-      prod_score=$((prod_score + 2))
-    else
-      log_warn "outputs/ exists but is empty"
-    fi
-  else
-    # Check global outputs directory for this squad (uses env var or relative path)
-    local global_outputs="${OUTPUTS_DIR:-./outputs}"
-    if [ -d "$global_outputs" ]; then
-      local squad_outputs=$(find "$global_outputs" -type d -name "*$SQUAD_NAME*" 2>/dev/null | head -1)
-      if [ -n "$squad_outputs" ] && [ -d "$squad_outputs" ]; then
-        local output_count=$(find "$squad_outputs" -type f 2>/dev/null | wc -l | tr -d ' ')
-        if [ "$output_count" -gt 0 ]; then
-          log_pass "Found outputs in global directory ($output_count files)"
-          has_outputs=true
-          prod_score=$((prod_score + 2))
-        fi
+  local runtime_root="${AIOX_RUNTIME_ROOT:-./.aiox/squad-runtime}"
+  if [ -d "$runtime_root" ]; then
+    local squad_runtime_dir
+    squad_runtime_dir=$(find "$runtime_root" -maxdepth 3 -type d -name "$SQUAD_NAME" 2>/dev/null | head -1)
+    if [ -n "$squad_runtime_dir" ] && [ -d "$squad_runtime_dir" ]; then
+      local output_count
+      output_count=$(find "$squad_runtime_dir" -type f 2>/dev/null | wc -l | tr -d ' ')
+      if [ "$output_count" -gt 0 ]; then
+        log_pass "Found runtime evidence in .aiox/squad-runtime ($output_count files)"
+        has_outputs=true
+        prod_score=$((prod_score + 2))
+      else
+        log_warn "Runtime directory exists but has no files: $squad_runtime_dir"
       fi
     fi
+  fi
 
-    if [ "$has_outputs" = false ]; then
-      log_warn "No outputs/ directory found - squad not tested in production"
-    fi
+  if [ "$has_outputs" = false ]; then
+    log_warn "No runtime evidence found in .aiox/squad-runtime for squad '$SQUAD_NAME'"
   fi
 
   log_subsection "5.2 Tested Flag"
@@ -918,7 +1105,7 @@ Respond with ONLY the JSON, no other text."
 calculate_final_score() {
   log_section "PHASE 7: Final Scoring"
 
-  local total_fails=$((TIER1_FAIL + SEC_FAIL + XREF_FAIL))
+  local total_fails=$((TIER1_FAIL + SEC_FAIL + XREF_FAIL + WF_CONTRACT_FAIL))
   local prod_normalized=$((PROD_SCORE * 2))
 
   # Structure score uses decimal penalties with explicit rounding:
@@ -1003,7 +1190,13 @@ generate_report() {
     "tier1_fail": $TIER1_FAIL,
     "security_fail": $SEC_FAIL,
     "xref_fail": $XREF_FAIL,
+    "workflow_contract_fail": $WF_CONTRACT_FAIL,
     "warnings": $WARN_COUNT
+  },
+  "workflow_contracts": {
+    "files_checked": $M_WORKFLOW_CONTRACT_FILES,
+    "errors": $M_WORKFLOW_CONTRACT_ERRORS,
+    "warnings": $M_WORKFLOW_CONTRACT_WARNINGS
   },
   "production": {
     "score": $PROD_SCORE,
@@ -1040,6 +1233,7 @@ EOF
     printf "  │   Structure failures: %-17s│\n" "$TIER1_FAIL"
     printf "  │   Security issues: %-19s│\n" "$SEC_FAIL"
     printf "  │   Cross-ref broken: %-18s│\n" "$XREF_FAIL"
+    printf "  │   Workflow contract: %-14s│\n" "$WF_CONTRACT_FAIL"
     printf "  │   Warnings: %-26s│\n" "$WARN_COUNT"
     echo "  └─────────────────────────────────────────┘"
 
@@ -1080,11 +1274,11 @@ EOF
     echo ""
   fi
 
-  # Return appropriate exit code
+  VALIDATION_RESULT="$result"
   if [[ "$result" == "PASS" ]]; then
-    exit 0
+    EXIT_CODE=0
   else
-    exit 1
+    EXIT_CODE=1
   fi
 }
 
@@ -1107,29 +1301,58 @@ main() {
   fi
   echo -e "  Model: $MODEL_QUALITY"
 
+  runtime_state_start
+
   # Phase 1: Structure (Bash)
+  runtime_state_phase_start "phase_1_structure"
   check_structure
+  runtime_state_phase_complete "phase_1_structure"
 
   # Phase 2: Security (Bash)
+  runtime_state_phase_start "phase_2_security_scan"
   check_security
+  runtime_state_phase_complete "phase_2_security_scan"
 
   # Phase 3: Cross-references (Bash)
+  runtime_state_phase_start "phase_3_cross_reference"
   check_cross_references
+  runtime_state_phase_complete "phase_3_cross_reference"
+
+  # Phase 3.5: Workflow contracts (same validator as CI)
+  runtime_state_phase_start "phase_3_5_workflow_contracts"
+  check_workflow_contracts
+  runtime_state_phase_complete "phase_3_5_workflow_contracts"
 
   # Phase 4: Type detection (Bash)
+  runtime_state_phase_start "phase_4_type_detection"
   detect_squad_type
+  runtime_state_phase_complete "phase_4_type_detection"
 
   # Phase 5: Production validation (Bash) - NEW
+  runtime_state_phase_start "phase_5_production_validation"
   check_production
+  runtime_state_phase_complete "phase_5_production_validation"
 
   # Phase 6: Quality analysis (Claude CLI)
+  runtime_state_phase_start "phase_6_quality_analysis"
   analyze_with_claude
+  runtime_state_phase_complete "phase_6_quality_analysis"
 
   # Phase 7: Final scoring
+  runtime_state_phase_start "phase_7_final_scoring"
   calculate_final_score
 
   # Generate report
   generate_report
+  runtime_state_phase_complete "phase_7_final_scoring"
+
+  if [[ "$EXIT_CODE" -eq 0 ]]; then
+    runtime_state_complete "completed"
+  else
+    runtime_state_complete "failed"
+  fi
+
+  exit "$EXIT_CODE"
 }
 
 # Run

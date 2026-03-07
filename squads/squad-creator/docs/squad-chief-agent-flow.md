@@ -192,7 +192,7 @@ Estes tasks so estao disponiveis quando `squads/squad-creator-pro/config.yaml` e
 
 | Arquivo | Proposito |
 |---------|-----------|
-| `squads/squad-registry.yaml` | Ecosystem awareness - all squads |
+| `{registry_path}` | Ecosystem awareness - all squads |
 | `data/tool-registry.yaml` | Global tool catalog (MCPs, APIs, CLIs) |
 | `data/squad-analytics-guide.md` | Guide for *squad-analytics |
 | `data/squad-kb.md` | Knowledge base for squad creation |
@@ -383,7 +383,7 @@ stateDiagram-v2
 ```mermaid
 flowchart TB
     subgraph PHASE_0["Phase 0: Discovery"]
-        A["Input: Domain Request"] --> B["Check squad-registry.yaml"]
+        A["Input: Domain Request"] --> B["Check ecosystem-registry.yaml"]
         B --> C{"Existing Squad?"}
         C -->|"Yes"| D["Offer: Use/Extend/Create New"]
         C -->|"No"| E["Proceed to Research"]
@@ -509,7 +509,7 @@ flowchart TB
 | Comando | Task/Workflow | Operacao |
 |---------|---------------|----------|
 | `*list-squads` | inline | List all created squads |
-| `*show-registry` | inline | Display squad-registry.yaml |
+| `*show-registry` | inline | Display ecosystem-registry.yaml |
 | `*squad-analytics` | `squad-analytics.md` | Detailed analytics dashboard |
 | `*refresh-registry` | `refresh-registry.md` | Scan and update registry |
 
@@ -709,7 +709,7 @@ never_do:
 |---------|-----------|
 | `squads/squad-creator/config.yaml` | Squad configuration |
 | `squads/squad-creator/agents/squad-chief.md` | Agent definition |
-| `squads/squad-registry.yaml` | Ecosystem awareness |
+| `{registry_path}` | Ecosystem awareness |
 | `squads/squad-creator/data/tool-registry.yaml` | Tool catalog |
 | `squads/squad-creator-pro/config.yaml` | PRO mode detection (existence = pro_mode=true) |
 
@@ -743,7 +743,7 @@ mission_router:
 # Data files carregados por comando
 data_loading:
   "*create-squad":
-    - "squads/squad-registry.yaml"
+    - "{registry_path}"
     - "data/squad-kb.md"
     - "data/squad-type-definitions.yaml"
   "*validate-squad":
@@ -869,7 +869,7 @@ Antes de qualquer criacao, verificar:
 
 ```yaml
 pre_flight:
-  - "Check squad-registry.yaml for existing coverage"
+  - "Check ecosystem-registry.yaml for existing coverage"
   - "Validate domain has discoverable elite minds (PRO) or clear use cases (Base)"
   - "Confirm user understands time investment"
   - "Verify output path is writable"
@@ -1076,7 +1076,7 @@ Erro: Handoff para @oalanicolas falhou - context insufficient
 
 | Data File | Purpose |
 |-----------|---------|
-| `squad-registry.yaml` | Ecosystem map |
+| `ecosystem-registry.yaml` | Ecosystem map |
 | `tool-registry.yaml` | Tool catalog |
 | `quality-dimensions-framework.md` | Scoring |
 | `tier-system-framework.md` | Agent organization |

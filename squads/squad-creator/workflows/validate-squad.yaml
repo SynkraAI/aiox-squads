@@ -11,6 +11,7 @@ workflow:
     Base validation pipeline for AIOX squads. Covers structural integrity,
     coverage analysis, and basic quality scoring. For advanced validation
     (axioma, heuristics, veto-conditions), install squad-creator-pro.
+  type: validation
 
   # ========================================================================
   # AGENT MAPPING
@@ -23,6 +24,7 @@ workflow:
       type_detection: squad-chief
       structure: squad-chief
       coverage: squad-chief
+      workflow_contract: squad-chief
       quality: squad-chief
       report: squad-chief
 
@@ -35,6 +37,7 @@ workflow:
       - type_detection
       - structure
       - coverage
+      - workflow_contract
       - quality
       - report
       - complete
@@ -59,10 +62,18 @@ workflow:
 
       - trigger: coverage_passed
         source: coverage
-        dest: quality
+        dest: workflow_contract
 
       - trigger: coverage_failed
         source: coverage
+        dest: failed
+
+      - trigger: workflow_contract_passed
+        source: workflow_contract
+        dest: quality
+
+      - trigger: workflow_contract_failed
+        source: workflow_contract
         dest: failed
 
       - trigger: quality_scored
@@ -88,6 +99,7 @@ workflow:
     - phase: type_detection
       agent: squad-chief
       task: detect-squad-type
+      action: detect_squad_type
       description: "Detect squad type (Expert / Pipeline / Hybrid / Operational)"
       inputs:
         - squad_name
@@ -104,6 +116,7 @@ workflow:
     - phase: structure
       agent: squad-chief
       task: validate-structure
+      action: validate_structure
       description: "Validate structural integrity -- config, agents, references"
       blocking: true
       checks:
@@ -131,6 +144,7 @@ workflow:
     - phase: coverage
       agent: squad-chief
       task: validate-coverage
+      action: validate_coverage
       description: "Validate component coverage and completeness"
       checks:
         - checklist_coverage_gte_30pct
@@ -148,12 +162,35 @@ workflow:
         output: coverage_gaps
 
     # ------------------------------------------------------------------
-    # PHASE 3: Basic Quality Scoring
+    # PHASE 3: Workflow Contract Validation (CI parity)
+    # Agent: squad-chief
+    # ------------------------------------------------------------------
+    - phase: workflow_contract
+      agent: squad-chief
+      task: validate-workflow-contracts
+      action: validate_workflow_contracts
+      description: "Run the same workflow contract validation used in CI"
+      blocking: true
+      checks:
+        - workflow_contract_errors_eq_0
+        - workflow_contract_warnings_eq_0
+      command: "npm run validate:workflow-contracts:strict -- --squads {squad_name}"
+      scripts:
+        - "infrastructure/scripts/squads/validate_workflow_contracts.cjs"
+      on_pass:
+        trigger: workflow_contract_passed
+      on_fail:
+        trigger: workflow_contract_failed
+        output: workflow_contract_issues
+
+    # ------------------------------------------------------------------
+    # PHASE 4: Basic Quality Scoring
     # Agent: squad-chief
     # ------------------------------------------------------------------
     - phase: quality
       agent: squad-chief
       task: score-quality
+      action: score_quality
       description: "Score squad quality across 5 dimensions"
       dimensions:
         prompt_quality: 20
@@ -172,12 +209,13 @@ workflow:
         output: quality_scores
 
     # ------------------------------------------------------------------
-    # PHASE 4: Report Generation
+    # PHASE 5: Report Generation
     # Agent: squad-chief
     # ------------------------------------------------------------------
     - phase: report
       agent: squad-chief
       task: generate-report
+      action: generate_validation_report
       description: "Generate validation report with scores and recommendations"
       inputs:
         - structure_errors
@@ -215,12 +253,13 @@ workflow:
   # RESUME CONFIGURATION
   # ========================================================================
   resume:
-    state_file: .validate-state.json
+    state_file: .aiox/squad-runtime/validate-squad/{squad_name}/state.json
     supported: true
     preserve_outputs: true
     allowed_phases:
       - type_detection
       - structure
       - coverage
+      - workflow_contract
       - quality
       - report

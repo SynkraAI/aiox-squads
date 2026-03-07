@@ -233,6 +233,5 @@ quality_gate_checks:
 
 ---
 
-**Version:** 1.0.0
 **Created:** 2026-02-10
 **Task Reference:** tasks/create-workflow.md

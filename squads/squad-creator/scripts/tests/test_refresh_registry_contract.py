@@ -21,6 +21,11 @@ scan_squad = refresh_registry.scan_squad
 merge_with_existing = refresh_registry.merge_with_existing
 
 
+def test_default_registry_path_is_canonical_runtime_path() -> None:
+    expected = Path(".aiox") / "squad-runtime" / "ecosystem-registry.yaml"
+    assert refresh_registry.DEFAULT_REGISTRY_REL_PATH == expected
+
+
 def test_scan_squad_creator_essential_version_and_counts() -> None:
     squad_path = REPO_ROOT / "squads" / "squad-creator"
     result = scan_squad(squad_path, project_root=REPO_ROOT)

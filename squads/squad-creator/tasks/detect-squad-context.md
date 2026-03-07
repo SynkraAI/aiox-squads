@@ -1,7 +1,6 @@
 # Task: Detect Squad Context
 
 **Task ID:** detect-squad-context
-**Version:** 1.0.0
 **Execution Type:** Hybrid (Script-first detection + Agent interpretation only for ambiguity)
 **Purpose:** Detect the right creation or upgrade route before any squad generation begins
 **Orchestrator:** @squad-chief
@@ -70,7 +69,7 @@ veto_conditions:
 
 1. Check `squads/{squad_name}/` existence.
 2. Check presence of `config.yaml`, `agents/`, `tasks/`, `workflows/`.
-3. Scan for PRD/brief references in `docs/` and `outputs/`.
+3. Scan for PRD/brief references in `docs/` and `.aiox/squad-runtime/`.
 4. Build confidence score per context.
 5. If confidence < 0.70, ask user with 3 options.
 

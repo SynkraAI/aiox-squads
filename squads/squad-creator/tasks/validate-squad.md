@@ -1,7 +1,6 @@
 # Task: Validate Squad
 
 **Task ID:** validate-squad
-**Version:** 5.0.0
 **Purpose:** Validate a squad against AIOX principles using tiered, context-aware validation
 **Orchestrator:** @squad-chief
 **Mode:** Tiered validation (structure > coverage > quality > contextual)
@@ -15,6 +14,7 @@
   - `scripts/coherence-validator.py` -- Heuristic/axioma coherence
   - `scripts/scoring.py` -- Weighted quality score
   - `scripts/security_scanner.py` -- Security issues (API keys, secrets, credentials)
+  - `infrastructure/scripts/squads/validate_workflow_contracts.cjs` -- AIOX workflow contract parity check (same as CI)
 **Model:** `Haiku` (QUALIFIED -- 88% deterministic via script, Agent interprets pre-computed data only)
 **Haiku Eligible:** YES -- empirically validated: Haiku 9.0 vs Opus 7.89 baseline (114.1% match)
 
@@ -81,7 +81,12 @@ INPUT (squad_name)
     -> Tool registry validation (if exists) [v3.2]
     -> BLOCKING: Coverage failures = ABORT
     |
-[PHASE 3: QUALITY - TIER 3]
+[PHASE 3: WORKFLOW CONTRACT - CI PARITY]
+    -> Run same validator used in CI gate
+    -> Command: npm run validate:workflow-contracts:strict -- --squads {squad_name}
+    -> BLOCKING: Any error or warning = ABORT
+    |
+[PHASE 4: QUALITY - TIER 3]
     -> Prompt Quality (20%)
     -> Pipeline Coherence (20%)
     -> Checklist Actionability (20%)
@@ -89,17 +94,17 @@ INPUT (squad_name)
     -> Optimization Opportunities (20%) [v3.2]
     -> Score 0-10, threshold 7.0
     |
-[PHASE 4: CONTEXTUAL - TIER 4]
+[PHASE 5: CONTEXTUAL - TIER 4]
     -> Expert: voice_dna, objection_algorithms, tiers
     -> Pipeline: workflow, checkpoints, orchestrator
     -> Hybrid: persona, behavioral_states, heuristics, executor_decision_tree [v3.2]
     -> Score 0-10, weighted 20% of final
     |
-[PHASE 5: VETO CHECK]
+[PHASE 6: VETO CHECK]
     -> Check type-specific veto conditions
     -> Any veto = FAIL regardless of score
     |
-[PHASE 6: SCORING & REPORT]
+[PHASE 7: SCORING & REPORT]
     -> Calculate: (Tier 3 x 0.80) + (Tier 4 x 0.20)
     -> Generate detailed report
     |
@@ -115,6 +120,21 @@ OUTPUT: Validation Report + Final Score
 | `squad_name` | string | Yes | Name of squad to validate | `"{your-squad}"` |
 | `squad_path` | string | No | Override default path | `"squads/{squad-name}/"` |
 | `type_override` | string | No | Force squad type | `"expert"`, `"pipeline"`, `"hybrid"` |
+
+## Runtime State (SSOT)
+
+Validation runtime state is canonical at:
+
+`.aiox/squad-runtime/validate-squad/{squad_name}/state.json`
+
+Runtime persistence implementation:
+- `scripts/validate-squad.sh` (phase-by-phase updates)
+- `scripts/lib/validate-runtime-state.cjs` (canonical path writer)
+
+Error handling (KISS):
+- If state file does not exist: start from `init` and create state at canonical path.
+- If state is corrupted: stop validation, preserve corrupted file as evidence, and restart from `init` after manual fix.
+- Never use local legacy validate-state files or state files inside `squad-creator*` as source of truth.
 
 ---
 
@@ -156,6 +176,9 @@ python3 squads/squad-creator/scripts/scoring.py squads/{squad_name}/ --output js
 
 # 7. SECURITY: Are there any secrets/credentials exposed?
 python3 squads/squad-creator/scripts/security_scanner.py squads/{squad_name}/ --output json > /tmp/preflight-security.json
+
+# 8. WORKFLOW CONTRACTS: Same validation used in CI gate
+npm run -s validate:workflow-contracts:strict -- --squads {squad_name} --json > /tmp/preflight-workflow-contracts.json
 ```
 
 > Note (Base↔Pro boundary): `coherence-validator.py` and `scoring.py` are Base adapters.
@@ -174,6 +197,7 @@ python3 squads/squad-creator/scripts/security_scanner.py squads/{squad_name}/ --
 | `coherence-validator.py` | Debug: "Why coherence check failed?" |
 | `scoring.py` | Debug: "How is score calculated?" |
 | `security_scanner.py` | Debug: "What security issues exist?" |
+| `validate_workflow_contracts.cjs` | Debug: "Why workflow contract failed in CI?" |
 
 **VETO CONDITIONS:**
 ```yaml
@@ -184,6 +208,7 @@ blocking_checks:
   - checklists.json -> invalid_files > 3 -> WARN (continue with warning)
   - coherence.json -> blocking_issues > 0 -> BLOCK (squad-creator only)
   - security.json -> critical_count > 0 -> BLOCK (fix secrets first!)
+  - workflow_contracts.json -> totals.errors > 0 OR totals.warnings > 0 -> BLOCK (same rule as CI gate)
 ```
 
 **IF ANY blocking issue found -> STOP. Report issues. No LLM needed.**
@@ -1594,32 +1619,3 @@ report_structure:
 | Executor Decision Tree | `data/executor-decision-tree.md` **[v3.2]** |
 
 ---
-
-## Changelog
-
-| Version | Date | Changes |
-|---------|------|---------|
-| 5.0.0 | 2026-02-24 | REWRITE: Remove PRO dependencies, add PRO DETECTION block |
-| | | REMOVE: @pedro-valerio Process Specialist reference |
-| | | REMOVE: config/veto-conditions.yaml reference (inlined veto conditions) |
-| | | REMOVE: config/task-anatomy.yaml reference (use checklist instead) |
-| | | REMOVE: data/tool-registry.yaml from Frameworks Used |
-| | | MODIFY: Phase 5 veto conditions are now inline (no external config) |
-| | | MODIFY: Optimization suggestions check for squad-creator-pro existence |
-| | | ADD: PRO DETECTION block for delegation |
-| 4.3.0 | 2026-02-11 | ADD: security_scanner.py -- ported from validate-squad.sh check_security() |
-| | | ADD: Security veto condition (critical_count > 0 -> BLOCK) |
-| 4.2.0 | 2026-02-11 | ADD: Modular Python scripts integration (RFC-001 Phase 4 completion) |
-| | | ADD: 6 individual scripts for granular debugging |
-| | | ADD: Veto conditions for each modular script |
-| | | ADD: Use case table for when to use each script |
-| 4.1.0 | 2026-02-11 | ADD: Explicit Model specification (Haiku QUALIFIED) -- PV Audit |
-| | | ADD: Haiku Eligible: YES with empirical evidence (114.1% match) |
-
-Ver historico completo em: [`CHANGELOG.md`](./CHANGELOG.md)
-
----
-
-_Task Version: 5.0.0_
-_Philosophy: Context-aware validation - different squads need different things_
-_Reference: squad-checklist.md v3.0, squad-type-definitions.yaml v1.0, executor-decision-tree.md v1.0_

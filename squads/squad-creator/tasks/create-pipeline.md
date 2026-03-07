@@ -1,7 +1,6 @@
 # Task: Create Pipeline Scaffolding
 
 **Task ID:** create-pipeline
-**Version:** 1.0
 **Execution Type:** Worker
 **Purpose:** Generate pipeline code scaffolding for a squad that needs multi-phase data processing
 **Orchestrator:** @squad-chief

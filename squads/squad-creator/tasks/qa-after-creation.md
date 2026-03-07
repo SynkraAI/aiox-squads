@@ -1,7 +1,6 @@
 # Task: QA After Creation
 
 **Task ID:** qa-after-creation
-**Version:** 1.2.0
 **Execution Type:** Hybrid (Script for structural checks + Agent for quality assessment)
 **Purpose:** Automatic quality assurance check after squad/component creation
 **Orchestrator:** @squad-chief
@@ -542,20 +541,3 @@ Output: "✅ Squad 'my-new-squad' created and validated (Score: 7.8/10)"
 
 ---
 
-## Changelog
-
-```yaml
-v1.0.0 (2026-02-01):
-  - Initial task
-  - 5-phase QA flow
-  - Security scan integration (SEC-001 to SEC-018)
-  - Auto-trigger from creation tasks
-  - Score thresholds (7.0 pass, 5.0 conditional)
-```
-
----
-
-_Task Version: 1.2.0_
-_Last Updated: 2026-02-11_
-_Philosophy: No component ships without QA_
-_Triggered by: create-squad, create-agent, create-task, create-workflow_

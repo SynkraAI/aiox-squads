@@ -1,7 +1,6 @@
 # Task: Generate Squad Overview
 
 **Task ID:** squad-overview
-**Version:** 1.0.0
 **Purpose:** Generate comprehensive SQUAD-OVERVIEW.md documentation for any squad
 **Orchestrator:** @squad-chief
 **Mode:** Documentation generation with analysis
@@ -156,11 +155,11 @@ analyze_agents:
 
 ```yaml
 collect_mind_dna:
-  condition: "include_minds == true AND outputs/minds/{expert}/ exists"
+  condition: "include_minds == true AND .aiox/squad-runtime/minds/{expert}/ exists"
 
   for_each_expert:
     - action: "Check mind directory"
-      path: "outputs/minds/{expert_slug}/"
+      path: ".aiox/squad-runtime/minds/{expert_slug}/"
 
     - action: "List DNA files"
       files:
@@ -614,7 +613,7 @@ quality_gate:
 |-------|-----------|----------|
 | Squad not found | config.yaml missing | Report error, list available squads |
 | No agents | agents/ empty | Create minimal doc with warning |
-| Mind dir missing | outputs/minds/{expert}/ not found | Skip DNA section, note in doc |
+| Mind dir missing | .aiox/squad-runtime/minds/{expert}/ not found | Skip DNA section, note in doc |
 
 ---
 
@@ -671,14 +670,3 @@ This task integrates with:
 
 ---
 
-## Changelog
-
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0.0 | 2026-02-18 | Initial version — comprehensive squad documentation generator |
-
----
-
-_Task Version: 1.0.0_
-_Philosophy: Document once, reference always_
-_Output: SQUAD-OVERVIEW.md — the single source of truth for any squad_

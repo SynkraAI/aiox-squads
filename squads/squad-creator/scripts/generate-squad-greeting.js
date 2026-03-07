@@ -48,8 +48,19 @@ try {
 }
 
 const SQUADS_PATH = './squads';
-const REGISTRY_PATH = './squads/squad-registry.yaml';
+const REGISTRY_PATH_ENV = 'AIOX_ECOSYSTEM_REGISTRY_PATH';
+const DEFAULT_REGISTRY_REL_PATH = path.join('outputs', 'squad-creator', 'ecosystem-registry.yaml');
 const TIMEOUT_MS = 200;
+
+function resolveRegistryPath() {
+  const configuredPath = process.env[REGISTRY_PATH_ENV];
+  if (configuredPath && configuredPath.trim().length > 0) {
+    return path.isAbsolute(configuredPath)
+      ? configuredPath
+      : path.join(process.cwd(), configuredPath);
+  }
+  return path.join(process.cwd(), DEFAULT_REGISTRY_REL_PATH);
+}
 
 /**
  * Load agent definition from squad
@@ -165,17 +176,22 @@ async function loadSquadConfig(squadName) {
 }
 
 /**
- * Load squad registry data
+ * Load ecosystem registry data
  *
  * @returns {Promise<Object>} Registry data
  */
 async function loadSquadRegistry() {
+  const registryPath = resolveRegistryPath();
+
   try {
-    const registryPath = path.join(process.cwd(), REGISTRY_PATH);
     const content = await fs.readFile(registryPath, 'utf8');
     return yaml.load(content);
   } catch (error) {
-    console.warn(`[generate-squad-greeting] Failed to load registry: ${error.message}`);
+    if (error.code !== 'ENOENT') {
+      console.warn(
+        `[generate-squad-greeting] Failed to load ecosystem registry (${registryPath}): ${error.message}`
+      );
+    }
     return null;
   }
 }

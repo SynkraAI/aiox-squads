@@ -2,7 +2,7 @@
 """
 Squad Registry Refresh Script
 
-Deterministic operations for updating squad-registry.yaml:
+Deterministic operations for updating the ecosystem registry:
 - Scan squads/ directory
 - Count components recursively (agents, tasks, workflows, etc.)
 - Read canonical config.yaml metadata (fallback: squad.yaml)
@@ -10,10 +10,12 @@ Deterministic operations for updating squad-registry.yaml:
 
 Usage:
     python scripts/refresh-registry.py [--output json|yaml|summary] [--squads-path PATH]
+    python scripts/refresh-registry.py --write [--registry-path PATH]
 """
 
 import fnmatch
 import json
+import os
 import re
 import sys
 from datetime import datetime
@@ -44,6 +46,8 @@ UNKNOWN_VERSION_VALUES = {
 
 SKIP_DIRS = {".DS_Store", "__pycache__", "node_modules", ".git", "artifacts"}
 EXCLUDED_MARKDOWN = {"readme.md", "template.md", "_template.md"}
+REGISTRY_PATH_ENV = "AIOX_ECOSYSTEM_REGISTRY_PATH"
+DEFAULT_REGISTRY_REL_PATH = Path(".aiox") / "squad-runtime" / "ecosystem-registry.yaml"
 
 SECTION_PATTERNS = {
     "agents": ["*.md"],
@@ -465,7 +469,7 @@ def _normalize_validation_consistency(entry: Dict[str, Any]) -> None:
 
 
 def format_for_registry(scan_results: Dict[str, Any]) -> Dict[str, Any]:
-    """Format scan results for squad-registry.yaml structure."""
+    """Format scan results for ecosystem-registry.yaml structure."""
     stopwords = {
         "squad", "de", "da", "do", "dos", "das", "para", "com", "and", "the",
         "use", "using", "specialized", "especializado", "especializada", "team",
@@ -595,9 +599,19 @@ def format_for_registry(scan_results: Dict[str, Any]) -> Dict[str, Any]:
     return registry
 
 
-def get_registry_path(squads_path: Path) -> Path:
-    """Get the path to squad-registry.yaml."""
-    return squads_path / "squad-registry.yaml"
+def get_registry_path(squads_path: Path, registry_path: Optional[Path] = None) -> Path:
+    """Resolve ecosystem registry path from CLI arg, env var, or default output path."""
+    if registry_path is not None:
+        expanded = registry_path.expanduser()
+        return expanded if expanded.is_absolute() else (Path.cwd() / expanded)
+
+    env_registry_path = os.getenv(REGISTRY_PATH_ENV, "").strip()
+    if env_registry_path:
+        env_path = Path(env_registry_path).expanduser()
+        return env_path if env_path.is_absolute() else (Path.cwd() / env_path)
+
+    project_root = squads_path.parent if squads_path.name == "squads" else get_project_root()
+    return project_root / DEFAULT_REGISTRY_REL_PATH
 
 
 def load_existing_registry(registry_path: Path) -> Optional[Dict[str, Any]]:
@@ -736,6 +750,7 @@ def write_registry(registry: Dict[str, Any], registry_path: Path) -> None:
 
     CleanDumper.add_representer(str, str_representer)
 
+    registry_path.parent.mkdir(parents=True, exist_ok=True)
     with open(registry_path, "w", encoding="utf-8") as file:
         yaml.dump(
             registry,
@@ -774,14 +789,24 @@ def _print_summary(results: Dict[str, Any]) -> None:
 def main() -> None:
     import argparse
 
-    parser = argparse.ArgumentParser(description="Scan squads and generate registry data")
+    parser = argparse.ArgumentParser(description="Scan squads and generate ecosystem registry data")
     parser.add_argument("--output", choices=["json", "yaml", "summary"], default="yaml", help="Output format")
     parser.add_argument("--squads-path", type=Path, default=None, help="Path to squads/ directory")
-    parser.add_argument("--registry-format", action="store_true", help="Output in squad-registry.yaml format")
+    parser.add_argument(
+        "--registry-format",
+        action="store_true",
+        help="Output in ecosystem registry schema format",
+    )
+    parser.add_argument(
+        "--registry-path",
+        type=Path,
+        default=None,
+        help=f"Target registry path (env fallback: {REGISTRY_PATH_ENV})",
+    )
     parser.add_argument(
         "--write",
         action="store_true",
-        help="Write directly to squad-registry.yaml (merge with existing, preserve manual enrichments)",
+        help="Write directly to target registry path (merge with existing, preserve manual enrichments)",
     )
 
     args = parser.parse_args()
@@ -795,7 +820,7 @@ def main() -> None:
     results = scan_all_squads(squads_path)
 
     if args.write:
-        registry_path = get_registry_path(squads_path)
+        registry_path = get_registry_path(squads_path, args.registry_path)
         existing = load_existing_registry(registry_path)
 
         results = scan_all_squads(squads_path, existing)

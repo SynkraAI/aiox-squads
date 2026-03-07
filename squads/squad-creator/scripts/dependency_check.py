@@ -24,15 +24,23 @@ from pathlib import Path
 from typing import Dict, List, Any, Tuple
 
 
-# Known squad names to detect external references
-# Dynamically loaded from squad-registry.yaml if available, otherwise empty set
+# Known squad names to detect external references.
+# Dynamically loaded from an external ecosystem registry when available,
+# otherwise discovered from the local squads/ directory.
 def load_known_squads():
     """Load known squad names from registry or discover from squads/ directory."""
     known = set()
 
-    # Try loading from squad-registry.yaml
+    # Try loading ecosystem registry from env-configurable path
     script_dir = Path(__file__).parent
-    registry_path = script_dir / ".." / ".." / "squad-registry.yaml"
+    project_root = script_dir / ".." / ".." / ".."
+    env_registry_path = os.getenv("AIOX_ECOSYSTEM_REGISTRY_PATH", "").strip()
+    if env_registry_path:
+        registry_path = Path(env_registry_path).expanduser()
+        if not registry_path.is_absolute():
+            registry_path = project_root / registry_path
+    else:
+        registry_path = project_root / ".aiox" / "squad-runtime" / "ecosystem-registry.yaml"
 
     if registry_path.exists():
         try:
@@ -46,7 +54,7 @@ def load_known_squads():
 
     # Fallback: discover from squads/ directory
     if not known:
-        squads_dir = script_dir / ".." / ".." / ".."  / "squads"
+        squads_dir = project_root / "squads"
         if squads_dir.exists():
             for item in squads_dir.iterdir():
                 if item.is_dir() and not item.name.startswith('.'):

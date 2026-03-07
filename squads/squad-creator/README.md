@@ -406,7 +406,7 @@ Máxima fidelidade com materiais do usuário:
 | Comando | Descrição | Output |
 |---------|-----------|--------|
 | `*create-squad` | Criar squad completo (6 fases) | `squads/{name}/` |
-| `*clone-mind {name}` | Extrair Voice + Thinking DNA | `outputs/minds/{slug}/` |
+| `*clone-mind {name}` | Extrair Voice + Thinking DNA | `.aiox/squad-runtime/minds/{slug}/` |
 | `*create-agent` | Agent individual para squad | `agents/{name}.md` |
 | `*create-workflow` | Workflow multi-fase | `workflows/{name}.yaml` |
 | `*create-task` | Task atômica | `tasks/{name}.md` |

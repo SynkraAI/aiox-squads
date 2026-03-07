@@ -1,7 +1,6 @@
 # Squad Structural Completeness Checklist
 
 **ID:** SC_STRUCT_001
-**Version:** 1.1.0
 **Purpose:** Verificar que arquivos estruturais obrigatórios existem antes de declarar squad "criado"
 **When:** OBRIGATÓRIO ao final de `*create-squad` e `*create-squad-smart`
 **Tier:** haiku (checklist determinístico)
@@ -386,16 +385,3 @@ veto_condition: "Qualquer check estrutural falhando"
 
 ---
 
-## CHANGELOG
-
-```yaml
-v1.0.0 (2026-02-23):
-  - Checklist criado após análise de erros na criação do squad "theme"
-  - Erros identificados: nome de config, activation-instructions, docs faltando
-  - Adicionado script de verificação automatizada
-  - Integração com qa-after-creation proposta
-```
-
----
-
-_"Um squad listado no README não é um squad criado. O arquivo precisa EXISTIR."_

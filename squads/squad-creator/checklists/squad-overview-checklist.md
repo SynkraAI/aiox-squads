@@ -1,7 +1,6 @@
 # Squad Overview Quality Checklist
 
 **Checklist ID:** squad-overview-checklist
-**Version:** 1.0.0
 **Purpose:** Validate SQUAD-OVERVIEW.md completeness and quality
 **Used By:** `*squad-overview` task, manual review
 **Scoring:** 100 points total, minimum 80 to pass
@@ -177,7 +176,7 @@
 
 - [ ] **Paths are correct** (1 pt)
   - squads/{name}/ path is accurate
-  - outputs/minds/ paths exist (if mentioned)
+  - .aiox/squad-runtime/minds/ paths exist (if mentioned)
 
 ---
 
@@ -380,14 +379,3 @@ next_action: "Ready for use | Fix issues and re-run | Regenerate"
 
 ---
 
-## Changelog
-
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0.0 | 2026-02-18 | Initial version — comprehensive overview quality checklist |
-
----
-
-_Checklist Version: 1.0.0_
-_Philosophy: Quality documentation enables squad adoption_
-_Minimum Pass Score: 80/100_

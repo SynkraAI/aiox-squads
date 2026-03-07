@@ -402,9 +402,3 @@ Summary:
 - `*install-commands` - Instalar commands (versão anterior)
 - `*sync-squad-synkra` - Sincronizar para Synkra marketplace
 
-## Changelog
-
-| Version | Date | Description |
-|---------|------|-------------|
-| 1.0.0 | 2026-01-27 | Full implementation with multi-IDE support |
-| 0.1.0 | 2026-01-27 | Initial spec |

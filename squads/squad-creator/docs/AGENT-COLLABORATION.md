@@ -278,7 +278,7 @@ REGRA CRITICA:
 |                                                                          |
 |  FASE 0: DISCOVERY (squad-chief)                                         |
 |  +-- Recebe request do usuario                                          |
-|  +-- Verifica squads/squad-registry.yaml (existe similar?)              |
+|  +-- Verifica {registry_path} (existe similar?)              |
 |  +-- Pergunta modo (YOLO/QUALITY/HYBRID)                                |
 |  +-- Inicia research loop                                               |
 |                                                                          |

@@ -169,7 +169,7 @@ triage:
         - EXPLORE: "Research, understand, analyze"
 
     step_2_ecosystem:
-      action: "Check squad-registry.yaml for existing coverage"
+      action: "Check ecosystem-registry.yaml for existing coverage"
       if_exists: "Offer extension before creation"
 
     step_3_route:
@@ -179,7 +179,7 @@ triage:
   decision_heuristics:
     - id: "DH_001"
       name: "Existing Squad Check"
-      rule: "ALWAYS check squad-registry.yaml before creating new"
+      rule: "ALWAYS check ecosystem-registry.yaml before creating new"
     - id: "DH_002"
       name: "Scope Escalation"
       rule: "If scope > 3 agents, handle internally (squad creation)"
@@ -205,7 +205,7 @@ triage:
 duplicate-detection:
   trigger: "ONLY when user requests squad/agent creation, NOT on activation"
   on_squad_request:
-    - "1. Read squads/squad-registry.yaml"
+    - "1. Read {registry_path}"
     - "2. Parse user request for domain keywords"
     - "3. Check domain_index for matches"
     - "4. If match found - WARN about existing squad, SHOW its details, ASK if user wants to extend or create new"
@@ -249,6 +249,10 @@ command_scripts:
     script: "python3 squads/squad-creator/scripts/squad-analytics.py squad-creator"
     fallback: "Run *refresh-registry first, then retry *squad-analytics."
     rule: "Execute script. Display output as-is."
+  "*validate-squad":
+    script: "bash squads/squad-creator-pro/scripts/validate-squad.sh {args}"
+    fallback: "Usage: *validate-squad {squad-name} [--verbose|--quick|--fast|--json]"
+    rule: "Extract everything after *validate-squad as {args}. Execute once, pass args verbatim, and display output as-is. NEVER run manual phase-by-phase validation."
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # BEHAVIORAL COMMANDS (agent-handled, no task file needed)
@@ -258,17 +262,17 @@ command_scripts:
 
 behavioral_commands:
   "*show-tools":
-    action: "Read squads/squad-registry.yaml, extract tools/dependencies across all squads, display formatted list"
-    fallback: "No squad-registry.yaml found. Run *refresh-registry first."
+    action: "Read {registry_path}, extract tools/dependencies across all squads, display formatted list"
+    fallback: "No ecosystem-registry.yaml found. Run *refresh-registry first."
   "*add-tool":
     action: "Read the target squad's config.yaml, add the tool to dependencies section, Write() updated file"
     validation: "Verify tool name is valid and not already listed"
   "*list-squads":
-    action: "Read squads/squad-registry.yaml, list all registered squads with name, version, and description"
-    fallback: "No squad-registry.yaml found. Run *refresh-registry first."
+    action: "Read {registry_path}, list all registered squads with name, version, and description"
+    fallback: "No ecosystem-registry.yaml found. Run *refresh-registry first."
   "*show-registry":
-    action: "Read squads/squad-registry.yaml, display full registry content formatted as table"
-    fallback: "No squad-registry.yaml found. Run *refresh-registry first."
+    action: "Read {registry_path}, display full registry content formatted as table"
+    fallback: "No ecosystem-registry.yaml found. Run *refresh-registry first."
   "*show-context":
     action: "List all files loaded in current session context (agents, tasks, configs, data)"
   "*chat-mode":
@@ -313,7 +317,7 @@ design_rules:
     check: "Agent ESCREVE arquivo fora de squads/{squad-name}/? → VETO. Agent LE workspace/ para contexto? → PERMITIDO."
     allowed: ["agents/", "tasks/", "data/", "checklists/"]
     read_only_allowed: ["workspace/workspace.yaml", "workspace/domains/", "workspace/businesses/", "workspace/config.md"]
-    forbidden: ["outputs/minds/", ".aiox-core/", "docs/"]
+    forbidden: [".aiox/squad-runtime/minds/", ".aiox-core/", "docs/"]
 
   functional_over_philosophical:
     rule: "Agent deve saber FAZER o trabalho, nao ser clone perfeito"
@@ -617,10 +621,10 @@ commands:
   - "*squad-overview {name} - Generate comprehensive SQUAD-OVERVIEW.md documentation for a squad"
   - "*sync - Sync squad commands to .claude/commands/ (runs tasks/sync-ide-command.md)"
   # Utility Commands — behavioral (agent-handled, no task file)
-  - "*show-tools - Display global tool registry by reading squads/squad-registry.yaml"
+  - "*show-tools - Display global tool registry by reading {registry_path}"
   - "*add-tool {name} - Add discovered tool to squad config.yaml dependencies"
-  - "*list-squads - List all squads by reading squads/squad-registry.yaml"
-  - "*show-registry - Display squad registry by reading squads/squad-registry.yaml"
+  - "*list-squads - List all squads by reading {registry_path}"
+  - "*show-registry - Display squad registry by reading {registry_path}"
   - "*show-context - Show what context files are loaded in current session"
   - "*chat-mode - (Default) Conversational mode for squad guidance"
   - "*exit - Say goodbye and deactivate persona"
@@ -751,7 +755,7 @@ pre-execution-hooks:
   "*create-squad":
     - action: "check-registry"
       description: "Check if squad for this domain already exists"
-      file: "squads/squad-registry.yaml"
+      file: "{registry_path}"
       on_match: "Show existing squad, ask user preference"
     - action: "check-pro-mode"
       description: "Check if pro mode is available for enhanced workflow"
@@ -908,7 +912,7 @@ dependencies:
     - squad-config.yaml
     - workflow-yaml-schema.yaml
   external:
-    - squads/squad-registry.yaml  # lives at squads root, not inside squad-creator
+    - "{registry_path}"  # external configurable path (env/CLI), not hardcoded to installation layout
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # KNOWLEDGE AREAS

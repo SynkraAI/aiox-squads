@@ -1,7 +1,6 @@
 # Task: Create Squad Workflow
 
 **Task ID:** create-workflow
-**Version:** 2.0.1
 **Execution Type:** Hybrid (Agent for design + elicitation, deterministic for validation)
 **Purpose:** Create multi-phase workflows that orchestrate complex operations across agents
 **Orchestrator:** @squad-chief

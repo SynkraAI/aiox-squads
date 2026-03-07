@@ -100,7 +100,7 @@ Criamos 4 frameworks abstraídos de padrões de squads de alta qualidade, agora 
 
 **Novo Step 8 adicionado:** QUALITY GATE (Agent Validation) com blocking requirements
 
-### 3.2 mind-research-loop.md
+### 3.2 wf-mind-research-loop.yaml
 
 **Antes:** 450 linhas, sem uso de frameworks
 **Depois:** ~620 linhas, 3 frameworks integrados
@@ -248,8 +248,8 @@ squads/squad-creator/
 │   ├── install-commands.md
 │   └── sync-ide-command.md
 ├── workflows/
-│   ├── mind-research-loop.md           # PRO-coupled reference (histórico)
-│   └── research-then-create-agent.md   # PRO-coupled reference (histórico)
+│   ├── wf-mind-research-loop.yaml           # PRO-coupled reference (histórico)
+│   └── wf-research-then-create-agent.yaml   # PRO-coupled reference (histórico)
 ├── templates/
 │   ├── agent-tmpl.md
 │   ├── task-tmpl.md

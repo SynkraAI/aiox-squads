@@ -1,7 +1,6 @@
 # Task: Squad Analytics
 
 **Task ID:** squad-analytics
-**Version:** 3.1.0
 **Purpose:** Generate metrics and quality analysis for squads
 **Orchestrator:** @squad-chief
 **Execution Type:** `Hybrid` (Script for metrics + Agent for analysis)
@@ -259,27 +258,3 @@ squads/squad-creator/scripts/squad-analytics.py
 
 ---
 
-## Changelog
-
-### v3.0.0 (2026-02-10)
-- Clear separation: Script (deterministic) vs Agent (LLM)
-- Added `--squad NAME` filter
-- Added `--line-counts` / `-l` flag
-- Added `--quality-audit` / `-q` flag
-- Added extra folders detection (data/minds/, docs/sops/)
-- Removed promises that require LLM (health-check, gap-analysis, etc.)
-- Those features now documented as "Agent Phase"
-
-### v2.0.0 (2026-02-05)
-- Added health indicators (moved to Agent phase)
-- Added gap analysis (moved to Agent phase)
-- Added recommendations (moved to Agent phase)
-
-### v1.0.0 (2026-02-01)
-- Initial release with basic counting
-
----
-
-_Task Version: 3.0.0_
-_Updated: 2026-02-10_
-_Author: squad-chief_

@@ -1,7 +1,6 @@
 # Task: Validate Final Artifacts
 
 **Task ID:** validate-final-artifacts
-**Version:** 1.0.0
 **Execution Type:** Hybrid (Deterministic checks + Agent for semantic quality)
 **Purpose:** Validate final squad outputs only, not intermediate artifacts
 **Orchestrator:** @squad-chief
@@ -85,4 +84,4 @@ final_artifact_report:
 ## Success Criteria
 
 - All blocking gates pass.
-- Report generated at `outputs/squad_validation/{squad_name}/final-artifacts.yaml`.
+- Report generated at `.aiox/squad-runtime/squad-validation/{squad_name}/final-artifacts.yaml`.

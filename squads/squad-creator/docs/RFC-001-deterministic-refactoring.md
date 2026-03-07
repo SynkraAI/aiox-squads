@@ -287,7 +287,7 @@ weights: dict
 ```python
 # Input
 query: str  # "copywriting"
-registry_path: str  # "squads/squad-registry.yaml"
+registry_path: str  # "{registry_path}"
 
 # Output
 {
@@ -307,7 +307,7 @@ registry_path: str  # "squads/squad-registry.yaml"
 ```
 
 **What it does:**
-- Parse squad-registry.yaml
+- Parse ecosystem-registry.yaml
 - Search domain_index
 - Search keywords arrays
 - Return matches with confidence

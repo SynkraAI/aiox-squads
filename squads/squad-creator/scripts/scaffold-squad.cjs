@@ -4,7 +4,7 @@
  *
  * Usage:
  *   node scaffold-squad.cjs <slug> [--name "Display Name"]
- *   node scaffold-squad.cjs  # Uses .active-squad
+ *   node scaffold-squad.cjs  # Uses .aiox/squad-runtime/active-squad.json
  *
  * Creates:
  *   squads/{slug}/
@@ -21,13 +21,17 @@
 
 const fs = require('fs');
 const path = require('path');
+const {
+  DEFAULT_WORKFLOW,
+  readActiveSquad: readActiveSquadFromRuntime,
+  readStateWithLegacyFallback,
+} = require(path.join(__dirname, 'lib', 'squad-runtime-paths.cjs'));
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CONSTANTS
 // ═══════════════════════════════════════════════════════════════════════════
 
 const SQUADS_BASE = path.resolve(__dirname, '..', '..'); // squads/
-const ACTIVE_SQUAD_PATH = path.join(SQUADS_BASE, '.active-squad');
 
 const DIRECTORIES = [
   'agents',
@@ -170,26 +174,15 @@ function outputError(code, message, details = {}) {
 
 function resolveSlug(cliSlug) {
   if (cliSlug && !cliSlug.startsWith('-')) return cliSlug;
-  if (fs.existsSync(ACTIVE_SQUAD_PATH)) {
-    return fs.readFileSync(ACTIVE_SQUAD_PATH, 'utf8').trim();
-  }
-  return null;
-}
-
-function getStatePath(slug) {
-  return path.join(SQUADS_BASE, slug, 'metadata', 'state.json');
+  return readActiveSquadFromRuntime();
 }
 
 function readState(slug) {
-  const statePath = getStatePath(slug);
-  if (fs.existsSync(statePath)) {
-    try {
-      return JSON.parse(fs.readFileSync(statePath, 'utf8'));
-    } catch {
-      return null;
-    }
-  }
-  return null;
+  const result = readStateWithLegacyFallback(slug, {
+    workflow: DEFAULT_WORKFLOW,
+  });
+  if (!result.state || result.state.__corrupted) return null;
+  return result.state;
 }
 
 function parseArg(args, flag) {
@@ -210,7 +203,7 @@ function main() {
 
 Usage:
   node scaffold-squad.cjs <slug> [--name "Display Name"]
-  node scaffold-squad.cjs  # Uses .active-squad
+  node scaffold-squad.cjs  # Uses .aiox/squad-runtime/active-squad.json
 
 Options:
   --name "Name"    Display name for the squad (default: slug title-cased)
@@ -227,7 +220,7 @@ Creates files: README.md, config.yaml`);
   const slug = resolveSlug(cliSlug);
 
   if (!slug) {
-    outputError('NO_SLUG', 'No slug provided and no .active-squad file found', {
+    outputError('NO_SLUG', 'No slug provided and no active squad pointer found', {
       hint: 'Run: node squad-state-manager.cjs init <slug> first'
     });
     process.exit(1);

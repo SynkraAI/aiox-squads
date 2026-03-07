@@ -1,7 +1,6 @@
 # Task: Create Complete Squad
 
 **Task ID:** create-squad
-**Version:** 3.0
 **Execution Type:** Hybrid
 **Purpose:** Create a complete AIOX-FULLSTACK squad through guided elicitation, template selection, and validation
 **Orchestrator:** @squad-chief
@@ -255,7 +254,7 @@ pack_structure_elicitation:
 
   derived:
     - pack_path: "squads/{squad_name}/"
-    - outputs_path: "squads/{squad_name}/outputs/"
+    - outputs_path: ".aiox/squad-runtime/create-squad/{squad_name}/"
     - command_path: ".claude/commands/{PackTitle}/"
 
   pattern_library:
@@ -587,12 +586,10 @@ create_directories:
     - checklists/
     - data/
     - docs/
-    - outputs/
 
   initial_files:
     - config.yaml (from templates/config-tmpl.yaml)
     - README.md (placeholder)
-    - outputs/README.md (runtime artifact location guide)
 ```
 
 ### Step 3.2: Create Agents (Template-Driven)
@@ -990,7 +987,7 @@ next_steps:
 | Tasks | `squads/{squad_name}/tasks/` | Atomic tasks |
 | Templates | `squads/{squad_name}/templates/` | Output templates |
 | Checklists | `squads/{squad_name}/checklists/` | Validation checklists |
-| Runtime Outputs | `squads/{squad_name}/outputs/` | Artifacts gerados em execucoes reais |
+| Runtime Outputs | `.aiox/squad-runtime/create-squad/{squad_name}/` | Artifacts gerados em execucoes reais |
 | Knowledge Base | `squads/{squad_name}/data/{squad_name}-kb.md` | Domain knowledge |
 | Documentation | `squads/{squad_name}/README.md` | Usage documentation |
 | Config | `squads/{squad_name}/config.yaml` | Squad configuration |
@@ -1004,7 +1001,7 @@ next_steps:
 - [ ] All required subdirectories created
 - [ ] config.yaml is valid YAML
 - [ ] config.yaml defines explicit `entry_agent`
-- [ ] `outputs/` exists with bootstrap artifact (`outputs/README.md` or equivalent)
+- [ ] Runtime state exists at `.aiox/squad-runtime/create-squad/{squad_name}/state.json`
 
 ### Agents
 - [ ] Orchestrator agent exists

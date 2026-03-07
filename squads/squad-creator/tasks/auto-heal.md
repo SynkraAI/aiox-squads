@@ -1,7 +1,6 @@
 # Task: Auto-Heal (Reactive Error Recovery)
 
 **Task ID:** auto-heal
-**Version:** 2.0.0
 **Execution Type:** Reactive (triggered by error during session)
 **Purpose:** Diagnose and fix errors encountered during squad operations
 **Orchestrator:** @squad-chief

@@ -619,7 +619,6 @@ task:
 
 ---
 
-**Checklist Version:** 1.0.0
 **Pattern Reference:** HO-TP-001 (Task Anatomy Standard)
 **Created:** 2026-01-24
 **Part of:** squads/squad-creator

@@ -137,7 +137,7 @@ O squad-chief acumula todas as funcoes: triage, routing, criacao, validacao, ana
 #### Utilidades (5)
 | Task | Descricao |
 |------|-----------|
-| refresh-registry.md | Atualizar squad-registry.yaml |
+| refresh-registry.md | Atualizar ecosystem-registry.yaml |
 | squad-analytics.md | Dashboard de analytics |
 | squad-overview.md | Gerar SQUAD-OVERVIEW.md |
 | sync-ide-command.md | Sincronizar comandos para IDE |

@@ -179,6 +179,5 @@ smoke_test:
 
 ---
 
-**Version:** 1.0.0
 **Created:** 2026-02-10
 **Task Reference:** tasks/create-agent.md

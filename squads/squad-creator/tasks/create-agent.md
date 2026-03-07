@@ -1,7 +1,6 @@
 # Task: Create Squad Agent
 
 **Task ID:** create-agent
-**Version:** 3.0
 **Execution Type:** Agent
 **Execution Rationale:** "Core operations (research, elicitation, creation) require LLM interpretation. Preflight validations (squad exists, sources count) could be scripted in future."
 **Model:** Opus
@@ -43,7 +42,7 @@ self_contained:
     - "squads/{squad-name}/checklists/*.md"
     - "squads/{squad-name}/minds/**/*"
   forbidden:
-    - "outputs/minds/*"  # DNA extraido deve ser INTEGRADO, nao referenciado
+    - ".aiox/squad-runtime/minds/*"  # DNA extraido deve ser INTEGRADO, nao referenciado
     - ".aiox-core/*"     # Nao depender de core externo
     - "docs/*"           # Documentacao externa
   exception: "Mission router pode lazy-load tasks/data DO PROPRIO squad"

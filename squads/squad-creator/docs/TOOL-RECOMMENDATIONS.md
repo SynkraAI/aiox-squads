@@ -110,7 +110,7 @@ npx -y mcp-perplexity
 - Melhor para perguntas complexas
 
 **Integração:**
-- `mind-research-loop.md` - Iterações de pesquisa (PRO-coupled task)
+- `wf-mind-research-loop.yaml` - Iterações de pesquisa (PRO-coupled workflow)
 - `deep-research-pre-agent.md` (PRO-coupled task; fora do base-only)
 
 **Métricas:**

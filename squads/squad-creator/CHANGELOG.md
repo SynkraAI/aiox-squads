@@ -24,7 +24,7 @@ Todas as alterações notáveis no squad-creator serão documentadas aqui.
   - Remove .claude/commands/SquadCreator/ (37 files, third copy eliminated)
 - **SCPRO.5:** Dual-mode testing, degradation verification, final audit
   - All 53 tasks accounted for: 20 base + 33 pro, zero duplication
-  - Registry migrated to squads/squad-registry.yaml
+  - Registry migrated to {registry_path}
   - Zero broken references, all YAML valid
 
 ### Alterado

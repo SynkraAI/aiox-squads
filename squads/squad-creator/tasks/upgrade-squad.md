@@ -1,7 +1,6 @@
 # Task: Upgrade Squad
 
 **Task ID:** upgrade-squad
-**Version:** 2.0.0
 **Execution Type:** Hybrid (Script for inventory/scanning + Agent for gap analysis/planning)
 **Purpose:** Upgrade existing squads to current AIOX structural standards with gap analysis and automated improvements
 **Orchestrator:** @squad-chief
@@ -1048,37 +1047,3 @@ qualitative_upgrade_note: |
 
 ---
 
-## Changelog
-
-```yaml
-v2.0.0 (2026-02-24):
-  - REWRITE: Simplified to structural-only gap analysis
-  - REMOVE: Qualitative gap analysis (voice_dna quality, thinking_dna)
-  - REMOVE: extract-voice-dna references and DNA gap analysis
-  - REMOVE: mind-cloning references
-  - REMOVE: Pro checklists/configs references
-  - ADD: PRO DETECTION block for delegation to squad-creator-pro
-  - ADD: Config.yaml format compliance checks (S-CFG-*)
-  - ADD: Agent template compliance checks (S-AGT-*)
-  - ADD: Workflow schema compliance checks (S-WFL-*)
-  - ADD: Missing required files check (S-FIL-*)
-  - ADD: Placeholder section generation with TODO markers
-  - MODIFY: Phase 1 is now structural-only
-  - MODIFY: Phase 3 applies structural fixes only
-  - NOTE: Qualitative upgrades delegated to squad-creator-pro
-
-v1.1.0 (2026-02-11):
-  - Gap analysis against current standards
-  - Auto-applicable vs manual upgrades
-
-v1.0.0 (2026-02-04):
-  - Initial task creation
-  - 4-phase upgrade flow
-  - Backup and restore capability
-```
-
----
-
-_Task Version: 2.0.0_
-_Last Updated: 2026-02-24_
-_Philosophy: Upgrade structure safely, delegate quality to pro. Validate thoroughly, document everything._

@@ -1,7 +1,6 @@
 # Task: Next Squad Recommendation
 
 **Task ID:** next-squad
-**Version:** 1.0.0
 **Execution Type:** Hybrid (Script metrics + Agent analysis)
 **Purpose:** Determine which squad should be created or improved next based on ecosystem analysis, business gaps, and backlog
 **Orchestrator:** @squad-chief
@@ -10,7 +9,7 @@
 **Haiku Eligible:** NO -- multi-dimensional prioritization requires interpretive reasoning
 
 **Frameworks Used:**
-- `squads/squad-registry.yaml` → Ecosystem state, gaps, extension candidates (Phase 1)
+- `{registry_path}` → Ecosystem state, gaps, extension candidates (Phase 1)
 - `data/quality-dimensions-framework.md` → Scoring criteria (Phase 3)
 - `data/tier-system-framework.md` → Squad maturity classification (Phase 2)
 
@@ -26,7 +25,7 @@ It analyzes 4 data sources, scores candidates across 5 dimensions, and outputs a
 INPUT (optional: business_context, priority_domain)
     ↓
 [PHASE 1: ECOSYSTEM SCAN]
-    → Read squad-registry.yaml (current state)
+    → Read ecosystem-registry.yaml (current state)
     → Identify extension candidates, config issues, gaps
     → Map domain coverage vs known needs
     ↓
@@ -62,8 +61,9 @@ OUTPUT: Ranked recommendation + execution command
 
 ## Preconditions
 
-- [ ] `squads/squad-registry.yaml` exists and is current
+- [ ] `{registry_path}` exists and is current
 - [ ] At least 1 squad exists in `squads/` directory
+- [ ] `{registry_path}` resolved via `AIOX_ECOSYSTEM_REGISTRY_PATH` (fallback: `.aiox/squad-runtime/ecosystem-registry.yaml`)
 
 **Recommended:** Run `*refresh-registry` before `*next-squad` for freshest data.
 
@@ -76,7 +76,7 @@ OUTPUT: Ranked recommendation + execution command
 **Action:**
 ```yaml
 action: read
-file: squads/squad-registry.yaml
+file: {registry_path}
 extract:
   - metadata.total_squads
   - gaps.extension_candidates      # Squads that exist but are incomplete
@@ -159,9 +159,9 @@ scan_locations:
     look_for: "PRDs that imply new domain needs"
     signal: "PRD for 'financial dashboard' → finance squad demand"
 
-  - pattern: "outputs/**/*"
+  - pattern: ".aiox/squad-runtime/**/*"
     look_for: "Ad-hoc outputs in domains without squads"
-    signal: "outputs/legal-analysis/ exists but no legal squad → organic demand"
+    signal: ".aiox/squad-runtime/legal-analysis/ exists but no legal squad → organic demand"
 
   - pattern: ".aiox/project-status.yaml"
     look_for: "Current epic/story context"
@@ -192,7 +192,7 @@ removed_squads_triage:
   check:
     - "Was it removed intentionally (deprecated) or accidentally (cleanup)?"
     - "Does the domain still have business relevance?"
-    - "Are there residual artifacts in outputs/ or docs/?"
+    - "Are there residual artifacts in .aiox/squad-runtime/ or docs/?"
   classify:
     - REVIVE: "Domain still relevant, removal was cleanup, re-create with current standards"
     - ARCHIVE: "Domain no longer relevant, document why, move on"
@@ -362,7 +362,7 @@ execution_path:
 | Output | Format | Location |
 |--------|--------|----------|
 | Recommendation report | Markdown | Displayed in terminal |
-| Candidate scores | YAML (optional) | `outputs/next-squad/scores-{date}.yaml` |
+| Candidate scores | YAML (optional) | `.aiox/squad-runtime/next-squad/scores-{date}.yaml` |
 
 **Primary output:** Terminal display with actionable recommendation.
 **Optional:** Save scores to file with `--save` flag.
@@ -399,7 +399,7 @@ validation:
 
 ```yaml
 veto:
-  - condition: "squad-registry.yaml not found or empty"
+  - condition: "ecosystem-registry.yaml not found or empty"
     action: "BLOCK — run *refresh-registry first"
 
   - condition: "All candidates score < 3.0"

@@ -1,7 +1,6 @@
 # Task: Install Commands
 
 **Task ID:** install-commands
-**Version:** 2.0.0
 **Execution Type:** `Worker` (100% deterministic file operations)
 **Worker Script:** `scripts/sync-ide-command.py` (use: `python3 scripts/sync-ide-command.py squad {name}`)
 **Purpose:** Convert squad agents into IDE commands and install them across all detected IDEs
@@ -1069,37 +1068,3 @@ python3 scripts/sync-ide-command.py squad {squad_name} --uninstall
 
 ---
 
-## Changelog
-
-```yaml
-v2.0.0 (2026-02-24):
-  - REWRITE: Expanded from Claude Code-only to multi-IDE support (5 IDEs)
-  - ADD: PRO DETECTION block for delegation to squad-creator-pro
-  - ADD: IDE Detection phase (Phase 0) with fallback
-  - ADD: Codex SKILL.md format support
-  - ADD: Gemini command format support
-  - ADD: Antigravity command format support
-  - ADD: Cursor command format with .cursorrules reference
-  - ADD: Per-IDE installation loop
-  - ADD: Cross-IDE consistency validation
-  - ADD: Cross-IDE installation summary
-  - ADD: Worker script interface documentation
-  - ADD: IDE format reference section
-  - MODIFY: Directory creation now per-IDE
-  - MODIFY: Validation now per-IDE
-  - NOTE: Pro mode adds sync of both base and pro assets
-
-v1.1.0 (2026-02-11):
-  - Worker script reference added
-
-v1.0.0 (2025-10-06):
-  - Initial task creation
-  - Claude Code only
-  - Basic agent conversion and installation
-```
-
----
-
-_Task Version: 2.0.0_
-_Last Updated: 2026-02-24_
-_Philosophy: Install once, use everywhere. Every IDE gets the same squad capabilities._

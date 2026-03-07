@@ -1,7 +1,6 @@
 # Task: Create Squad Template
 
 **Task ID:** create-template
-**Version:** 2.0
 **Execution Type:** Hybrid
 **Purpose:** Create output templates for squad artifacts through interactive elicitation
 **Orchestrator:** @squad-chief
