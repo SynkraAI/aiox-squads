@@ -1,0 +1,115 @@
+# ==============================================================================
+# APEX SQUAD — Operational Configuration
+# config/squad-config.yaml
+# ==============================================================================
+# Purpose:  Centralized runtime configuration for Squad Apex.
+#           Controls pipeline behavior, enforcement, profile defaults,
+#           and integration settings. Data sources (tokens, presets, budgets)
+#           live in data/ — this file controls HOW they are used.
+#
+# Owner:    apex-lead
+# Version:  1.1.0
+# ==============================================================================
+
+squad_config:
+  name: apex
+  version: "1.1.0"
+  description: "Squad 100% frontend ultra-premium para Web, Mobile e Spatial"
+
+  # =========================================
+  # Profile Configuration
+  # =========================================
+  profiles:
+    default: auto  # auto = detect from package.json, or specify: full|web-next|web-spa|minimal
+    detection_order:
+      - check: "react-native OR expo in package.json"
+        profile: full
+      - check: "next in package.json"
+        profile: web-next
+      - check: "react AND vite in package.json, no next"
+        profile: web-spa
+      - check: fallback
+        profile: minimal
+
+  # =========================================
+  # Pipeline Configuration
+  # =========================================
+  pipeline:
+    default_mode: guided  # guided | autonomous
+    max_revision_loops: 3
+    checkpoint_timeout_minutes: 30
+    auto_suggest_after_operation: true
+    max_chained_operations: 5
+
+    intent_classification:
+      fix_threshold: 3        # <= 3 files = *apex-fix
+      quick_threshold: 10     # <= 10 files, multi-domain = *apex-quick
+      full_threshold: 11      # > 10 files = *apex-go
+
+  # =========================================
+  # Enforcement Configuration
+  # =========================================
+  enforcement:
+    mode: strict                        # strict | relaxed
+    fallback_on_tool_failure: BLOCK     # BLOCK | SKIP_WITH_WARNING
+    veto_conditions_file: data/veto-conditions.yaml
+    adaptive_skip: true                 # Skip veto conditions when tooling unavailable
+
+    non_waivable_gates:
+      - QG-AX-005   # Accessibility
+      - QG-AX-010   # Lead sign-off
+
+    expedited_mode:
+      requires_approval: true           # apex-lead must approve
+      never_skip:
+        - QG-AX-001  # Design tokens
+        - QG-AX-003  # Design spec approval
+        - QG-AX-005  # Accessibility
+        - QG-AX-007  # Performance budget
+        - QG-AX-008  # Visual regression
+        - QG-AX-009  # Cross-platform
+        - QG-AX-010  # Lead sign-off
+
+  # =========================================
+  # Discovery Configuration
+  # =========================================
+  discovery:
+    component_scan:
+      extensions: [tsx, jsx]
+      exclude_patterns: ["*.test.*", "*.stories.*", "*.spec.*", "node_modules"]
+      large_project_threshold: 500  # warn if > 500 components
+    design_scan:
+      token_sources: [css_variables, tailwind_config, theme_objects]
+      near_duplicate_hsl_distance: 5  # % distance for flagging
+
+  # =========================================
+  # Suggestions Configuration
+  # =========================================
+  suggestions:
+    auto_after_operation: true
+    max_auto: 5
+    max_manual: 10
+    severity_order: [HIGH, MEDIUM, LOW]
+    never_auto_fix: true  # NEVER auto-correct, always present and wait
+
+  # =========================================
+  # Quality Standards (reference)
+  # =========================================
+  quality:
+    performance_budgets: data/performance-budgets.yaml
+    spring_configs: data/spring-configs.yaml
+    veto_conditions: data/veto-conditions.yaml
+    design_presets: data/design-presets.yaml
+
+  # =========================================
+  # Integration
+  # =========================================
+  integration:
+    aios_handoff:
+      enabled: true
+      handoff_dir: .aios/handoffs/
+      ship_delegates_to: devops
+    git:
+      allowed: [add, commit, status, diff, log, branch, checkout, merge, stash]
+      blocked: [push, force-push]
+      blocked_reason: "Delegate to @devops"

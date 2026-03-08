@@ -1,0 +1,775 @@
+# ==============================================================================
+# APEX SQUAD — Intelligence Layer
+# data/apex-intelligence.yaml
+# ==============================================================================
+# Purpose:  Defines smart behaviors that make the squad think more and ask less.
+#           Intent chaining, smart defaults, and context memory rules.
+# Used by:  apex-entry.md, apex-scan.md, all pipelines
+# Owner:    apex-lead
+# Version:  1.0.0
+# ==============================================================================
+
+version: "1.0.0"
+
+# ==============================================================================
+# 1. INTENT CHAINING — "E depois?"
+# ==============================================================================
+# After each operation, Apex suggests the next logical action based on results.
+
+intent_chaining:
+  description: >
+    After every operation completes, Apex analyzes the output and suggests
+    the most logical next action. User picks by number, types naturally,
+    or says "done" to stop the chain.
+
+  after_fix:
+    suggest_primary: "Rodar suggestions no arquivo modificado"
+    suggest_primary_pipeline: "*apex-suggest"
+    suggest_secondary: "Fazer outro fix"
+    suggest_secondary_pipeline: "*apex-fix"
+    suggest_tertiary: "Done"
+
+    output_format: |
+      Fix aplicado. {files_modified} arquivo(s) modificado(s). typecheck PASS.
+
+      Proximo passo:
+        1. {suggest_primary}
+        2. {suggest_secondary}
+        3. {suggest_tertiary}
+
+      O que prefere?
+
+  after_quick:
+    suggest_primary: "Rodar suggestion scan completo"
+    suggest_primary_pipeline: "*apex-suggest"
+    suggest_secondary: "Fazer deploy (handoff @devops)"
+    suggest_secondary_pipeline: "generate_aios_handoff"
+    suggest_tertiary: "Continuar com outro quick"
+    suggest_tertiary_pipeline: "*apex-quick"
+
+    output_format: |
+      Quick pipeline completo. {files_count} arquivos, {agents_used} agentes.
+
+      Proximo passo:
+        1. {suggest_primary}
+        2. {suggest_secondary}
+        3. {suggest_tertiary}
+
+      O que prefere?
+
+  after_pipeline:
+    conditions:
+      - if: "qa_verdict == PASS"
+        suggest_primary: "Ship (handoff @devops para push)"
+        suggest_primary_pipeline: "generate_aios_handoff"
+        suggest_secondary: "Rodar polish cycle (motion + a11y + perf)"
+        suggest_secondary_pipeline: "*apex-go polish"
+        suggest_tertiary: "So quero revisar o resultado"
+
+      - if: "qa_verdict == CONCERNS"
+        suggest_primary: "Resolver concerns antes de ship"
+        suggest_primary_pipeline: "*apex-fix (concerns)"
+        suggest_secondary: "Ship com concerns documentados"
+        suggest_secondary_pipeline: "generate_aios_handoff"
+        suggest_tertiary: "Abortar e refazer"
+
+      - if: "qa_verdict == FAIL"
+        suggest_primary: "Corrigir falhas ({fail_count} issues)"
+        suggest_primary_pipeline: "*apex-fix (failures)"
+        suggest_secondary: "Ver relatorio detalhado"
+        suggest_tertiary: "Abortar pipeline"
+
+  after_suggest:
+    conditions:
+      - if: "suggestions_count > 0 AND high_count > 0"
+        suggest_primary: "Aplicar suggestion #{1} ({top_suggestion})"
+        suggest_primary_pipeline: "*apex-fix"
+        suggest_secondary: "Aplicar todas as HIGH automaticamente"
+        suggest_secondary_pipeline: "*apex-quick (batch fix)"
+        suggest_tertiary: "Ignorar sugestoes"
+
+      - if: "suggestions_count > 0 AND high_count == 0"
+        suggest_primary: "Aplicar suggestion #{1} ({top_suggestion})"
+        suggest_primary_pipeline: "*apex-fix"
+        suggest_secondary: "Ignorar (todas sao MEDIUM/LOW)"
+        suggest_tertiary: "Done"
+
+      - if: "suggestions_count == 0"
+        suggest_primary: "Projeto saudavel! Quer descobrir componentes?"
+        suggest_primary_pipeline: "*discover-components"
+        suggest_secondary: "Mapear design system"
+        suggest_secondary_pipeline: "*discover-design"
+        suggest_tertiary: "Done"
+
+  after_discover_components:
+    conditions:
+      - if: "orphaned_count > 0 OR untested_count > 3"
+        suggest_primary: "Limpar {orphaned_count} componente(s) orfao(s)"
+        suggest_primary_pipeline: "*apex-fix (cleanup)"
+        suggest_secondary: "Adicionar testes para {untested_count} componentes"
+        suggest_secondary_pipeline: "*apex-quick (add tests)"
+        suggest_tertiary: "Descobrir design system"
+        suggest_tertiary_pipeline: "*discover-design"
+
+      - if: "god_components > 0"
+        suggest_primary: "Refatorar god component(s): {god_list}"
+        suggest_primary_pipeline: "*apex-go (refactor)"
+        suggest_secondary: "Descobrir design system"
+        suggest_secondary_pipeline: "*discover-design"
+        suggest_tertiary: "So quero o inventario"
+
+      - if: "health_score >= 80"
+        suggest_primary: "Projeto saudavel! Descobrir design system"
+        suggest_primary_pipeline: "*discover-design"
+        suggest_secondary: "Rodar audit completo"
+        suggest_secondary_pipeline: "*apex-audit"
+        suggest_tertiary: "Done"
+
+    output_format: |
+      Discovery completa. {total_components} componentes encontrados.
+      Health Score: {health_score}/100
+      Orphans: {orphaned_count} | Sem testes: {untested_count} | God components: {god_count}
+
+      Proximo passo:
+        1. {suggest_primary}
+        2. {suggest_secondary}
+        3. {suggest_tertiary}
+
+      O que prefere?
+
+  after_discover_design:
+    conditions:
+      - if: "violations_count > 5"
+        suggest_primary: "Corrigir {violations_count} violacoes de tokens"
+        suggest_primary_pipeline: "*apex-quick (token fixes)"
+        suggest_secondary: "Focar nas {color_violations} cores hardcoded primeiro"
+        suggest_secondary_pipeline: "*apex-fix (colors)"
+        suggest_tertiary: "So quero o relatorio"
+
+      - if: "violations_count > 0 AND violations_count <= 5"
+        suggest_primary: "Corrigir {violations_count} violacoes (rapido)"
+        suggest_primary_pipeline: "*apex-fix (token fixes)"
+        suggest_secondary: "Descobrir componentes"
+        suggest_secondary_pipeline: "*discover-components"
+        suggest_tertiary: "Done"
+
+      - if: "ds_score >= 90"
+        suggest_primary: "Design system solido! Quer auditar componentes?"
+        suggest_primary_pipeline: "*discover-components"
+        suggest_secondary: "Rodar audit completo"
+        suggest_secondary_pipeline: "*apex-audit"
+        suggest_tertiary: "Done"
+
+    output_format: |
+      Design system mapeado. DS Score: {ds_score}/100 ({classification}).
+      Tokens: {defined_count} definidos | Violacoes: {violations_count}
+      Design language: {design_language}
+
+      Proximo passo:
+        1. {suggest_primary}
+        2. {suggest_secondary}
+        3. {suggest_tertiary}
+
+      O que prefere?
+
+  after_audit:
+    conditions:
+      - if: "critical_gates_failed > 0"
+        suggest_primary: "Corrigir {critical_count} gates CRITICOS"
+        suggest_primary_pipeline: "*apex-fix (critical)"
+        suggest_secondary: "Ver relatorio detalhado por gate"
+        suggest_tertiary: "Exportar relatorio"
+
+      - if: "warning_gates > 0 AND critical_gates_failed == 0"
+        suggest_primary: "Resolver {warning_count} warnings"
+        suggest_primary_pipeline: "*apex-quick (warnings)"
+        suggest_secondary: "Exportar relatorio (nada critico)"
+        suggest_tertiary: "Done"
+
+      - if: "all_gates_pass"
+        suggest_primary: "Tudo verde! Ship? (handoff @devops)"
+        suggest_primary_pipeline: "generate_aios_handoff"
+        suggest_secondary: "Descobrir componentes (deep dive)"
+        suggest_secondary_pipeline: "*discover-components"
+        suggest_tertiary: "Done"
+
+  after_analyze:
+    conditions:
+      - if: "source == internal AND avg_score >= 80"
+        suggest_primary: "Projeto bonito! Quer aperfeicoar detalhes?"
+        suggest_primary_pipeline: "*apex-fix"
+        suggest_secondary: "Comparar com uma referencia externa"
+        suggest_secondary_pipeline: "*apex-compare"
+        suggest_tertiary: "Done"
+
+      - if: "source == internal AND avg_score < 80"
+        suggest_primary: "Aplicar melhorias HIGH ({high_count} issues)"
+        suggest_primary_pipeline: "*apex-quick (improvements)"
+        suggest_secondary: "Transformar com preset de design"
+        suggest_secondary_pipeline: "*apex-transform"
+        suggest_tertiary: "Comparar com referencia"
+        suggest_tertiary_pipeline: "*apex-compare"
+
+      - if: "source == external"
+        suggest_primary: "Replicar esse design no seu projeto"
+        suggest_primary_pipeline: "*apex-quick (replicate)"
+        suggest_secondary: "Usar como inspiracao (adaptar ao seu estilo)"
+        suggest_secondary_pipeline: "*apex-transform"
+        suggest_tertiary: "Comparar com implementacao atual"
+        suggest_tertiary_pipeline: "*apex-compare"
+
+    output_format: |
+      Analise completa. Score geral: {avg_score}/100.
+      Fonte: {source}. Escopo: {scope_type}.
+      Pontos fortes: {strength_count} | Melhorias: {improvement_count}
+
+      Proximo passo:
+        1. {suggest_primary}
+        2. {suggest_secondary}
+        3. {suggest_tertiary}
+
+      O que prefere?
+
+  after_compare:
+    conditions:
+      - if: "total_delta > 20"
+        suggest_primary: "Adotar o melhor dos dois (hybrid)"
+        suggest_primary_pipeline: "*apex-quick (hybrid)"
+        suggest_secondary: "Adotar A completamente"
+        suggest_secondary_pipeline: "*apex-go (adopt A)"
+        suggest_tertiary: "Manter B como esta"
+
+      - if: "total_delta <= 20"
+        suggest_primary: "Diferenca pequena — ajuste fino"
+        suggest_primary_pipeline: "*apex-fix (fine-tune)"
+        suggest_secondary: "Aprofundar dimensao especifica"
+        suggest_secondary_pipeline: "*apex-visual-analyze"
+        suggest_tertiary: "Done — designs similares"
+
+    output_format: |
+      Comparacao completa. Delta geral: {total_delta} pontos.
+      A ({label_a}): {avg_a}/100 | B ({label_b}): {avg_b}/100
+      Diferencas chave: {key_diff_count}
+
+      Proximo passo:
+        1. {suggest_primary}
+        2. {suggest_secondary}
+        3. {suggest_tertiary}
+
+      O que prefere?
+
+  after_consistency_audit:
+    conditions:
+      - if: "consistency_score < 70"
+        suggest_primary: "Padronizar tudo ({inconsistency_count} inconsistencias)"
+        suggest_primary_pipeline: "*apex-go (standardize)"
+        suggest_secondary: "Corrigir so as HIGH ({high_count})"
+        suggest_secondary_pipeline: "*apex-quick (critical fixes)"
+        suggest_tertiary: "Criar design system formal"
+        suggest_tertiary_pipeline: "*discover-design"
+
+      - if: "consistency_score >= 70 AND consistency_score < 90"
+        suggest_primary: "Corrigir {inconsistency_count} inconsistencias"
+        suggest_primary_pipeline: "*apex-quick (consistency fixes)"
+        suggest_secondary: "Mapear design system atual"
+        suggest_secondary_pipeline: "*discover-design"
+        suggest_tertiary: "Done — relatorio salvo"
+
+      - if: "consistency_score >= 90"
+        suggest_primary: "App consistente! Rodar audit completo"
+        suggest_primary_pipeline: "*apex-audit"
+        suggest_secondary: "Done"
+
+    output_format: |
+      Consistencia auditada. {page_count} paginas analisadas.
+      Consistency Score: {consistency_score}/100
+      Inconsistencias: {inconsistency_count} (HIGH: {high_count})
+
+      Proximo passo:
+        1. {suggest_primary}
+        2. {suggest_secondary}
+        3. {suggest_tertiary}
+
+      O que prefere?
+
+  after_discover_routes:
+    conditions:
+      - if: "orphan_routes > 0 OR dead_routes > 0"
+        suggest_primary: "Corrigir {dead_routes} dead routes + {orphan_routes} orphan routes"
+        suggest_primary_pipeline: "*apex-fix (routes)"
+        suggest_secondary: "Adicionar SEO meta tags faltando ({seo_gaps})"
+        suggest_secondary_pipeline: "*apex-quick (seo)"
+        suggest_tertiary: "Descobrir componentes"
+        suggest_tertiary_pipeline: "*discover-components"
+
+      - if: "route_health >= 80"
+        suggest_primary: "Rotas saudaveis! Descobrir componentes"
+        suggest_primary_pipeline: "*discover-components"
+        suggest_secondary: "Rodar audit completo"
+        suggest_secondary_pipeline: "*apex-audit"
+        suggest_tertiary: "Done"
+
+    output_format: |
+      Routes mapeadas. {total_routes} rotas encontradas.
+      Route Health Score: {route_health}/100
+      Orphans: {orphan_routes} | Dead: {dead_routes} | SEO gaps: {seo_gaps}
+
+      Proximo passo:
+        1. {suggest_primary}
+        2. {suggest_secondary}
+        3. {suggest_tertiary}
+
+      O que prefere?
+
+  after_discover_dependencies:
+    conditions:
+      - if: "critical_vulnerabilities > 0"
+        suggest_primary: "URGENTE: Corrigir {critical_vulnerabilities} vulnerabilidades criticas"
+        suggest_primary_pipeline: "*apex-fix (security)"
+        suggest_secondary: "Remover {unused_count} pacotes nao usados"
+        suggest_secondary_pipeline: "*apex-quick (cleanup)"
+        suggest_tertiary: "Ver relatorio completo"
+
+      - if: "heavy_count > 0 AND critical_vulnerabilities == 0"
+        suggest_primary: "Substituir {heavy_count} pacotes pesados por alternativas leves"
+        suggest_primary_pipeline: "*apex-quick (bundle)"
+        suggest_secondary: "Remover {unused_count} pacotes nao usados"
+        suggest_secondary_pipeline: "*apex-fix (cleanup)"
+        suggest_tertiary: "Done"
+
+      - if: "dep_health >= 80"
+        suggest_primary: "Dependencias saudaveis! Descobrir performance"
+        suggest_primary_pipeline: "*discover-performance"
+        suggest_secondary: "Done"
+
+    output_format: |
+      Dependencias auditadas. {total_deps} pacotes ({prod_count} prod + {dev_count} dev).
+      Dependency Health Score: {dep_health}/100
+      Vulneraveis: {vuln_count} | Pesados: {heavy_count} | Unused: {unused_count}
+
+      Proximo passo:
+        1. {suggest_primary}
+        2. {suggest_secondary}
+        3. {suggest_tertiary}
+
+      O que prefere?
+
+  after_discover_motion:
+    conditions:
+      - if: "veto_violations > 0"
+        suggest_primary: "Corrigir {veto_violations} violacoes de veto (QG-AX-005/006)"
+        suggest_primary_pipeline: "*apex-fix (motion vetos)"
+        suggest_secondary: "Adicionar reduced-motion em {missing_rm} componentes"
+        suggest_secondary_pipeline: "*apex-quick (reduced-motion)"
+        suggest_tertiary: "So quero o inventario"
+
+      - if: "motion_health >= 80 AND veto_violations == 0"
+        suggest_primary: "Motion saudavel! Descobrir acessibilidade"
+        suggest_primary_pipeline: "*discover-a11y"
+        suggest_secondary: "Refinar choreography"
+        suggest_secondary_pipeline: "*apex-fix (choreography)"
+        suggest_tertiary: "Done"
+
+    output_format: |
+      Motion mapeada. {total_animations} animacoes encontradas.
+      Motion Health Score: {motion_health}/100
+      Veto violations: {veto_violations} | Missing exit: {missing_exit} | Non-GPU: {non_gpu}
+
+      Proximo passo:
+        1. {suggest_primary}
+        2. {suggest_secondary}
+        3. {suggest_tertiary}
+
+      O que prefere?
+
+  after_discover_a11y:
+    conditions:
+      - if: "critical_count > 0"
+        suggest_primary: "Corrigir {critical_count} CRITICAL (keyboard traps)"
+        suggest_primary_pipeline: "*apex-fix (a11y critical)"
+        suggest_secondary: "Corrigir todos os HIGH ({high_count})"
+        suggest_secondary_pipeline: "*apex-quick (a11y)"
+        suggest_tertiary: "Rodar audit completo com axe-core"
+
+      - if: "a11y_health >= 80"
+        suggest_primary: "Boa acessibilidade! Descobrir performance"
+        suggest_primary_pipeline: "*discover-performance"
+        suggest_secondary: "Rodar screen reader testing"
+        suggest_secondary_pipeline: "*apex-fix (sr-testing)"
+        suggest_tertiary: "Done"
+
+    output_format: |
+      Acessibilidade escaneada. {components_scanned} componentes.
+      A11y Health Score: {a11y_health}/100
+      Critical: {critical_count} | High: {high_count} | Medium: {medium_count}
+
+      Proximo passo:
+        1. {suggest_primary}
+        2. {suggest_secondary}
+        3. {suggest_tertiary}
+
+      O que prefere?
+
+  after_discover_performance:
+    conditions:
+      - if: "cwv_risks > 3"
+        suggest_primary: "Corrigir {cwv_risks} riscos de Core Web Vitals"
+        suggest_primary_pipeline: "*apex-quick (cwv)"
+        suggest_secondary: "Otimizar lazy loading ({lazy_gaps} componentes)"
+        suggest_secondary_pipeline: "*apex-fix (lazy)"
+        suggest_tertiary: "Bundle analysis detalhado"
+
+      - if: "perf_health >= 80"
+        suggest_primary: "Performance ok! Rodar audit completo"
+        suggest_primary_pipeline: "*apex-audit"
+        suggest_secondary: "Descobrir acessibilidade"
+        suggest_secondary_pipeline: "*discover-a11y"
+        suggest_tertiary: "Done"
+
+    output_format: |
+      Performance analisada. {components_scanned} componentes.
+      Performance Health Score: {perf_health}/100
+      CWV risks: {cwv_risks} | Lazy gaps: {lazy_gaps} | Image issues: {image_issues}
+
+      Proximo passo:
+        1. {suggest_primary}
+        2. {suggest_secondary}
+        3. {suggest_tertiary}
+
+      O que prefere?
+
+  after_inspire:
+    suggest_primary: "Aplicar o estilo escolhido"
+    suggest_primary_pipeline: "*apex-transform --style {selected_id}"
+    suggest_secondary: "Ver outro estilo"
+    suggest_secondary_pipeline: "*apex-inspire"
+    suggest_tertiary: "Done"
+
+  after_transform:
+    conditions:
+      # --- Error state (always takes priority) ---
+      - if: "typecheck_fail OR lint_fail"
+        suggest_primary: "Corrigir erros de typecheck/lint"
+        suggest_primary_pipeline: "*apex-fix (errors)"
+        suggest_secondary: "Reverter transformacao (git checkout)"
+        suggest_tertiary: "Ver erros detalhados"
+
+      # --- Category-specific suggestions (when build passes) ---
+      - if: "typecheck_pass AND preset_category == 'healthcare'"
+        suggest_primary: "Rodar audit de acessibilidade (healthcare exige AA+)"
+        suggest_primary_pipeline: "*apex-audit (a11y)"
+        suggest_secondary: "Verificar contraste em dark mode"
+        suggest_secondary_pipeline: "*apex-dark-mode"
+        suggest_tertiary: "Done — estilo healthcare aplicado"
+
+      - if: "typecheck_pass AND preset_category == 'cyberpunk'"
+        suggest_primary: "Verificar performance (efeitos pesados)"
+        suggest_primary_pipeline: "*apex-audit (perf)"
+        suggest_secondary: "Testar em mobile (320px)"
+        suggest_secondary_pipeline: "*apex-fix (responsive)"
+        suggest_tertiary: "Done — estilo cyberpunk aplicado"
+
+      - if: "typecheck_pass AND preset_category == 'dark_themes'"
+        suggest_primary: "Rodar dark mode audit completo"
+        suggest_primary_pipeline: "*apex-dark-mode"
+        suggest_secondary: "Verificar contraste WCAG AA"
+        suggest_secondary_pipeline: "*apex-audit (a11y)"
+        suggest_tertiary: "Done — tema dark aplicado"
+
+      - if: "typecheck_pass AND preset_category == 'experimental'"
+        suggest_primary: "Testar responsividade (estilos experimentais quebram)"
+        suggest_primary_pipeline: "*apex-fix (responsive)"
+        suggest_secondary: "Rodar performance check (motion heavy)"
+        suggest_secondary_pipeline: "*apex-audit (perf)"
+        suggest_tertiary: "Done — estilo experimental aplicado"
+
+      - if: "typecheck_pass AND preset_category == 'apple'"
+        suggest_primary: "Verificar motion fluidity (springs Apple-like)"
+        suggest_primary_pipeline: "*apex-suggest"
+        suggest_secondary: "Comparar com referencia Apple real"
+        suggest_secondary_pipeline: "*apex-compare"
+        suggest_tertiary: "Done — estilo Apple aplicado"
+
+      - if: "typecheck_pass AND preset_category == 'google'"
+        suggest_primary: "Validar Material Design tokens"
+        suggest_primary_pipeline: "*apex-suggest"
+        suggest_secondary: "Rodar accessibility audit (Material exige)"
+        suggest_secondary_pipeline: "*apex-audit (a11y)"
+        suggest_tertiary: "Done — estilo Material aplicado"
+
+      # --- Generic fallback (any other category) ---
+      - if: "typecheck_pass AND lint_pass"
+        suggest_primary: "Rodar suggestions nos arquivos modificados"
+        suggest_primary_pipeline: "*apex-suggest"
+        suggest_secondary: "Ajustar detalhes (fine-tune)"
+        suggest_secondary_pipeline: "*apex-fix"
+        suggest_tertiary: "Done — estilo aplicado"
+
+  # Chain behavior rules
+  chain_rules:
+    - "User picks by number (1, 2, 3) — execute immediately"
+    - "User types naturally — re-classify intent and route"
+    - "User says 'done', 'pronto', 'so isso' — end chain gracefully"
+    - "Max chain depth: 5 operations (prevent infinite loops)"
+    - "Each chain step shows suggestions, NEVER auto-executes"
+
+# ==============================================================================
+# 2. SMART DEFAULTS — Parar de perguntar o obvio
+# ==============================================================================
+
+smart_defaults:
+  description: >
+    When the scanner already detected information that answers a question,
+    USE that information as default instead of asking the user.
+
+  rules:
+    - question: "Qual componente?"
+      smart_default:
+        - if: "user mentioned component name that matches a file"
+          answer: "{matching component}"
+          confidence: high
+          show: null
+        - if: "only 1 component in scope"
+          answer: "{that component}"
+          confidence: high
+          show: "Usando {component} (unico no escopo)."
+        - if: "multiple components, no clear match"
+          answer: null
+          confidence: low
+          ask: "Qual componente? {numbered list}"
+
+    - question: "Pipeline completo ou quick?"
+      smart_default:
+        - if: "scope == 1 file, 1 domain"
+          answer: "*apex-fix"
+          confidence: high
+          show: null
+        - if: "scope <= 3 files"
+          answer: "*apex-quick"
+          confidence: high
+          show: null
+        - if: "scope > 3 files OR multi-domain"
+          answer: "*apex-go"
+          confidence: high
+          show: null
+
+    - question: "Qual agente?"
+      smart_default:
+        - if: "domain clearly maps to single agent in routing table"
+          answer: "{routed agent}"
+          confidence: high
+          show: null
+        - if: "multi-domain request"
+          answer: "pipeline (multiple agents)"
+          confidence: high
+          show: null
+
+    - question: "Print e interno ou externo?"
+      smart_default:
+        - if: "Image matches known project routes/components from scan cache"
+          answer: "internal"
+          confidence: high
+          show: null
+        - if: "User said 'quero assim', 'faz igual', 'olha esse app/site'"
+          answer: "external"
+          confidence: high
+          show: null
+        - if: "Unclear"
+          answer: null
+          confidence: low
+          ask: "Esse print e do seu projeto atual ou de uma referencia externa?"
+
+    - question: "Qual dimensao priorizar na analise?"
+      smart_default:
+        - if: "visual_analysis_history.priority_dimensions exists"
+          answer: "{top priority dimension from history}"
+          confidence: medium
+          show: "Priorizando {dimension} (baseado no seu historico)."
+        - if: "Project domain == healthcare"
+          answer: "accessibility"
+          confidence: medium
+          show: "Healthcare: priorizando acessibilidade."
+        - if: "No history"
+          answer: null
+          confidence: low
+          show: null  # Analyze all dimensions equally
+
+    - question: "Corrigir suggestion automaticamente?"
+      smart_default:
+        - if: "suggestion is LOW severity"
+          answer: null
+          confidence: low
+          ask: "Suggestion LOW — quer aplicar?"
+        - if: "suggestion is HIGH severity"
+          answer: null
+          confidence: medium
+          show: "Suggestion HIGH encontrada. Quer que eu corrija?"
+
+  display_rules:
+    high_confidence: "Use default silently"
+    medium_confidence: "Show default with brief explanation"
+    low_confidence: "Ask the question, present options"
+
+# ==============================================================================
+# 3. CONTEXT MEMORY — "Ja escaneei esse projeto"
+# ==============================================================================
+
+context_memory:
+  description: >
+    Cache scan results, discovery data, and user preferences so the squad
+    doesn't repeat work or ask the same questions twice.
+
+  storage:
+    location: ".aios/apex-context/"
+    files:
+      scan_cache: ".aios/apex-context/scan-cache.yaml"
+      component_cache: ".aios/apex-context/component-cache.yaml"
+      design_cache: ".aios/apex-context/design-cache.yaml"
+      user_preferences: ".aios/apex-context/preferences.yaml"
+    gitignore: true
+
+  cache_rules:
+    scan_results:
+      store: "Full project_context from apex-scan"
+      ttl: "Current session"
+      invalidate_on:
+        - "package.json modified"
+        - "tailwind.config.* modified"
+        - "User runs *apex-scan explicitly"
+
+    component_discovery:
+      store:
+        total_components: N
+        component_list: "[{name, path, type, loc}]"
+        orphaned: "[{names}]"
+        untested: "[{names}]"
+        health_score: N
+        discovered_at: "{ISO 8601}"
+      ttl: "Until src/ files change (mtime-based)"
+      invalidate_on:
+        - "Any .tsx/.jsx file created, deleted, or modified"
+        - "User runs *discover-components explicitly"
+
+    design_discovery:
+      store:
+        ds_score: N
+        design_language: "{type}"
+        violations_count: N
+        token_inventory: "{colors, spacing, typography}"
+        discovered_at: "{ISO 8601}"
+      ttl: "Until CSS/config files change"
+      invalidate_on:
+        - "Any .css file modified"
+        - "tailwind.config.* modified"
+        - "User runs *discover-design explicitly"
+
+    visual_analysis_history:
+      store:
+        analyses: "[{timestamp, source, scope, avg_score, user_choice, key_preferences}]"
+        rejected_suggestions: "[{suggestion, reason}]"
+        approved_styles: "[{preset_id, dimensions_approved}]"
+        reference_images: "[{label, extracted_tokens}]"
+      ttl: "Persistent across sessions"
+      invalidate_on:
+        - "User runs *apex-scan explicitly"
+        - "Manual clear"
+      max_entries: 20
+      purpose: >
+        Track what the user likes/dislikes across visual analyses.
+        Use to improve future suggestions — if user rejected "brutalist"
+        twice, stop suggesting it. If user always picks "improve a11y",
+        prioritize accessibility in future analyses.
+
+    route_discovery:
+      store:
+        total_routes: N
+        route_list: "[{path, component, layout, lazy, seo_status}]"
+        orphan_routes: "[{paths}]"
+        dead_routes: "[{paths}]"
+        seo_gaps: "[{paths}]"
+        route_health: N
+        discovered_at: "{ISO 8601}"
+      ttl: "Until router config or pages directory changes"
+      invalidate_on:
+        - "Router config file modified"
+        - "Page component created or deleted"
+        - "User runs *discover-routes explicitly"
+
+    dependency_health:
+      store:
+        total_deps: N
+        outdated: "[{name, installed, latest}]"
+        vulnerable: "[{name, severity, advisory}]"
+        heavy: "[{name, size, alternative}]"
+        unused: "[{names}]"
+        dep_health: N
+        discovered_at: "{ISO 8601}"
+      ttl: "Until package.json or lock file changes"
+      invalidate_on:
+        - "package.json modified"
+        - "Lock file modified"
+        - "User runs *discover-dependencies explicitly"
+
+    motion_discovery:
+      store:
+        total_animations: N
+        animation_list: "[{component, type, library, trigger}]"
+        veto_violations: N
+        missing_reduced_motion: "[{components}]"
+        css_transitions_interactive: "[{components}]"
+        motion_health: N
+        discovered_at: "{ISO 8601}"
+      ttl: "Until component or CSS files change"
+      invalidate_on:
+        - "Any .tsx/.jsx/.css file with animation patterns modified"
+        - "User runs *discover-motion explicitly"
+
+    a11y_discovery:
+      store:
+        components_scanned: N
+        issues_by_category: "{category: count}"
+        worst_offenders: "[{component, issue_count}]"
+        a11y_health: N
+        discovered_at: "{ISO 8601}"
+      ttl: "Until component files change"
+      invalidate_on:
+        - "Any .tsx/.jsx file modified"
+        - "User runs *discover-a11y explicitly"
+
+    performance_discovery:
+      store:
+        components_scanned: N
+        heaviest_components: "[{name, loc, weight}]"
+        lazy_gaps: N
+        image_issues: N
+        rerender_risks: N
+        cwv_risks: N
+        perf_health: N
+        discovered_at: "{ISO 8601}"
+      ttl: "Until src/ or config files change"
+      invalidate_on:
+        - "Any .tsx/.jsx file modified"
+        - "package.json or build config modified"
+        - "User runs *discover-performance explicitly"
+
+    user_preferences:
+      store:
+        preferred_pipeline: "{apex-go | apex-quick | apex-fix}"
+        preferred_style_direction: "{preset_ids user approved}"
+        rejected_style_direction: "{preset_ids user rejected}"
+        priority_dimensions: "[{dimension, weight}]"
+        last_operation: "{operation + timestamp}"
+      ttl: "Persistent across sessions"
+
+  resume:
+    on_session_start: |
+      1. Check .aios/apex-context/ for cached state
+      2. If component cache exists and valid:
+         - Show: "Component inventory carregado ({total} components, health {score}/100)"
+      3. If design cache exists and valid:
+         - Show: "Design system cache carregado (DS Score {score}/100)"
+      4. If no cache: run apex-scan silently
+
+  cleanup:
+    manual: "*apex-scan (forces re-scan, clears caches)"
+    auto: "Remove caches older than 7 days"

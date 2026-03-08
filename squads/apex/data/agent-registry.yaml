@@ -1,0 +1,254 @@
+registry:
+  version: "1.0.0"
+  squad: apex
+  total_agents: 15
+  description: "Apex Squad — Frontend Ultra-Premium (Web, Mobile, Spatial)"
+
+  tiers:
+    orchestrator: apex-lead
+    tier_1: [frontend-arch]
+    tier_2: [interaction-dsgn, design-sys-eng]
+    tier_3: [css-eng, react-eng, mobile-eng, cross-plat-eng, spatial-eng]
+    tier_4: [motion-eng, a11y-eng, perf-eng]
+    tier_5: [qa-visual, qa-xplatform]
+
+  agents:
+    - id: apex-lead
+      name: Emil
+      icon: "⚡"
+      tier: orchestrator
+      dna_source: "Emil Kowalski (Linear, Vercel, animations.dev)"
+      role: "Design Engineering Lead & Squad Orchestrator"
+      file: agents/apex-lead.md
+      aliases: [apex, lead]
+      commands:
+        - help
+        - route
+        - design
+        - build
+        - polish
+        - ship
+        - review
+        - status
+        - agents
+        - handoff
+        - gates
+        - exit
+
+    - id: frontend-arch
+      name: Arch
+      icon: "🏛️"
+      tier: 1
+      dna_source: "Lee Robinson (Vercel VP Product)"
+      role: "Staff Frontend Architect — Technical Authority"
+      file: agents/frontend-arch.md
+      commands:
+        - architecture
+        - decide
+        - structure
+        - performance-budget
+        - tech-stack
+        - monorepo
+        - bundle-audit
+        - help
+        - exit
+
+    - id: interaction-dsgn
+      name: Ahmad
+      icon: "🎨"
+      tier: 2
+      dna_source: "Ahmad Shadeed (Defensive CSS, Debugging CSS)"
+      role: "Senior Product Designer (Interaction)"
+      file: agents/interaction-dsgn.md
+      commands:
+        - design-component
+        - layout
+        - responsive
+        - prototype
+        - user-flow
+        - help
+        - exit
+
+    - id: design-sys-eng
+      name: Diana
+      icon: "🎯"
+      tier: 2
+      dna_source: "Diana Mounter (GitHub Design System)"
+      role: "Design System Designer/Engineer — Token Guardian"
+      file: agents/design-sys-eng.md
+      commands:
+        - token
+        - component
+        - theme
+        - sync-figma
+        - audit-tokens
+        - help
+        - exit
+
+    - id: css-eng
+      name: Josh
+      icon: "🎭"
+      tier: 3
+      dna_source: "Josh Comeau (CSS for JavaScript Developers)"
+      role: "Design Engineer — CSS Architecture"
+      file: agents/css-eng.md
+      commands:
+        - css
+        - layout
+        - responsive
+        - debug-css
+        - stacking-context
+        - fluid-type
+        - help
+        - exit
+
+    - id: react-eng
+      name: Kent
+      icon: "⚛️"
+      tier: 3
+      dna_source: "Kent C. Dodds (Testing Library, Epic React)"
+      role: "Design Engineer — React/Server Components"
+      file: agents/react-eng.md
+      commands:
+        - component
+        - hook
+        - test
+        - state
+        - server-component
+        - form
+        - help
+        - exit
+
+    - id: mobile-eng
+      name: Krzysztof
+      icon: "📱"
+      tier: 3
+      dna_source: "Krzysztof Magiera (Software Mansion, Reanimated, Gesture Handler)"
+      role: "Design Engineer — React Native"
+      file: agents/mobile-eng.md
+      commands:
+        - animate
+        - gesture
+        - native-module
+        - reanimated
+        - screen
+        - help
+        - exit
+
+    - id: cross-plat-eng
+      name: Fernando
+      icon: "🌐"
+      tier: 3
+      dna_source: "Fernando Rojo (Vercel Head of Mobile, Solito, Moti, Dripsy)"
+      role: "Design Engineer — Cross-Platform"
+      file: agents/cross-plat-eng.md
+      commands:
+        - universal
+        - shared-component
+        - platform-check
+        - responsive
+        - navigation
+        - help
+        - exit
+
+    - id: spatial-eng
+      name: Paul
+      icon: "🌌"
+      tier: 3
+      dna_source: "Paul Henschel (Poimandres, React Three Fiber, Drei, Zustand)"
+      role: "Design Engineer — Spatial & 3D"
+      file: agents/spatial-eng.md
+      commands:
+        - scene
+        - 3d-component
+        - shader
+        - spatial-ui
+        - webxr
+        - help
+        - exit
+
+    - id: motion-eng
+      name: Matt
+      icon: "🎬"
+      tier: 4
+      dna_source: "Matt Perry (Creator of Motion/Framer Motion, Popmotion)"
+      role: "Motion Engineer — Animation & Choreography"
+      file: agents/motion-eng.md
+      commands:
+        - animate
+        - spring
+        - transition
+        - choreograph
+        - scroll-animation
+        - gesture-animation
+        - help
+        - exit
+
+    - id: a11y-eng
+      name: Sara
+      icon: "♿"
+      tier: 4
+      dna_source: "Sara Soueidan (Practical Accessibility, Inclusive UI Engineering)"
+      role: "Accessibility Engineer — Universal Access"
+      file: agents/a11y-eng.md
+      commands:
+        - audit
+        - focus
+        - aria
+        - screen-reader
+        - contrast
+        - keyboard-nav
+        - help
+        - exit
+
+    - id: perf-eng
+      name: Addy
+      icon: "🚀"
+      tier: 4
+      dna_source: "Addy Osmani (Google Chrome, O'Reilly Author, PRPL Pattern)"
+      role: "Performance Engineer — Core Web Vitals"
+      file: agents/perf-eng.md
+      commands:
+        - lighthouse
+        - bundle-analyze
+        - web-vitals
+        - image-optimize
+        - code-split
+        - font-optimize
+        - help
+        - exit
+
+    - id: qa-visual
+      name: Andy
+      icon: "👁️"
+      tier: 5
+      dna_source: "Andy Bell (Piccalilli, CUBE CSS, Every Layout)"
+      role: "Frontend QA Engineer — Visual Regression"
+      file: agents/qa-visual.md
+      commands:
+        - visual-test
+        - compare
+        - regression
+        - cross-browser
+        - theme-test
+        - responsive-test
+        - screenshot
+        - help
+        - exit
+
+    - id: qa-xplatform
+      name: Michal
+      icon: "📋"
+      tier: 5
+      dna_source: "Michal Pierzchala (Callstack, React Native Testing Library, react-native-visionos)"
+      role: "Frontend QA Engineer — Cross-Platform Testing"
+      file: agents/qa-xplatform.md
+      commands:
+        - device-test
+        - platform-compare
+        - gesture-test
+        - offline-test
+        - spatial-test
+        - deep-link-test
+        - help
+        - exit

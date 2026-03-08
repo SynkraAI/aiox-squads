@@ -1,0 +1,930 @@
+---
+# ==============================================================================
+# APEX SQUAD — WORKFLOW: Component Create
+# wf-component-create.yaml
+# ==============================================================================
+# Purpose:  End-to-end workflow for creating a new reusable component in the
+#           Apex design system. Covers design specification, implementation,
+#           motion/animation, accessibility audit, and full test suite.
+#
+# Trigger:  New component needed for design system (from any feature build,
+#           design system roadmap, or direct request).
+# Owner:    design-sys-eng
+# Squad:    Apex (Frontend Ultra-Premium)
+# Version:  1.0.0
+# ==============================================================================
+
+id: wf-component-create
+name: Component Create
+description: >
+  Five-phase workflow for designing, building, animating, auditing, and testing
+  a new reusable component for the Apex design system. Produces a fully
+  production-ready component in packages/ui/ with Storybook documentation,
+  comprehensive tests, accessibility certification, and motion design.
+  Every component created through this workflow is design-system grade.
+
+metadata:
+  version: "1.0.0"
+  owner: design-sys-eng
+  squad: apex
+  created: "2026-03-01"
+  tags:
+    - design-system
+    - component
+    - reusable
+    - storybook
+    - accessibility
+    - motion
+
+# ------------------------------------------------------------------------------
+# INPUTS
+# ------------------------------------------------------------------------------
+inputs:
+  required:
+    - component_name:
+        type: string
+        description: >
+          PascalCase component name (e.g. "DataCard", "FilterChip", "ToastStack").
+          Must be unique within packages/ui/src/components/.
+    - component_category:
+        type: string
+        enum: [primitives, layout, forms, feedback, navigation, data-display, overlay]
+        description: Design system category this component belongs to
+    - design_brief:
+        type: string
+        description: >
+          Short description of the component purpose, key variants, and any
+          design references (Figma URL, existing similar components, etc.)
+  optional:
+    - variants:
+        type: array
+        default: []
+        description: >
+          List of variant names (e.g. ["primary", "secondary", "ghost"]).
+          If empty, design-sys-eng defines variants during phase-1-design.
+    - sizes:
+        type: array
+        default: [sm, md, lg]
+        description: Size variants to support
+    - has_animation:
+        type: boolean
+        default: true
+        description: Whether the component requires motion/animation design
+    - platform_targets:
+        type: array
+        default: [web]
+        description: Target platforms (web, mobile, or both)
+    - wcag_level:
+        type: string
+        default: AA
+        enum: [A, AA, AAA]
+        description: WCAG conformance level target for this component
+
+# ------------------------------------------------------------------------------
+# OUTPUTS
+# ------------------------------------------------------------------------------
+outputs:
+  - component_path:
+      description: Root directory of the created component
+      path: packages/ui/src/components/{component_name}/
+      type: directory
+  - component_files:
+      description: All source files for the component
+      type: array
+      expected:
+        - packages/ui/src/components/{component_name}/index.tsx
+        - packages/ui/src/components/{component_name}/{component_name}.tsx
+        - packages/ui/src/components/{component_name}/{component_name}.types.ts
+        - packages/ui/src/components/{component_name}/{component_name}.css.ts
+        - packages/ui/src/components/{component_name}/{component_name}.test.tsx
+        - packages/ui/src/components/{component_name}/{component_name}.stories.tsx
+        - packages/ui/src/components/{component_name}/{component_name}.motion.ts
+        - packages/ui/src/components/{component_name}/{component_name}.a11y.md
+  - storybook_story:
+      description: Storybook story file with all variants and states documented
+      path: packages/ui/src/components/{component_name}/{component_name}.stories.tsx
+      type: file
+  - test_results:
+      description: Test run output (unit, a11y, visual)
+      type: object
+  - a11y_certificate:
+      description: Accessibility audit certificate
+      path: docs/a11y/components/{component_name}-audit.md
+      type: file
+  - motion_catalog:
+      description: Animation catalog entry for the component
+      path: packages/ui/src/motion/catalog/{component_name}.ts
+      type: file
+
+# ------------------------------------------------------------------------------
+# ENFORCEMENT
+# ------------------------------------------------------------------------------
+enforcement:
+  veto_registry: data/veto-conditions.yaml
+  performance_budgets: data/performance-budgets.yaml
+  pre_execution_validation:
+    validate_agents: true
+    action: "BLOCK workflow if any referenced agent not in data/agent-registry.yaml"
+
+# ------------------------------------------------------------------------------
+# QUALITY GATES (with veto conditions)
+# ------------------------------------------------------------------------------
+gates:
+  - id: QG-AX-001
+    name: Design Token Spec Validated
+    description: >
+      Component uses only design tokens — no hardcoded colors, spacing, or
+      typography values. All tokens reference the semantic layer.
+    blocking: true
+    owner: design-sys-eng
+    criteria:
+      - Zero hardcoded hex values in component source
+      - Zero hardcoded pixel values not derived from spacing scale
+      - All font-size, font-weight, line-height reference typography tokens
+      - All color references use semantic color tokens
+    veto_conditions:
+      - ref: VC-001-A  # No hardcoded hex values
+      - ref: VC-001-B  # No hardcoded pixel spacing
+      - ref: VC-001-C  # Token naming convention enforced
+
+  - id: QG-AX-003
+    name: Design Spec Approved
+    description: >
+      Component design spec reviewed and approved before implementation begins.
+      Covers all variants, states, responsive behavior, and interaction patterns.
+    blocking: true
+    owner: design-sys-eng
+    criteria:
+      - All variant combinations documented
+      - All states covered (default, hover, focus, active, disabled, etc.)
+      - Responsive behavior defined (if applicable)
+      - Interaction patterns described (keyboard, mouse, touch)
+    veto_conditions:
+      - ref: VC-003-A  # APPROVED marker present
+      - ref: VC-003-B  # Design artifacts exist
+
+  - id: QG-AX-005
+    name: Component Accessibility Passed
+    description: >
+      Component passes WCAG audit at the target level. All critical and major
+      a11y issues resolved. a11y certificate issued.
+    blocking: true
+    owner: a11y-eng
+    criteria:
+      - All WCAG criteria at target level (inputs.wcag_level) pass
+      - Keyboard navigation fully functional
+      - Screen reader announces component correctly (role, label, state)
+      - Focus management correct for interactive components
+      - Color contrast meets target level requirements
+      - Reduced-motion variant implemented for all animations
+    veto_conditions:
+      - ref: VC-005-A  # axe-core zero violations
+      - ref: VC-005-B  # prefers-reduced-motion handled
+      - ref: VC-005-C  # Interactive elements have accessible names
+
+  - id: QG-AX-006
+    name: Motion & Animation Review
+    description: >
+      Motion design reviewed and approved. Animation timing, easing, and
+      reduced-motion variants all correct.
+    blocking: false
+    owner: motion-eng
+    criteria:
+      - Animation duration within motion system scale
+      - Easing follows motion system tokens
+      - All animations have prefers-reduced-motion variants
+      - No jarring or disorienting motion
+    veto_conditions:
+      - ref: VC-006-A  # Spring physics only (no CSS transitions for motion)
+      - ref: VC-006-B  # No hardcoded animation durations
+
+  - id: QG-AX-008
+    name: Visual Regression Passed
+    description: >
+      Visual regression tests pass for all component variants and states.
+      Storybook screenshots match design spec.
+    blocking: true
+    owner: qa-visual
+    criteria:
+      - All Storybook stories pass Chromatic visual regression
+      - No unintended style changes in existing components (zero regressions)
+      - Component renders correctly across all supported browsers
+    veto_conditions:
+      - ref: VC-008-A  # Chromatic zero regressions
+      - ref: VC-008-B  # Storybook build succeeds
+
+# ------------------------------------------------------------------------------
+# PHASES
+# ------------------------------------------------------------------------------
+phases:
+
+  # ============================================================================
+  # PHASE 1: DESIGN
+  # ============================================================================
+  - id: phase-1-design
+    name: Design
+    sequence: 1
+    agent: design-sys-eng
+    gate: QG-AX-003
+    description: >
+      design-sys-eng produces a complete component design specification:
+      all variants, states, token mapping, and behavioral contract.
+      This spec is the source of truth for all subsequent phases.
+
+    steps:
+      - id: step-1-1
+        name: Existing Component Audit
+        agent: design-sys-eng
+        checklists:
+          - ref: checklists/ds-component-review.md
+            reviewer: design-sys-eng
+          - ref: checklists/component-maturation.md
+            reviewer: design-sys-eng
+        action: >
+          Search packages/ui/src/components/ for similar existing components.
+          Identify: (a) existing components to extend instead of creating new,
+          (b) shared patterns to reuse, (c) design tokens already available.
+          Produce audit notes. If a suitable component already exists,
+          BLOCK this workflow and return recommendation to requester.
+        output: Audit notes (internal)
+        on_error: Proceed with creation if audit tooling unavailable
+
+      - id: step-1-2
+        name: Variant & State Definition
+        agent: design-sys-eng
+        action: >
+          Define the complete variant matrix for {component_name}:
+          - Variants from inputs.variants (or define if empty)
+          - Sizes from inputs.sizes
+          - State matrix: default, hover, focus, active, disabled, loading,
+            error, empty, selected (as applicable to component type)
+          - Composition variants: with icon, with badge, with tooltip, etc.
+          Document in a decision table format.
+        output: Variant matrix (internal documentation)
+        on_error: Use minimal viable variant set, document gaps
+
+      - id: step-1-3
+        name: Token Mapping
+        agent: design-sys-eng
+        checklists:
+          - ref: checklists/token-compliance.md
+            reviewer: design-sys-eng
+          - ref: checklists/multi-mode-checklist.md
+            reviewer: design-sys-eng
+        action: >
+          Map each variant/state combination to specific design tokens from
+          packages/tokens/. Identify any missing tokens that need to be added.
+          If new tokens required, create token request in
+          docs/design/token-requests/{component_name}.md.
+          Validate all tokens exist and are correctly typed.
+        gate: QG-AX-001
+        output:
+          - Token mapping table (internal)
+          - docs/design/token-requests/{component_name}.md (if new tokens needed)
+        on_error: Use closest existing tokens with documentation note
+
+      - id: step-1-4
+        name: Component Spec Document
+        agent: design-sys-eng
+        checklists:
+          - ref: checklists/figma-sync-checklist.md
+            reviewer: design-sys-eng
+          - ref: checklists/layout-review.md
+            reviewer: interaction-dsgn
+          - ref: checklists/responsive-checklist.md
+            reviewer: interaction-dsgn
+        action: >
+          Write the complete component specification:
+          docs/design/components/{component_name}-spec.md
+          Sections required:
+          - Purpose & usage guidelines
+          - API: prop types, defaults, required/optional
+          - Variant & size matrix
+          - State matrix
+          - Token mapping table
+          - Keyboard interaction spec
+          - Screen reader behavior spec
+          - Animation spec (if has_animation)
+          - Do/Don't usage examples
+          - Related components
+        output: docs/design/components/{component_name}-spec.md
+        on_error: Minimum: purpose, API, and variant matrix sections required
+
+      - id: step-1-5
+        name: Spec Review & Gate
+        agent: design-sys-eng
+        checklists:
+          - ref: checklists/visual-review-checklist.md
+            reviewer: apex-lead
+        action: >
+          Self-review the spec document against the component brief.
+          Verify completeness. Submit for apex-lead review and approval.
+        gate: QG-AX-003
+        decision:
+          APPROVE: Proceed to checkpoint-1
+          REVISE: Update spec, resubmit for review
+
+    checkpoint:
+      id: checkpoint-1
+      name: CP-01 Design to Implement
+      gate: QG-AX-003
+      artifacts_required:
+        - docs/design/components/{component_name}-spec.md
+      validation:
+        - All sections of spec document complete
+        - Token mapping validated (QG-AX-001 token check passed)
+        - apex-lead approval recorded in spec document
+      on_fail: >
+        Return to phase-1-design. List specific missing sections or
+        failed token validations.
+      revision_policy:
+        max_iterations: 3
+        on_max_reached:
+          action: ESCALATE
+          to: apex-lead
+          message: "Component design checkpoint failing after 3 attempts."
+      on_pass:
+        notify:
+          target: css-eng
+          message: "CP-01 passed. Component spec approved. Implementation can begin."
+          deadline_hours: 2
+          escalate_on_timeout: apex-lead
+
+  # ============================================================================
+  # PHASE 2: IMPLEMENT
+  # ============================================================================
+  - id: phase-2-implement
+    name: Implement
+    sequence: 2
+    agent: css-eng
+    description: >
+      css-eng implements the component following the spec exactly.
+      All variants, states, and token mappings from the spec are
+      implemented with zero deviation. TypeScript types are strict.
+      Unit tests are written alongside implementation (TDD encouraged).
+
+    steps:
+      - id: step-2-1
+        name: Directory & File Scaffold
+        agent: css-eng
+        action: >
+          Create the component directory and all required files:
+          packages/ui/src/components/{component_name}/
+            - index.tsx              (re-export barrel)
+            - {component_name}.tsx   (main component)
+            - {component_name}.types.ts  (TypeScript interfaces)
+            - {component_name}.css.ts    (Vanilla Extract styles)
+            - {component_name}.test.tsx  (unit tests)
+            - {component_name}.stories.tsx  (Storybook)
+            - {component_name}.motion.ts    (animation definitions — empty stub)
+            - {component_name}.a11y.md      (a11y implementation notes)
+        output:
+          - All files created (initially empty or with minimal stubs)
+        on_error: BLOCK — scaffolding must complete before implementation
+
+      - id: step-2-2
+        name: TypeScript Interface Implementation
+        agent: css-eng
+        action: >
+          Implement complete TypeScript interfaces in {component_name}.types.ts:
+          - Main props interface (ComponentNameProps)
+          - Variant and size union types
+          - Event handler types
+          - Forwarded ref type if applicable
+          - Export all types from index.tsx
+          Use strict TypeScript — no `any`, no `unknown` without narrowing.
+        output: packages/ui/src/components/{component_name}/{component_name}.types.ts
+        on_error: Log type errors, request spec clarification if API is ambiguous
+
+      - id: step-2-3
+        name: Styles Implementation
+        agent: css-eng
+        checklists:
+          - ref: checklists/css-review-checklist.md
+            reviewer: css-eng
+          - ref: checklists/defensive-css-checklist.md
+            reviewer: interaction-dsgn
+          - ref: checklists/token-compliance.md
+            reviewer: design-sys-eng
+        action: >
+          Implement all styles in {component_name}.css.ts using Vanilla Extract.
+          Rules:
+          - Reference only design tokens (packages/tokens/) — no hardcoded values
+          - Implement recipe() for variant/size combinations
+          - Implement all states using CSS selectors (:hover, :focus-visible, etc.)
+          - Mobile-first responsive breakpoints using token breakpoints
+          - High contrast mode support via @media (forced-colors: active)
+        output: packages/ui/src/components/{component_name}/{component_name}.css.ts
+        on_error: Log token reference failures, use nearest token with documentation
+
+      - id: step-2-4
+        name: Component Logic Implementation
+        agent: css-eng
+        checklists:
+          - ref: checklists/component-review-checklist.md
+            reviewer: react-eng
+          - ref: checklists/component-quality-checklist.md
+            reviewer: dev + apex-lead
+        action: >
+          Implement the main component in {component_name}.tsx:
+          - Correctly apply variant/size styles from styles file
+          - Implement all interactive behaviors from spec
+          - Apply correct ARIA attributes, roles, and labels
+          - Forward ref if needed (use forwardRef)
+          - Implement controlled and uncontrolled variants if applicable
+          - Handle all edge cases from spec (empty, loading, error, disabled)
+        output: packages/ui/src/components/{component_name}/{component_name}.tsx
+        on_error: Log implementation issue, request spec clarification for ambiguities
+
+      - id: step-2-5
+        name: Unit Test Implementation
+        agent: css-eng
+        action: >
+          Write comprehensive unit tests in {component_name}.test.tsx:
+          - Render test for each variant/size combination
+          - State tests: disabled, loading, error, empty
+          - Event tests: onClick, onFocus, onBlur, onChange (as applicable)
+          - Keyboard tests: Enter, Space, Escape, Tab navigation
+          - Ref forwarding test
+          - Snapshot test for structure regression
+          Target coverage: >= 85% for all new files.
+        command: npm run test -- --coverage --testPathPattern={component_name}
+        on_error: BLOCK — coverage < 85% must be resolved before proceeding
+
+      - id: step-2-6
+        name: Storybook Story Implementation
+        agent: css-eng
+        action: >
+          Implement complete Storybook stories in {component_name}.stories.tsx:
+          - Default story
+          - All variant stories
+          - All size stories
+          - Interactive states story (hover, focus, disabled showcase)
+          - Dark mode story
+          - All arg controls enabled with correct types
+          - Component documentation (autodocs)
+          - Accessibility addon configured
+        output: packages/ui/src/components/{component_name}/{component_name}.stories.tsx
+        on_error: Minimum: Default story required. Skip advanced stories if blocked.
+
+      - id: step-2-7
+        name: Index Export
+        agent: css-eng
+        action: >
+          Add component export to packages/ui/src/index.ts.
+          Export: component, all types, and any utility hooks.
+          Verify no circular imports introduced.
+        command: npm run typecheck
+        on_error: BLOCK — TypeScript errors must resolve before proceeding
+
+    checkpoint:
+      id: checkpoint-2
+      name: CP-02 Implement to Animate
+      artifacts_required:
+        - All 8 component files created and populated
+        - Unit test coverage >= 85%
+        - Zero TypeScript errors
+        - Zero lint errors
+        - Component exported from packages/ui/src/index.ts
+      commands:
+        - npm run typecheck
+        - npm run lint
+        - npm run test -- --coverage --testPathPattern={component_name}
+      on_fail: Return to phase-2-implement with failing checks listed
+      revision_policy:
+        max_iterations: 3
+        on_max_reached:
+          action: ESCALATE
+          to: apex-lead
+          message: "Component implementation failing after 3 attempts."
+      on_pass:
+        notify:
+          target: motion-eng
+          message: "CP-02 passed. Component implemented. Animation phase ready."
+          deadline_hours: 2
+          escalate_on_timeout: apex-lead
+
+  # ============================================================================
+  # PHASE 3: ANIMATE
+  # ============================================================================
+  - id: phase-3-animate
+    name: Animate
+    sequence: 3
+    agent: motion-eng
+    gate: QG-AX-006
+    skip_if: "inputs.has_animation == false"
+    description: >
+      motion-eng designs and implements all animations for the component.
+      All motion must use the Apex motion token system, respect
+      prefers-reduced-motion, and be documented in the motion catalog.
+
+    steps:
+      - id: step-3-1
+        name: Motion Audit of Component
+        agent: motion-eng
+        action: >
+          Review docs/design/components/{component_name}-spec.md animation spec
+          section. Identify all animation touchpoints:
+          - Mount/unmount transitions
+          - State change animations (hover, focus, active)
+          - Loading states
+          - Error state entrances
+          - Any gesture-driven animations
+          Map each to the Apex motion token system (duration, easing, delay).
+        output: Motion audit notes (internal)
+        on_error: Log ambiguities, request spec clarification from design-sys-eng
+
+      - id: step-3-2
+        name: Animation Implementation
+        agent: motion-eng
+        checklists:
+          - ref: checklists/motion-review-checklist.md
+            reviewer: motion-eng
+        action: >
+          Implement animations in {component_name}.motion.ts:
+          - Use CSS keyframes (Vanilla Extract) for simple transitions
+          - Use Framer Motion variants for complex orchestrated animations
+          - All durations reference motion.duration.* tokens
+          - All easings reference motion.easing.* tokens
+          - All animations wrapped in a shouldAnimate check
+            (respects prefers-reduced-motion media query)
+          Export animation variants as named constants.
+        output: packages/ui/src/components/{component_name}/{component_name}.motion.ts
+        on_error: Implement simple CSS transitions as fallback if complex animation blocked
+
+      - id: step-3-3
+        name: Component Animation Integration
+        agent: motion-eng
+        action: >
+          Integrate motion definitions into {component_name}.tsx:
+          - Wrap animated elements with motion.div (or equivalent)
+          - Apply animation variants from motion file
+          - Ensure reduced-motion fallback works correctly
+          - Test enter/exit animations do not cause layout shifts
+        command: npm run test -- --testPathPattern={component_name}
+        on_error: Log integration failures, request css-eng support if needed
+
+      - id: step-3-4
+        name: Motion Catalog Entry
+        agent: motion-eng
+        action: >
+          Add an entry to the motion catalog at
+          packages/ui/src/motion/catalog/{component_name}.ts:
+          - Document each animation with: name, trigger, duration, easing
+          - Provide code example
+          - Note reduced-motion behavior
+          Update Storybook with animation stories showing all motion variants.
+        gate: QG-AX-006
+        output:
+          - packages/ui/src/motion/catalog/{component_name}.ts
+          - Storybook story updated with motion stories
+        on_error: Skip catalog if time-critical, create follow-up task
+
+    checkpoint:
+      id: checkpoint-3
+      name: CP-03 Animate to Audit
+      gate: QG-AX-006
+      artifacts_required:
+        - packages/ui/src/motion/catalog/{component_name}.ts
+        - All animations integrated in component
+      validation:
+        - prefers-reduced-motion respected for all animations
+        - No layout shifts caused by animations (CLS check)
+        - All animations reference motion tokens (no hardcoded durations)
+      on_fail: Return to phase-3-animate with specific issues listed
+      revision_policy:
+        max_iterations: 3
+        on_max_reached:
+          action: ESCALATE
+          to: apex-lead
+          message: "Animation phase failing after 3 attempts."
+      on_pass:
+        notify:
+          target: a11y-eng
+          message: "CP-03 passed. Component animated. Accessibility audit ready."
+          deadline_hours: 4
+          escalate_on_timeout: apex-lead
+
+  # ============================================================================
+  # PHASE 4: AUDIT
+  # ============================================================================
+  - id: phase-4-audit
+    name: Audit
+    sequence: 4
+    agent: a11y-eng
+    gate: QG-AX-005
+    description: >
+      a11y-eng performs a comprehensive accessibility audit of the component
+      against WCAG 2.2 at the target conformance level. All critical and
+      major issues are resolved before the audit certificate is issued.
+
+    steps:
+      - id: step-4-1
+        name: Automated Accessibility Scan
+        agent: a11y-eng
+        checklists:
+          - ref: checklists/a11y-review-checklist.md
+            reviewer: a11y-eng
+          - ref: checklists/wcag-22-checklist.md
+            reviewer: a11y-eng
+          - ref: checklists/interaction-a11y.md
+            reviewer: interaction-dsgn
+        action: >
+          Run automated a11y scan on all Storybook stories for {component_name}:
+          - axe-core scan via @storybook/addon-a11y
+          - jest-axe for unit-level a11y tests
+          - Lighthouse a11y audit
+          Capture all violations, incomplete checks, and passes.
+          Document in docs/a11y/components/{component_name}-audit.md.
+        command: npm run test:a11y -- --component={component_name}
+        output:
+          - Automated scan results (VIOLATIONS list with WCAG criteria references)
+          - docs/a11y/components/{component_name}-audit.md (initial)
+        on_error: Fall back to manual axe DevTools scan if automated scan unavailable
+
+      - id: step-4-2
+        name: Keyboard Navigation Test
+        agent: a11y-eng
+        action: >
+          Test keyboard navigation in browser:
+          - Tab to reach component from previous focusable element
+          - All interactive elements reachable by keyboard alone
+          - Correct tab order within component
+          - Enter and Space activate interactive elements
+          - Escape closes overlays/dropdowns
+          - Arrow keys navigate within composite widgets (where applicable)
+          - Focus ring visible and clearly identifiable at all times
+          - No keyboard traps
+          Document all failures with specific WCAG criteria.
+        output: Keyboard test results section in audit document
+        on_error: Log test environment issues, request qa-xplatform support
+
+      - id: step-4-3
+        name: Screen Reader Test
+        agent: a11y-eng
+        action: >
+          Test with multiple screen readers:
+          - macOS VoiceOver + Safari
+          - Windows NVDA + Firefox
+          - Android TalkBack (if mobile target)
+          - iOS VoiceOver (if mobile target)
+          For each: verify role announcement, label announcement, state
+          announcement (expanded, selected, disabled, etc.), and that all
+          interactive elements are operable.
+          Document any discrepancies with browser/SR combination.
+        output: Screen reader test matrix in audit document
+        on_error: Test minimum VoiceOver + Safari if other SR unavailable
+
+      - id: step-4-4
+        name: Color Contrast Audit
+        agent: a11y-eng
+        action: >
+          Check color contrast for all text and interactive elements in all
+          component states and variants:
+          - Text contrast: >= 4.5:1 (AA) or >= 7:1 (AAA)
+          - Large text contrast: >= 3:1 (AA) or >= 4.5:1 (AAA)
+          - Interactive element boundaries: >= 3:1
+          - Focus indicator: >= 3:1 against adjacent colors
+          Use Colour Contrast Analyser and browser devtools.
+          Test both light and dark modes.
+        output: Contrast audit table in audit document
+        on_error: Log measurement tool issues, estimate from design tokens
+
+      - id: step-4-5
+        name: Issue Resolution
+        agent: a11y-eng
+        action: >
+          For each identified issue, categorize by severity (Critical, Major,
+          Minor, Informational) and WCAG criterion. Fix all Critical and Major
+          issues directly in the component code. For Minor issues, create
+          tracking notes. Informational issues are documented only.
+          Re-run automated scan after fixes to verify resolution.
+        on_error: BLOCK on unresolved Critical issues — must fix before gate
+
+      - id: step-4-6
+        name: A11y Certificate Issuance
+        agent: a11y-eng
+        action: >
+          Complete audit document with:
+          - Summary verdict: CERTIFIED / NOT CERTIFIED
+          - WCAG level achieved
+          - List of all checks run and results
+          - Known limitations (documented, accepted)
+          - Tested assistive technologies
+          - Certificate date and auditor (a11y-eng)
+        gate: QG-AX-005
+        output:
+          - docs/a11y/components/{component_name}-audit.md (final, certified)
+          - packages/ui/src/components/{component_name}/{component_name}.a11y.md (summary)
+        decision:
+          CERTIFIED: Proceed to checkpoint-4
+          NOT_CERTIFIED: Return to step-4-5 for additional issue resolution
+        revision_policy:
+          max_iterations: 3
+          on_max_reached:
+            action: ESCALATE
+            to: apex-lead
+            message: "A11y certification failing after 3 attempts. May need design change."
+
+    checkpoint:
+      id: checkpoint-4
+      name: CP-04 Audit to Test
+      gate: QG-AX-005
+      artifacts_required:
+        - docs/a11y/components/{component_name}-audit.md (status: CERTIFIED)
+        - packages/ui/src/components/{component_name}/{component_name}.a11y.md
+      validation:
+        - Zero Critical a11y violations unresolved
+        - Zero Major a11y violations unresolved
+        - WCAG level >= inputs.wcag_level achieved
+        - All tested SR/browser combinations documented
+      on_fail: Return to phase-4-audit, step-4-5 for issue resolution
+      revision_policy:
+        max_iterations: 3
+        on_max_reached:
+          action: ESCALATE
+          to: apex-lead
+          message: "A11y audit checkpoint failing after 3 attempts."
+      on_pass:
+        notify:
+          target: qa-visual
+          message: "CP-04 passed. Component a11y certified. Final test phase ready."
+          deadline_hours: 4
+          escalate_on_timeout: apex-lead
+
+  # ============================================================================
+  # PHASE 5: TEST
+  # ============================================================================
+  - id: phase-5-test
+    name: Test
+    sequence: 5
+    agent: qa-visual
+    gate: QG-AX-008
+    description: >
+      qa-visual runs the final visual regression and comprehensive test suite.
+      Verifies the component renders correctly, matches the design spec,
+      introduces no regressions in existing components, and passes all quality
+      checks. Issues a final test verdict.
+
+    steps:
+      - id: step-5-1
+        name: Full Unit Test Run
+        agent: qa-visual
+        action: >
+          Run the complete unit test suite for the new component and verify
+          no regressions in related components:
+          - npm run test -- --coverage --testPathPattern={component_name}
+          - npm run test -- --related (changed files only)
+          Verify coverage >= 85% for all new files.
+        command: npm run test -- --coverage
+        output:
+          - Test results (pass count, fail count, coverage %)
+        on_error: Flag failing tests to css-eng, block if coverage below threshold
+
+      - id: step-5-2
+        name: Visual Regression — Component Stories
+        agent: qa-visual
+        checklists:
+          - ref: checklists/visual-qa-checklist.md
+            reviewer: qa-visual
+          - ref: checklists/visual-review-checklist.md
+            reviewer: apex-lead
+        action: >
+          Run Chromatic visual regression on all {component_name} Storybook
+          stories. Capture baselines if first run. If updating existing
+          component, compare against approved baselines.
+          Any unexpected changes flagged for review.
+        command: npm run chromatic -- --only-story-names="{component_name}/*"
+        output:
+          - Chromatic build URL
+          - Visual diff report for any changes
+        on_error: Fall back to Playwright screenshot comparison if Chromatic unavailable
+
+      - id: step-5-3
+        name: Visual Regression — Regression Check
+        agent: qa-visual
+        action: >
+          Run full Storybook visual regression test suite to verify {component_name}
+          does not break any existing component story. Zero regressions permitted.
+          Review any unexpected diffs and determine if caused by new component
+          (token changes, CSS leakage, etc.).
+        command: npm run test:visual:regression
+        output: Regression test report
+        on_error: >
+          Investigate root cause of any regressions. If caused by new component,
+          escalate to css-eng for fix before proceeding.
+
+      - id: step-5-4
+        name: Integration Test
+        agent: qa-visual
+        action: >
+          Test the component in a realistic integration context:
+          - Render inside a typical page layout
+          - Test with real data (long strings, empty values, special characters)
+          - Test at minimum and maximum prop value boundaries
+          - Test in dark mode
+          - Test with forced colors (Windows High Contrast Mode)
+          Document any integration issues found.
+        on_error: Log issues, create follow-up tasks for non-blocking problems
+
+      - id: step-5-5
+        name: Final Verdict & Gate
+        agent: qa-visual
+        action: >
+          Compile all test results and issue final verdict:
+          - PASS: All gates pass, no regressions, coverage met
+          - FAIL: List all blocking failures with responsible agent for fix
+          Update Storybook baseline if new component (approve in Chromatic).
+        gate: QG-AX-008
+        decision:
+          PASS: Workflow complete — component ready for production
+          FAIL: Return failing items to responsible agents (css-eng, motion-eng, a11y-eng)
+
+    checkpoint:
+      id: checkpoint-5
+      name: CP-05 Test Complete — Component Ready
+      gate: QG-AX-008
+      artifacts_required:
+        - All unit tests pass (coverage >= 85%)
+        - Visual regression: zero unresolved failures
+        - Zero regressions in existing components
+        - a11y certificate present
+        - Motion catalog entry present (if has_animation)
+        - Storybook baseline approved in Chromatic
+      validation:
+        - npm run typecheck: PASS
+        - npm run lint: PASS
+        - npm run test: PASS
+        - npm run test:visual: PASS
+        - QG-AX-001 (tokens): PASS
+        - QG-AX-003 (spec): APPROVED
+        - QG-AX-005 (a11y): CERTIFIED
+        - QG-AX-006 (motion): APPROVED (or WAIVED if has_animation=false)
+        - QG-AX-008 (visual): PASS
+      on_fail: >
+        Return specific failing checks to responsible agents.
+        Re-run phase-5-test after all fixes applied.
+      revision_policy:
+        max_iterations: 3
+        on_max_reached:
+          action: ESCALATE
+          to: apex-lead
+          message: "Final test phase failing after 3 cycles. Component may need redesign."
+      on_pass:
+        notify:
+          targets: [apex-lead, design-sys-eng]
+          message: "Component {component_name} passed all gates. Ready for production."
+
+# ------------------------------------------------------------------------------
+# COMPONENT PROMOTION
+# ------------------------------------------------------------------------------
+post_completion:
+  - action: Update packages/ui/src/index.ts
+    description: Verify component is correctly exported
+  - action: Update Storybook categories
+    description: Ensure component appears in correct category sidebar
+  - action: Notify design-sys-eng
+    description: Component available in design system — update Figma component library
+  - action: Create CHANGELOG entry
+    description: Add component to packages/ui/CHANGELOG.md under "Added"
+
+# ------------------------------------------------------------------------------
+# ERROR HANDLING
+# ------------------------------------------------------------------------------
+error_handling:
+  global_retry_limit: 3
+  on_unrecoverable_error:
+    action: ESCALATE
+    escalate_to: design-sys-eng
+    then: apex-lead
+    then_last: aios-master
+  on_duplicate_component_name:
+    action: BLOCK
+    message: >
+      Component {component_name} already exists in packages/ui/src/components/.
+      Use wf-design-to-code to update the existing component, or choose a
+      different name.
+  on_token_missing:
+    action: PAUSE
+    notify: design-sys-eng
+    message: >
+      Required design token not found. Create token in packages/tokens/
+      before resuming.
+  on_a11y_critical_unresolvable:
+    action: ESCALATE
+    notify: apex-lead
+    message: >
+      Critical accessibility issue cannot be resolved at component level.
+      May require design change. Escalating to apex-lead for decision.
+
+# ------------------------------------------------------------------------------
+# STANDARDS COMPLIANCE
+# ------------------------------------------------------------------------------
+standards:
+  - WCAG 2.2 at level specified by inputs.wcag_level
+  - Design token system: packages/tokens/ (no hardcoded values)
+  - TypeScript strict mode (no any, no ts-ignore without explanation)
+  - Test coverage >= 85% for all new files
+  - Storybook: all variants documented with all arg controls enabled
+  - Motion: all animations respect prefers-reduced-motion
+  - Component API: follows existing patterns in packages/ui/

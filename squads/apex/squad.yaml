@@ -1,0 +1,427 @@
+name: apex
+version: "1.1.0"
+title: "Apex Squad — Frontend Ultra-Premium"
+description: >
+  Squad 100% frontend ultra-premium para Web, Mobile e Spatial.
+  14 agentes especializados + 1 orchestrator, cada um com DNA de
+  elite minds do frontend mundial. Cobre absolutamente tudo que
+  o usuario ve e toca: design system, componentes, animacoes,
+  3D/spatial, acessibilidade, performance, CSS, tipografia, cores, efeitos.
+author: "Synkra AIOS"
+slashPrefix: "apex"
+patternPrefix: "AX"
+
+platforms:
+  - web         # Next.js 15+, React 19+
+  - mobile      # React Native (New Architecture), Expo
+  - spatial     # VisionOS, WebXR, Three.js, R3F
+
+model: "hybrid-premium"  # Core Design Engineers + Deep Specialists
+
+tiers:
+  orchestrator: apex-lead
+  tier_1: [frontend-arch]
+  tier_2: [interaction-dsgn, design-sys-eng]
+  tier_3: [css-eng, react-eng, mobile-eng, cross-plat-eng, spatial-eng]
+  tier_4: [motion-eng, a11y-eng, perf-eng]
+  tier_5: [qa-visual, qa-xplatform]
+
+quality_standards:
+  performance:
+    web:
+      lcp: "< 1.2s"
+      inp: "< 200ms"
+      cls: "< 0.1"
+      first_load_js: "< 80KB gzipped"
+    mobile:
+      startup: "< 1s"
+      fps: ">= 60"
+      anr: "0%"
+  accessibility:
+    wcag_level: "AA"
+    axe_score: 100
+  visual:
+    regression_threshold: "0 pixels"
+    grid: "4px"
+  motion:
+    target_fps: 60
+    reduced_motion: "mandatory"
+
+workflows:
+  - id: wf-feature-build
+    path: workflows/wf-feature-build.yaml
+    description: "End-to-end feature build (design → ship)"
+  - id: wf-apex-pipeline
+    path: workflows/wf-apex-pipeline.yaml
+    description: "Automated pipeline orchestration with 6 user checkpoints"
+  - id: wf-component-create
+    path: workflows/wf-component-create.yaml
+    description: "Component creation workflow (design → build → test → document)"
+  - id: wf-cross-platform-sync
+    path: workflows/wf-cross-platform-sync.yaml
+    description: "Cross-platform sync validation (tokens, components, behavior)"
+  - id: wf-design-to-code
+    path: workflows/wf-design-to-code.yaml
+    description: "Design-to-code pipeline (Figma → tokens → components)"
+  - id: wf-polish-cycle
+    path: workflows/wf-polish-cycle.yaml
+    description: "Polish cycle (motion audit → a11y audit → perf audit → sign-off)"
+  - id: wf-ship-validation
+    path: workflows/wf-ship-validation.yaml
+    description: "Ship validation (quality gates → visual regression → sign-off)"
+  - id: wf-component-refactor
+    path: workflows/wf-component-refactor.yaml
+    description: "Component refactoring (analyze → test → refactor → verify → cleanup)"
+
+tasks:
+  - id: apex-route-request
+    path: tasks/apex-route-request.md
+    description: "Route request to best specialist agent"
+  - id: apex-pipeline-executor
+    path: tasks/apex-pipeline-executor.md
+    description: "Pipeline executor with *apex-go, *apex-step, and 6 more commands"
+  - id: apex-fix
+    path: tasks/apex-fix.md
+    description: "Single-agent quick fix (route → execute → verify)"
+  - id: apex-quick
+    path: tasks/apex-quick.md
+    description: "3-phase quick pipeline (specify → implement → ship)"
+  - id: apex-audit
+    path: tasks/apex-audit.md
+    description: "Squad readiness diagnostic for current project"
+  - id: apex-pivot
+    path: tasks/apex-pivot.md
+    description: "Change direction mid-pipeline without losing progress"
+  - id: apex-scan
+    path: tasks/apex-scan.md
+    description: "Dynamic project scanner — auto-detects stack, structure, design patterns"
+  - id: apex-suggest
+    path: tasks/apex-suggest.md
+    description: "Proactive suggestions — detects issues after operations, never auto-fixes"
+  - id: apex-entry
+    path: tasks/apex-entry.md
+    description: "Single entry point — natural language to auto-pipeline selection"
+  - id: apex-handoff-protocol
+    path: tasks/apex-handoff-protocol.md
+    description: "Agent handoff protocol — visible delegation, specialist intros, chain suggestions"
+  - id: apex-discover-components
+    path: tasks/apex-discover-components.md
+    description: "Component discovery — inventory, dependency tree, orphans, test coverage"
+  - id: apex-discover-design
+    path: tasks/apex-discover-design.md
+    description: "Design system discovery — tokens, violations, palette, consistency score"
+  - id: apex-discover-routes
+    path: tasks/apex-discover-routes.md
+    description: "Route discovery — inventory, orphan routes, SEO gaps, dead routes"
+  - id: apex-discover-dependencies
+    path: tasks/apex-discover-dependencies.md
+    description: "Dependency health — outdated, vulnerable, heavy, duplicated, unused packages"
+  - id: apex-discover-motion
+    path: tasks/apex-discover-motion.md
+    description: "Motion discovery — animation inventory, veto violations, spring audit"
+  - id: apex-discover-a11y
+    path: tasks/apex-discover-a11y.md
+    description: "Accessibility discovery — static a11y scan, WCAG violations, keyboard traps"
+  - id: apex-discover-performance
+    path: tasks/apex-discover-performance.md
+    description: "Performance discovery — lazy loading gaps, image audit, re-render risks, CWV"
+  - id: apex-agents
+    path: tasks/apex-agents.md
+    description: "List active agents for current profile"
+  - id: apex-inspire
+    path: tasks/apex-inspire.md
+    description: "Browse design presets catalog for inspiration"
+  - id: apex-transform
+    path: tasks/apex-transform.md
+    description: "Apply complete design style with single command (31 presets)"
+
+  # --- Visual Analysis Tasks ---
+  - id: apex-visual-analyze
+    path: tasks/apex-visual-analyze.md
+    description: "Deep multi-dimensional analysis of screenshot/print with actionable options"
+  - id: apex-compare
+    path: tasks/apex-compare.md
+    description: "Side-by-side visual comparison (2 images) with dimensional delta scores"
+  - id: apex-consistency-audit
+    path: tasks/apex-consistency-audit.md
+    description: "Cross-page consistency audit (3+ screenshots) with standardization plan"
+
+  # --- Code Quality & Audit Tasks ---
+  - id: apex-code-review
+    path: tasks/apex-code-review.md
+    description: "Frontend code review — multi-agent (patterns, architecture, performance, a11y)"
+  - id: apex-dark-mode-audit
+    path: tasks/apex-dark-mode-audit.md
+    description: "Dark mode validation — tokens, contrast, hardcoded colors, component-specific"
+  - id: apex-design-critique
+    path: tasks/apex-design-critique.md
+    description: "Design critique with formal principles (Gestalt, hierarchy, color theory)"
+  - id: apex-export-tokens
+    path: tasks/apex-export-tokens.md
+    description: "Export tokens to designer formats (Figma, Style Dictionary, CSS, Tailwind)"
+  - id: integration-test-setup
+    path: tasks/integration-test-setup.md
+    description: "Integration test setup for composite component interactions"
+
+  # --- Pipeline Flow Tasks ---
+  - id: apex-build-flow
+    path: tasks/apex-build-flow.md
+    description: "Build phase orchestration for full pipeline"
+  - id: apex-design-flow
+    path: tasks/apex-design-flow.md
+    description: "Design phase orchestration for full pipeline"
+  - id: apex-ship-flow
+    path: tasks/apex-ship-flow.md
+    description: "Ship phase orchestration with quality gates"
+
+  # --- Architecture Tasks (frontend-arch) ---
+  - id: architecture-decision
+    path: tasks/architecture-decision.md
+    description: "Record architecture decision (ADR format)"
+  - id: monorepo-setup
+    path: tasks/monorepo-setup.md
+    description: "Setup monorepo structure for cross-platform"
+  - id: monorepo-structure
+    path: tasks/monorepo-structure.md
+    description: "Define monorepo directory structure"
+  - id: rsc-architecture
+    path: tasks/rsc-architecture.md
+    description: "React Server Components architecture design"
+  - id: rsc-boundary-audit
+    path: tasks/rsc-boundary-audit.md
+    description: "Audit client/server component boundaries"
+  - id: tech-stack-evaluation
+    path: tasks/tech-stack-evaluation.md
+    description: "Evaluate technology stack options"
+  - id: naming-convention
+    path: tasks/naming-convention.md
+    description: "Define naming conventions for project"
+  - id: testing-strategy
+    path: tasks/testing-strategy.md
+    description: "Define testing strategy across platforms"
+
+  # --- Design & Interaction Tasks (interaction-dsgn, design-sys-eng) ---
+  - id: component-design
+    path: tasks/component-design.md
+    description: "Design component specification"
+  - id: design-component
+    path: tasks/design-component.md
+    description: "Full component design with states and interactions"
+  - id: layout-strategy
+    path: tasks/layout-strategy.md
+    description: "Define layout strategy for feature/page"
+  - id: prototype-interaction
+    path: tasks/prototype-interaction.md
+    description: "Prototype interaction patterns"
+  - id: user-flow-design
+    path: tasks/user-flow-design.md
+    description: "Design user flow with states and transitions"
+  - id: token-architecture
+    path: tasks/token-architecture.md
+    description: "Design token architecture and hierarchy"
+  - id: token-audit
+    path: tasks/token-audit.md
+    description: "Audit existing tokens for consistency"
+  - id: theme-audit
+    path: tasks/theme-audit.md
+    description: "Audit theme configuration and coverage"
+  - id: figma-sync-setup
+    path: tasks/figma-sync-setup.md
+    description: "Setup Figma-to-code sync workflow"
+  - id: shared-tokens-setup
+    path: tasks/shared-tokens-setup.md
+    description: "Setup shared design tokens across platforms"
+  - id: component-maturation
+    path: tasks/component-maturation.md
+    description: "Mature component from basic to production-ready"
+  - id: storybook-docs
+    path: tasks/storybook-docs.md
+    description: "Create Storybook documentation for components"
+
+  # --- CSS Tasks (css-eng) ---
+  - id: css-architecture-audit
+    path: tasks/css-architecture-audit.md
+    description: "Audit CSS architecture and patterns"
+  - id: defensive-css-review
+    path: tasks/defensive-css-review.md
+    description: "Review for defensive CSS patterns"
+  - id: fluid-type-setup
+    path: tasks/fluid-type-setup.md
+    description: "Setup fluid typography system"
+  - id: responsive-audit
+    path: tasks/responsive-audit.md
+    description: "Audit responsive design across breakpoints"
+  - id: stacking-context-debug
+    path: tasks/stacking-context-debug.md
+    description: "Debug z-index and stacking context issues"
+
+  # --- Motion Tasks (motion-eng) ---
+  - id: animation-architecture
+    path: tasks/animation-architecture.md
+    description: "Design animation architecture with spring physics"
+  - id: animation-design
+    path: tasks/animation-design.md
+    description: "Design animation specifications"
+  - id: choreography-design
+    path: tasks/choreography-design.md
+    description: "Design choreographed animation sequences"
+  - id: spring-config
+    path: tasks/spring-config.md
+    description: "Configure spring physics parameters"
+  - id: motion-audit
+    path: tasks/motion-audit.md
+    description: "Audit motion patterns and performance"
+
+  # --- Accessibility Tasks (a11y-eng) ---
+  - id: accessibility-audit
+    path: tasks/accessibility-audit.md
+    description: "Full WCAG 2.2 AA accessibility audit"
+  - id: aria-pattern-implementation
+    path: tasks/aria-pattern-implementation.md
+    description: "Implement ARIA patterns for complex widgets"
+  - id: focus-management-design
+    path: tasks/focus-management-design.md
+    description: "Design focus management for navigation flows"
+  - id: screen-reader-testing
+    path: tasks/screen-reader-testing.md
+    description: "Screen reader testing protocol"
+
+  # --- Performance Tasks (perf-eng) ---
+  - id: performance-audit
+    path: tasks/performance-audit.md
+    description: "Full performance audit (CWV, bundle, loading)"
+  - id: performance-budget-review
+    path: tasks/performance-budget-review.md
+    description: "Review performance against budget thresholds"
+  - id: perf-budget-setup
+    path: tasks/perf-budget-setup.md
+    description: "Setup performance budget configuration"
+  - id: bundle-optimization
+    path: tasks/bundle-optimization.md
+    description: "Optimize bundle size (code splitting, tree shaking)"
+  - id: image-optimization
+    path: tasks/image-optimization.md
+    description: "Optimize images (format, size, lazy loading)"
+
+  # --- Mobile & Cross-Platform Tasks ---
+  - id: gesture-design
+    path: tasks/gesture-design.md
+    description: "Design gesture interactions for mobile"
+  - id: gesture-test-suite
+    path: tasks/gesture-test-suite.md
+    description: "Create gesture testing suite"
+  - id: native-module-setup
+    path: tasks/native-module-setup.md
+    description: "Setup React Native native module"
+  - id: universal-component-design
+    path: tasks/universal-component-design.md
+    description: "Design universal cross-platform component"
+  - id: cross-platform-test-setup
+    path: tasks/cross-platform-test-setup.md
+    description: "Setup cross-platform testing infrastructure"
+  - id: device-matrix-design
+    path: tasks/device-matrix-design.md
+    description: "Define device testing matrix"
+  - id: offline-test-suite
+    path: tasks/offline-test-suite.md
+    description: "Create offline capability test suite"
+
+  # --- Spatial/3D Tasks (spatial-eng) ---
+  - id: scene-architecture
+    path: tasks/scene-architecture.md
+    description: "Design 3D scene architecture (R3F)"
+  - id: shader-design
+    path: tasks/shader-design.md
+    description: "Design custom shaders"
+  - id: 3d-performance-audit
+    path: tasks/3d-performance-audit.md
+    description: "Audit 3D scene performance"
+
+  # --- QA Tasks (qa-visual, qa-xplatform) ---
+  - id: visual-regression-setup
+    path: tasks/visual-regression-setup.md
+    description: "Setup visual regression testing (Chromatic/Percy)"
+  - id: visual-regression-audit
+    path: tasks/visual-regression-audit.md
+    description: "Audit visual regression results"
+  - id: cross-browser-validation
+    path: tasks/cross-browser-validation.md
+    description: "Validate cross-browser rendering"
+  - id: theme-visual-testing
+    path: tasks/theme-visual-testing.md
+    description: "Visual testing across themes (light/dark)"
+
+data:
+  - data/agent-registry.yaml
+  - data/veto-conditions.yaml
+  - data/pipeline-state-schema.yaml
+  - data/performance-budgets.yaml
+  - data/spring-configs.yaml
+  - data/design-tokens-map.yaml
+  - data/platform-capabilities.yaml
+  - data/apex-intelligence.yaml
+  - data/design-presets.yaml
+
+profiles:
+  full:
+    agents: [apex-lead, frontend-arch, interaction-dsgn, design-sys-eng, css-eng, react-eng, mobile-eng, cross-plat-eng, spatial-eng, motion-eng, a11y-eng, perf-eng, qa-visual, qa-xplatform]
+    description: "Monorepo cross-platform (Next.js + React Native + Spatial)"
+    detect_when: "react-native OR expo in package.json"
+  web-next:
+    agents: [apex-lead, frontend-arch, interaction-dsgn, design-sys-eng, css-eng, react-eng, motion-eng, a11y-eng, perf-eng, qa-visual]
+    description: "Next.js App Router projects"
+    detect_when: "next in package.json"
+  web-spa:
+    agents: [apex-lead, interaction-dsgn, css-eng, react-eng, motion-eng, a11y-eng, perf-eng, qa-visual]
+    description: "React + Vite SPA (e.g., ClinicOS)"
+    detect_when: "react AND vite in package.json, no next"
+  minimal:
+    agents: [apex-lead, css-eng, react-eng, a11y-eng]
+    description: "Quick fixes, single components"
+    detect_when: "fallback"
+
+commands:
+  pipeline:
+    - "*apex-go {desc} — Full 7-phase pipeline (autonomous)"
+    - "*apex-step {desc} — Full pipeline (guided, phase by phase)"
+    - "*apex-quick {desc} — Quick 3-phase pipeline (specify → implement → ship)"
+    - "*apex-fix {desc} — Single-agent fix (route → execute → verify)"
+    - "*apex-resume — Resume paused/crashed pipeline"
+    - "*apex-status — Show pipeline status"
+    - "*apex-abort — Cancel pipeline"
+    - "*apex-pivot {reason} — Change direction mid-pipeline"
+  visual:
+    - "*apex-analyze {print} — Analise visual profunda (8 dimensoes, score, opcoes)"
+    - "*apex-compare — Comparacao lado a lado (2 prints, delta por dimensao)"
+    - "*apex-consistency — Auditoria de consistencia cross-page (3+ prints)"
+  quality:
+    - "*apex-review — Multi-agent frontend code review (patterns, arch, perf, a11y)"
+    - "*apex-dark-mode — Dark mode audit (tokens, contrast, hardcoded colors)"
+    - "*apex-critique {component} — Design critique with formal principles"
+    - "*apex-export-tokens {format} — Export tokens (Figma, Style Dictionary, CSS, Tailwind)"
+    - "*apex-integration-test {flow} — Integration test setup for composite interactions"
+    - "*apex-refactor {component} — Safe refactoring workflow (5 phases)"
+  discovery:
+    - "*discover-components — Inventory all components, dependency tree, orphans, test gaps"
+    - "*discover-design — Map design system: tokens, violations, palette, consistency"
+    - "*discover-routes — Map all routes, orphan routes, SEO gaps, dead routes"
+    - "*discover-dependencies — Dependency health: outdated, vulnerable, heavy, unused"
+    - "*discover-motion — Animation inventory, CSS→spring violations, reduced-motion gaps"
+    - "*discover-a11y — Static accessibility scan, WCAG violations, keyboard traps"
+    - "*discover-performance — Lazy loading gaps, image audit, re-render risks, CWV"
+  style:
+    - "*apex-inspire — Browse 31 design presets (Apple, Google, Stripe, brutalist, etc.)"
+    - "*apex-transform --style {id} — Apply complete design style to project"
+  autonomous:
+    - "*apex-scan — Scan project (stack, structure, design patterns)"
+    - "*apex-suggest — Proactive issue detection and suggestions"
+  diagnostic:
+    - "*apex-audit — Squad readiness diagnostic for current project"
+    - "*apex-agents — List active agents for current profile"
+
+activation:
+  greetingEnabled: true
+  quickCommandsEnabled: true
+  ecosystemReportEnabled: false
+  autoActivation: true
+  claudeMdPath: "squads/apex/CLAUDE.md"

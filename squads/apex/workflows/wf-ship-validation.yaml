@@ -1,0 +1,876 @@
+---
+# ==============================================================================
+# APEX SQUAD — WORKFLOW: Ship Validation
+# wf-ship-validation.yaml
+# ==============================================================================
+# Purpose:  Final validation gate before a branch is merged to main and
+#           deployed. Covers performance auditing, visual QA, cross-platform
+#           compatibility testing, and apex-lead sign-off. No code reaches
+#           production without passing this workflow.
+#
+# Trigger:  Story status is InReview, PR is open, all previous QA passes done.
+#           Can also be triggered manually for hotfixes or urgent changes.
+# Owner:    apex-lead
+# Squad:    Apex (Frontend Ultra-Premium)
+# Version:  1.0.0
+# ==============================================================================
+
+id: wf-ship-validation
+name: Ship Validation
+description: >
+  The final quality gate before merge and deployment. Three parallel audit
+  phases — performance, visual QA, and cross-platform compatibility — run
+  concurrently, followed by apex-lead sign-off. All gates must pass or be
+  formally waived before the PR is eligible for merge. This workflow is
+  non-negotiable: no exceptions without documented, apex-lead-approved waivers.
+
+metadata:
+  version: "1.0.0"
+  owner: apex-lead
+  squad: apex
+  created: "2026-03-01"
+  tags:
+    - ship
+    - validation
+    - pre-merge
+    - performance
+    - visual-qa
+    - cross-platform
+
+# ------------------------------------------------------------------------------
+# INPUTS
+# ------------------------------------------------------------------------------
+inputs:
+  required:
+    - story_id:
+        type: string
+        description: Story ID associated with the PR being validated
+    - pr_number:
+        type: number
+        description: GitHub PR number to validate
+    - branch:
+        type: string
+        description: Feature branch name (must be pushed to remote)
+  optional:
+    - base_branch:
+        type: string
+        default: main
+        description: Base branch to compare against for perf and visual diffs
+    - target_platforms:
+        type: array
+        default: [web-chrome, web-firefox, web-safari, web-edge, ios, android]
+        description: >
+          Platforms to validate in cross-platform phase. Default covers all
+          Apex-supported targets.
+    - performance_budget:
+        type: object
+        source: data/performance-budgets.yaml  # SSOT — use this as canonical reference
+        default:
+          lcp_ms: 1200      # Apex ultra-premium: 1.2s (NOT Google's default 2.5s)
+          cls: 0.1
+          inp_ms: 200
+          bundle_delta_kb: 50
+          lighthouse_score: 90
+        description: >
+          Performance budget thresholds. Defaults from data/performance-budgets.yaml.
+          Override only with apex-lead approval.
+    - allow_visual_waiver:
+        type: boolean
+        default: false
+        description: >
+          When true, apex-lead may waive specific visual failures with written
+          justification. When false, all visual failures are hard blocks.
+    - expedited:
+        type: boolean
+        default: false
+        description: >
+          Expedited mode for hotfixes. Runs minimum required checks only.
+          Requires apex-lead approval to activate.
+
+# ------------------------------------------------------------------------------
+# OUTPUTS
+# ------------------------------------------------------------------------------
+outputs:
+  - performance_report:
+      description: Full performance audit report
+      path: docs/qa/ship/{story_id}-perf-report.md
+      type: file
+  - visual_report:
+      description: Visual QA comparison report
+      path: docs/qa/ship/{story_id}-visual-report.md
+      type: file
+  - xplatform_report:
+      description: Cross-platform compatibility matrix
+      path: docs/qa/ship/{story_id}-xplatform-report.md
+      type: file
+  - ship_verdict:
+      description: Final ship verdict (APPROVED | REJECTED | WAIVED)
+      type: string
+  - waiver_log:
+      description: Log of any formal waivers granted (empty if none)
+      type: array
+  - sign_off_timestamp:
+      description: ISO timestamp of apex-lead sign-off
+      type: string
+
+# ------------------------------------------------------------------------------
+# ENFORCEMENT
+# ------------------------------------------------------------------------------
+enforcement:
+  veto_registry: data/veto-conditions.yaml
+  performance_budgets: data/performance-budgets.yaml
+  pre_execution_validation:
+    validate_agents: true
+    action: "BLOCK workflow if any referenced agent not in data/agent-registry.yaml"
+
+# ------------------------------------------------------------------------------
+# QUALITY GATES (with veto conditions)
+# All performance thresholds reference data/performance-budgets.yaml (SSOT)
+# ------------------------------------------------------------------------------
+gates:
+  - id: QG-AX-007
+    name: Performance Budget Met
+    description: >
+      All performance metrics within budget defined in data/performance-budgets.yaml.
+      Includes Core Web Vitals (LCP < 1.2s, CLS < 0.1, INP < 200ms),
+      Lighthouse score >= 90, and bundle size delta <= 50KB.
+    blocking: true
+    owner: perf-eng
+    budget_reference: data/performance-budgets.yaml
+    criteria:
+      - LCP <= 1200ms (per data/performance-budgets.yaml)
+      - CLS <= 0.1 (per data/performance-budgets.yaml)
+      - INP <= 200ms (per data/performance-budgets.yaml)
+      - Bundle size delta <= 50KB gzipped (per data/performance-budgets.yaml)
+      - Lighthouse Performance score >= 90 (per data/performance-budgets.yaml)
+      - No new render-blocking resources introduced
+      - No memory leaks in component mount/unmount cycle
+    waivable: true
+    waiver_requires: apex-lead written justification + tracking issue created
+    veto_conditions:
+      - ref: VC-007-A  # Lighthouse score threshold
+      - ref: VC-007-B  # Bundle delta threshold
+      - ref: VC-007-C  # LCP < 1.2s
+
+  - id: QG-AX-008
+    name: Visual Regression Passed
+    description: >
+      Visual regression comparison against base branch passes. No unintended
+      visual changes in existing components. New component screenshots match
+      approved Figma spec (fidelity thresholds in data/performance-budgets.yaml).
+    blocking: true
+    owner: qa-visual
+    criteria:
+      - Zero unintended visual regressions in existing Storybook stories
+      - New component stories match Figma spec at >= 98% fidelity
+      - Dark mode variants verified
+      - All snapshot tests pass
+    waivable: true
+    waiver_requires: apex-lead approval + inputs.allow_visual_waiver == true
+    veto_conditions:
+      - ref: VC-008-A  # Chromatic zero regressions
+      - ref: VC-008-B  # Storybook build succeeds
+
+  - id: QG-AX-009
+    name: Cross-Platform Compatibility
+    description: >
+      Feature works correctly on all platforms in inputs.target_platforms.
+      No critical or high severity bugs outstanding.
+    blocking: true
+    owner: qa-xplatform
+    criteria:
+      - Zero CRITICAL bugs across all target platforms
+      - Zero HIGH severity bugs unless formally waived
+      - Feature parity between web and mobile implementations (if both targeted)
+      - No platform-specific crashes or error boundaries triggered
+      - Native gestures (swipe, pinch, long-press) work correctly on mobile targets
+    waivable: true
+    waiver_requires: apex-lead + MEDIUM/LOW severity only
+    veto_conditions:
+      - ref: VC-009-A  # Playwright cross-browser tests pass
+      - ref: VC-009-B  # Zero CRITICAL bugs
+
+  - id: QG-AX-010
+    name: Lead Sign-off
+    description: >
+      apex-lead has reviewed all three audit reports and formally signed off.
+      This is the final gate — workflow cannot complete without this approval.
+      NON-WAIVABLE.
+    blocking: true
+    owner: apex-lead
+    waivable: false
+    criteria:
+      - All three phase reports reviewed and acknowledged
+      - All waivers explicitly granted with documentation
+      - Story acceptance criteria re-verified against implementation
+      - PR description complete and accurate
+      - No open blocking comments on the PR
+    veto_conditions:
+      - ref: VC-010-A  # apex-lead sign-off recorded
+      - ref: VC-010-B  # Zero TypeScript errors
+      - ref: VC-010-C  # Zero lint errors
+
+# ------------------------------------------------------------------------------
+# PHASES
+# ------------------------------------------------------------------------------
+phases:
+
+  # ============================================================================
+  # PHASE 1: PERFORMANCE AUDIT
+  # ============================================================================
+  - id: phase-1-performance-audit
+    name: Performance Audit
+    sequence: 1
+    agent: perf-eng
+    parallel_with:
+      - phase-2-visual-qa
+      - phase-3-xplatform-qa
+    gate: QG-AX-007
+    description: >
+      perf-eng runs a comprehensive performance audit against the feature branch.
+      All Core Web Vitals, Lighthouse scores, bundle size, and runtime
+      performance metrics are measured and compared against the base branch.
+
+    steps:
+      - id: step-1-1
+        name: Environment Setup
+        agent: perf-eng
+        action: >
+          Ensure the feature branch is deployed to a staging environment.
+          Verify staging matches production configuration (no debug builds,
+          minification enabled, CDN headers correct). If no staging environment
+          exists, run Lighthouse against local production build.
+        command: npm run build:production && npm run serve:production
+        on_error: BLOCK — performance tests must run against production build
+
+      - id: step-1-2
+        name: Lighthouse CI Audit
+        agent: perf-eng
+        checklists:
+          - ref: checklists/perf-review-checklist.md
+            reviewer: perf-eng
+          - ref: checklists/cwv-checklist.md
+            reviewer: perf-eng
+        action: >
+          Run Lighthouse CI across all pages/routes affected by the feature.
+          Run 3 iterations per page (median used for reporting). Collect:
+          - Performance score
+          - LCP (Largest Contentful Paint)
+          - CLS (Cumulative Layout Shift)
+          - INP (Interaction to Next Paint)
+          - TBT (Total Blocking Time)
+          - FCP (First Contentful Paint)
+          - TTFB (Time to First Byte)
+          Compare against base branch values. Flag any regressions.
+        command: npm run lighthouse:ci -- --branch={branch} --base={base_branch}
+        output:
+          - Lighthouse JSON reports per page
+          - Diff vs base branch
+        on_error: Fall back to single Lighthouse run if CI unavailable
+
+      - id: step-1-3
+        name: Bundle Size Analysis
+        agent: perf-eng
+        action: >
+          Compare bundle sizes between feature branch and base branch:
+          - Total JavaScript bundle size (gzipped)
+          - Per-route chunk sizes
+          - Tree-shaking efficiency (unused export detection)
+          - Image assets (compressed size vs original)
+          - Font loading (self-hosted vs CDN, subsetting)
+          Flag if total bundle delta exceeds inputs.performance_budget.bundle_delta_kb.
+          Identify largest contributors to any increase.
+        command: npm run analyze:bundle -- --compare={base_branch}
+        output:
+          - Bundle size diff report
+          - Treemap visualization (HTML)
+        on_error: Log bundle analysis failure, estimate from build output
+
+      - id: step-1-4
+        name: Runtime Performance Profile
+        agent: perf-eng
+        action: >
+          Profile runtime performance of new/modified interactive components:
+          - React DevTools Profiler: render count and timing
+          - Memory: no memory leaks after component mount/unmount cycle (10 cycles)
+          - Long task detection (> 50ms on main thread)
+          - Re-render analysis: confirm no unnecessary re-renders on prop changes
+          Use browser performance panel and React DevTools.
+        output:
+          - Profiler flamegraph screenshots
+          - Memory leak check results
+        on_error: Log profiling failures, skip non-critical measurements
+
+      - id: step-1-5
+        name: Performance Verdict
+        agent: perf-eng
+        action: >
+          Compile all measurements into docs/qa/ship/{story_id}-perf-report.md.
+          Sections: Executive Summary, Lighthouse Results per Page, Bundle Delta,
+          Runtime Profiling, Comparison vs Budget, Issues Found, Verdict.
+          Issue verdict:
+          - PASS: All metrics within budget
+          - CONCERNS: Metrics within 10% of budget (warn, proceed)
+          - FAIL: One or more metrics exceed budget
+        gate: QG-AX-007
+        output:
+          - docs/qa/ship/{story_id}-perf-report.md
+          - outputs.performance_report
+        decision:
+          PASS: Phase complete, proceed to phase-4-lead-signoff (after all phases)
+          CONCERNS: Document concerns, flag for apex-lead review, continue
+          FAIL: BLOCK — return failure report to @dev for optimization
+        revision_policy:
+          max_iterations: 3
+          on_max_reached:
+            action: ESCALATE
+            to: apex-lead
+            message: "Performance audit failing after 3 cycles."
+      on_complete:
+        notify:
+          target: apex-lead
+          message: "Phase 1 (Performance Audit) complete. Verdict: {verdict}."
+
+    on_expedited_mode:
+      skip_steps: [step-1-4]
+      note: >
+        Expedited mode skips runtime profiling. Lighthouse and bundle analysis
+        still required.
+
+  # ============================================================================
+  # PHASE 2: VISUAL QA
+  # ============================================================================
+  - id: phase-2-visual-qa
+    name: Visual QA
+    sequence: 2
+    agent: qa-visual
+    parallel_with:
+      - phase-1-performance-audit
+      - phase-3-xplatform-qa
+    gate: QG-AX-008
+    description: >
+      qa-visual runs visual regression tests comparing the feature branch
+      against the base branch for all affected Storybook stories. Also
+      validates new component stories against Figma design spec. Dark mode
+      and high-contrast mode are verified.
+
+    steps:
+      - id: step-2-1
+        name: Identify Affected Stories
+        agent: qa-visual
+        action: >
+          Identify all Storybook stories affected by the feature branch:
+          - Stories for new components
+          - Stories for modified components
+          - Stories that import or depend on changed components or tokens
+          Build the list of stories to check.
+        command: git diff {base_branch}...{branch} --name-only | grep -E "\.stories\."
+        output: List of affected story file paths
+        on_error: Fall back to full visual regression run if diff analysis fails
+
+      - id: step-2-2
+        name: Chromatic Visual Regression
+        agent: qa-visual
+        checklists:
+          - ref: checklists/visual-qa-checklist.md
+            reviewer: qa-visual
+          - ref: checklists/visual-review-checklist.md
+            reviewer: apex-lead
+        action: >
+          Run Chromatic on the affected story list (and all stories for full
+          regression detection). Compare against approved baselines on base
+          branch. Flag any story with pixel differences.
+          Mode: auto-accept if only story is new (no baseline), manual review
+          if baseline exists.
+        command: npm run chromatic -- --branch={branch} --auto-accept-changes=false
+        output:
+          - Chromatic build URL and diff count
+          - List of stories with visual changes (approved/unapproved)
+        on_error: Fall back to Playwright screenshot comparison if Chromatic unavailable
+
+      - id: step-2-3
+        name: New Component Fidelity Check
+        agent: qa-visual
+        action: >
+          For all new components in this PR:
+          - Export screenshots from Figma (all states, all variants, 2x)
+          - Capture Storybook screenshots at matching viewport sizes
+          - Run pixel diff and compute fidelity score
+          - Fidelity threshold: 98% (strict) or 95% (non-strict)
+          Document per-component fidelity scores.
+        output:
+          - Fidelity scores per new component
+          - Diff images for any failures
+        on_error: Skip fidelity check if no new components in PR
+
+      - id: step-2-4
+        name: Dark Mode Verification
+        agent: qa-visual
+        action: >
+          For all affected components, verify dark mode rendering:
+          - Set prefers-color-scheme: dark in browser
+          - Check all color tokens render correctly in dark context
+          - Verify no hardcoded colors visible only in dark mode
+          - Screenshot and compare against dark mode Figma variants
+          Document any dark mode failures.
+        on_error: Log dark mode failures, flag to css-eng
+
+      - id: step-2-5
+        name: High Contrast Mode Verification
+        agent: qa-visual
+        action: >
+          Enable forced-colors (Windows High Contrast) in browser.
+          Verify all interactive elements are visible and usable:
+          - Focus indicators visible
+          - Button boundaries visible
+          - Text readable
+          - No content hidden by forced color overrides
+        on_error: Log HCM failures, create follow-up issue if non-blocking
+
+      - id: step-2-6
+        name: Visual QA Verdict
+        agent: qa-visual
+        action: >
+          Compile all visual test results into docs/qa/ship/{story_id}-visual-report.md.
+          Sections: Summary, Regression Results, New Component Fidelity,
+          Dark Mode, High Contrast, Issues List, Verdict.
+          Issue verdict:
+          - PASS: No regressions, fidelity meets threshold
+          - FAIL: Regressions or fidelity failures present
+          - PARTIAL: Minor issues documented, no blocking regressions
+        gate: QG-AX-008
+        output:
+          - docs/qa/ship/{story_id}-visual-report.md
+          - outputs.visual_report
+        decision:
+          PASS: Phase complete, proceed to phase-4-lead-signoff (after all phases)
+          FAIL: BLOCK — return failure list to css-eng for fix
+          PARTIAL: Flag for apex-lead review, proceed with documentation
+        revision_policy:
+          max_iterations: 3
+          on_max_reached:
+            action: ESCALATE
+            to: apex-lead
+            message: "Visual QA failing after 3 cycles."
+      on_complete:
+        notify:
+          target: apex-lead
+          message: "Phase 2 (Visual QA) complete. Verdict: {verdict}."
+
+    on_expedited_mode:
+      scope: affected_stories_only
+      skip_steps: [step-2-5]
+      note: >
+        Expedited mode only runs regression on directly affected stories.
+        Full regression and HCM check skipped.
+
+  # ============================================================================
+  # PHASE 3: CROSS-PLATFORM QA
+  # ============================================================================
+  - id: phase-3-xplatform-qa
+    name: Cross-Platform QA
+    sequence: 3
+    agent: qa-xplatform
+    parallel_with:
+      - phase-1-performance-audit
+      - phase-2-visual-qa
+    gate: QG-AX-009
+    description: >
+      qa-xplatform validates feature functionality, layout correctness, and
+      interactive behavior across all platforms in inputs.target_platforms.
+      Bugs are classified by severity. CRITICAL bugs are hard blocks. HIGH
+      severity bugs block unless waived by apex-lead.
+
+    steps:
+      - id: step-3-1
+        name: Test Plan Generation
+        agent: qa-xplatform
+        action: >
+          Review story acceptance criteria and generate a cross-platform test
+          plan. For each AC item, define a test case with:
+          - Expected behavior
+          - Test steps
+          - Target platforms
+          - Pass/fail criteria
+          Save test plan to docs/qa/ship/{story_id}-xplatform-testplan.md.
+        output: docs/qa/ship/{story_id}-xplatform-testplan.md
+        on_error: Use generic test plan if story has no explicit cross-platform AC
+
+      - id: step-3-2
+        name: Web Browser Testing
+        agent: qa-xplatform
+        checklists:
+          - ref: checklists/cross-platform-qa-checklist.md
+            reviewer: qa-xplatform
+          - ref: checklists/cross-platform-checklist.md
+            reviewer: cross-plat-eng
+        action: >
+          Execute test plan on all web browser targets:
+          - Chrome (latest stable)
+          - Firefox (latest stable)
+          - Safari (latest stable on macOS)
+          - Edge (latest stable)
+          For each browser: test all feature flows, interactive behaviors,
+          keyboard navigation, and responsive breakpoints (375, 768, 1024, 1440px).
+          Record pass/fail per test case per browser.
+        output:
+          - Browser compatibility matrix (pass/fail per test case per browser)
+          - Screenshots of any failures
+        on_error: Log browser launch failures, skip unavailable browsers, document gaps
+
+      - id: step-3-3
+        name: iOS Testing
+        agent: qa-xplatform
+        skip_if: "'ios' not in inputs.target_platforms"
+        checklists:
+          - ref: checklists/device-test-checklist.md
+            reviewer: qa-xplatform
+          - ref: checklists/rn-performance-checklist.md
+            reviewer: mobile-eng
+        action: >
+          Test on iOS targets:
+          - iOS 16 (minimum supported)
+          - iOS 17 (current)
+          - iPhone SE (smallest viewport)
+          - iPhone 15 Pro (standard)
+          - iPad (if tablet layout relevant)
+          Test: touch interactions, gestures, safe area handling, keyboard
+          appearance behavior, VoiceOver basic navigation.
+        output:
+          - iOS compatibility results (pass/fail per device/OS)
+          - Screenshots of any failures
+        on_error: Test minimum iOS 17 + iPhone 15 if limited device access
+
+      - id: step-3-4
+        name: Android Testing
+        agent: qa-xplatform
+        skip_if: "'android' not in inputs.target_platforms"
+        checklists:
+          - ref: checklists/device-test-checklist.md
+            reviewer: qa-xplatform
+          - ref: checklists/rn-performance-checklist.md
+            reviewer: mobile-eng
+        action: >
+          Test on Android targets:
+          - Android 12 (minimum supported)
+          - Android 14 (current)
+          - Standard phone (360x800)
+          - Large phone (412x915)
+          Test: touch interactions, back gesture handling, keyboard avoiding
+          view, TalkBack basic navigation.
+        output:
+          - Android compatibility results (pass/fail per device/OS)
+          - Screenshots of any failures
+        on_error: Test minimum Android 14 + standard phone if limited device access
+
+      - id: step-3-5
+        name: Responsive Layout Verification
+        agent: qa-xplatform
+        checklists:
+          - ref: checklists/responsive-checklist.md
+            reviewer: interaction-dsgn
+          - ref: checklists/layout-review.md
+            reviewer: interaction-dsgn
+        action: >
+          For all web targets, verify responsive layout at each breakpoint:
+          - 320px (minimum supported)
+          - 375px (iPhone SE / small mobile)
+          - 428px (iPhone Pro Max)
+          - 768px (tablet portrait)
+          - 1024px (tablet landscape / small desktop)
+          - 1280px (standard desktop)
+          - 1440px (large desktop)
+          - 1920px (wide desktop)
+          Verify no horizontal overflow, correct column counts, readable
+          typography at each breakpoint.
+        output:
+          - Responsive layout matrix (PASS/FAIL per breakpoint per browser)
+          - Screenshots of any failures
+        on_error: Test minimum mobile (375px) and desktop (1440px) if time-constrained
+
+      - id: step-3-6
+        name: Bug Triage & Severity Classification
+        agent: qa-xplatform
+        action: >
+          Collect all failures from browser, iOS, Android, and responsive tests.
+          Classify each bug:
+          - CRITICAL: Feature broken/unusable on a supported platform
+          - HIGH: Major functionality degraded, no workaround
+          - MEDIUM: Minor functionality issue or cosmetic defect
+          - LOW: Cosmetic only, non-impactful
+          Assign each bug to the responsible agent (css-eng, mobile-eng, etc.).
+          Create bug list in docs/qa/ship/{story_id}-xplatform-report.md.
+        output:
+          - Bug list with severity, platform, description, and screenshot
+        on_error: Log triage failures, default unclassified bugs to MEDIUM
+
+      - id: step-3-7
+        name: Cross-Platform Verdict
+        agent: qa-xplatform
+        action: >
+          Compile final cross-platform report:
+          docs/qa/ship/{story_id}-xplatform-report.md.
+          Sections: Executive Summary, Browser Matrix, Mobile Device Matrix,
+          Responsive Layout Matrix, Bug List (by severity), Verdict.
+          Issue verdict:
+          - PASS: Zero CRITICAL, zero HIGH bugs
+          - CONCERNS: Zero CRITICAL, one or more HIGH bugs (document for waiver)
+          - FAIL: One or more CRITICAL bugs
+        gate: QG-AX-009
+        output:
+          - docs/qa/ship/{story_id}-xplatform-report.md
+          - outputs.xplatform_report
+        decision:
+          PASS: Phase complete, proceed to phase-4-lead-signoff
+          CONCERNS: Await apex-lead waiver decision
+          FAIL: BLOCK — return CRITICAL bugs to responsible agents for fix
+        revision_policy:
+          max_iterations: 3
+          on_max_reached:
+            action: ESCALATE
+            to: apex-lead
+            message: "Cross-platform QA failing after 3 cycles."
+      on_complete:
+        notify:
+          target: apex-lead
+          message: "Phase 3 (Cross-Platform QA) complete. Verdict: {verdict}."
+
+    on_expedited_mode:
+      scope: chrome_and_safari_only
+      skip_steps: [step-3-5]
+      note: >
+        Expedited mode tests Chrome and Safari only. No mobile device testing.
+        Responsive check skipped. Justification required from apex-lead.
+
+  # ============================================================================
+  # PHASE 4: LEAD SIGN-OFF
+  # ============================================================================
+  - id: phase-4-lead-signoff
+    name: Lead Sign-off
+    sequence: 4
+    agent: apex-lead
+    depends_on:
+      - phase-1-performance-audit
+      - phase-2-visual-qa
+      - phase-3-xplatform-qa
+    gate: QG-AX-010
+    description: >
+      apex-lead reviews all three audit reports and issues the final ship
+      verdict. This phase only begins after all parallel phases complete.
+      Any waivers must be explicitly granted here with written justification.
+      The workflow output and PR eligibility depend entirely on this verdict.
+
+    steps:
+      - id: step-4-1
+        name: Aggregate Reports Review
+        agent: apex-lead
+        action: >
+          Review all three reports in sequence:
+          1. docs/qa/ship/{story_id}-perf-report.md — Performance Audit
+          2. docs/qa/ship/{story_id}-visual-report.md — Visual QA
+          3. docs/qa/ship/{story_id}-xplatform-report.md — Cross-Platform QA
+          Identify all open issues, CONCERNS, and FAIL items.
+          List any items requiring a waiver decision.
+        output: Internal review notes
+        on_error: BLOCK — apex-lead review is mandatory for gate QG-AX-010
+
+      - id: step-4-2
+        name: Story AC Re-verification
+        agent: apex-lead
+        action: >
+          Re-read story acceptance criteria in the story file.
+          Verify each AC is demonstrably met by the implementation as evidenced
+          by QA reports. Flag any AC with insufficient evidence.
+          Confirm story File List section is accurate and complete.
+        output: AC verification notes
+        on_error: Return to @dev to update story file or provide evidence
+
+      - id: step-4-3
+        name: PR Review
+        agent: apex-lead
+        action: >
+          Review the GitHub PR:
+          - Title and description are accurate and complete
+          - No merge conflicts
+          - CI checks passing (if configured)
+          - No open blocking review comments
+          - Story ID referenced in PR title
+          - QA report links included in PR description
+        command: gh pr view {pr_number} --json title,body,reviews,mergeable,statusCheckRollup
+        output: PR review notes
+        on_error: Request PR author to resolve blockers before proceeding
+
+      - id: step-4-4
+        name: Waiver Decisions
+        agent: apex-lead
+        action: >
+          For each open issue, CONCERN, or FAIL item in the phase reports,
+          issue one of:
+          - FIX_REQUIRED: Return to responsible agent, block ship
+          - WAIVED: Grant formal waiver with written justification
+            (only for waivable gates: QG-AX-007, QG-AX-008, QG-AX-009)
+          - ACCEPTED_RISK: Accept known risk, document in waiver_log
+          Any non-waivable gate failure (QG-AX-010) cannot be waived —
+          all issues must be resolved.
+          Populate outputs.waiver_log with all waivers granted.
+        output:
+          - outputs.waiver_log (array of waiver objects with justification)
+        on_error: BLOCK — waiver decisions are mandatory for any outstanding issues
+
+      - id: step-4-5
+        name: Final Sign-off
+        agent: apex-lead
+        checklists:
+          - ref: checklists/ship-readiness-checklist.md
+            reviewer: apex-lead + qa
+        action: >
+          Issue final ship verdict:
+          - APPROVED: All gates pass or waived. PR eligible for merge.
+          - REJECTED: One or more non-waivable failures. Return to @dev.
+          Record sign-off with timestamp in the ship validation summary.
+          Add apex-lead approval comment to the PR.
+          Notify @devops that PR is approved for merge.
+        gate: QG-AX-010
+        commands:
+          - gh pr review {pr_number} --approve --body "Ship validation passed [wf-ship-validation]. All gates: QG-AX-007, QG-AX-008, QG-AX-009, QG-AX-010. Waivers: {waiver_count}. Approved for merge."
+        output:
+          - outputs.ship_verdict (APPROVED | REJECTED)
+          - outputs.sign_off_timestamp
+        decision:
+          APPROVED: Workflow complete — update story to InReview, notify @devops for merge
+          REJECTED: Return specific failures to responsible agents, re-trigger wf-ship-validation after fixes
+        revision_policy:
+          max_iterations: 2
+          on_max_reached:
+            action: ESCALATE
+            to: aios-master
+            message: "Ship validation rejected 2x. Requires aios-master intervention."
+
+    checkpoint:
+      id: checkpoint-4
+      name: CP-04 Ship Validation Complete
+      gate: QG-AX-010
+      artifacts_required:
+        - docs/qa/ship/{story_id}-perf-report.md (verdict: PASS or CONCERNS)
+        - docs/qa/ship/{story_id}-visual-report.md (verdict: PASS, PARTIAL)
+        - docs/qa/ship/{story_id}-xplatform-report.md (verdict: PASS or CONCERNS)
+        - outputs.ship_verdict == APPROVED
+        - outputs.sign_off_timestamp set
+        - PR approved by apex-lead on GitHub
+      validation:
+        - Zero unresolved CRITICAL issues across all reports
+        - Zero unwaived HIGH issues
+        - QG-AX-010 not waivable — apex-lead sign-off always required
+      on_fail: >
+        Ship blocked. Return failing items to responsible agents.
+        Re-run wf-ship-validation after fixes confirmed.
+      on_pass:
+        notify:
+          targets: [devops, apex-lead]
+          message: "Ship validation APPROVED. PR eligible for merge. @devops handle merge."
+          action: "Trigger post_approval actions automatically."
+
+# ------------------------------------------------------------------------------
+# POST-SHIP ACTIONS
+# ------------------------------------------------------------------------------
+post_approval:
+  - action: Notify @devops
+    description: >
+      apex-lead notifies @devops that the PR is approved for merge.
+      @devops handles the actual merge and any deployment steps
+      (exclusive @devops authority per agent-authority.md).
+  - action: Archive QA reports
+    description: >
+      Move QA reports from docs/qa/ship/ to docs/qa/archive/{story_id}/.
+      Retain for 90 days per compliance policy.
+  - action: Update story status
+    description: >
+      Set story status to Done after PR merge confirmed.
+  - action: Update epic tracker
+    description: >
+      Mark story complete in epic tracker.
+      Notify @pm of story completion.
+
+# ------------------------------------------------------------------------------
+# ERROR HANDLING
+# ------------------------------------------------------------------------------
+error_handling:
+  global_retry_limit: 2
+  on_unrecoverable_error:
+    action: ESCALATE
+    escalate_to: apex-lead
+    then: aios-master
+  on_all_phases_pass_lead_unavailable:
+    action: PAUSE
+    timeout_hours: 24
+    message: >
+      All audit phases passed. Awaiting apex-lead sign-off (QG-AX-010).
+      Workflow paused — lead must approve within 24 hours or PR will expire.
+  on_phase_timeout:
+    threshold_hours: 4
+    action: NOTIFY
+    notify: apex-lead
+    message: >
+      Phase exceeded 4 hour time limit. Investigate blocker or reassign.
+  on_critical_bug_found:
+    action: IMMEDIATE_BLOCK
+    notify:
+      - apex-lead
+      - dev (responsible agent)
+    message: >
+      CRITICAL bug found during cross-platform QA. Ship blocked immediately.
+      Return to implementation for fix. Re-trigger wf-ship-validation after fix.
+  on_performance_regression:
+    threshold: 20_percent_above_budget
+    action: IMMEDIATE_BLOCK
+    notify: apex-lead
+    message: >
+      Performance regression exceeds 20% above budget threshold.
+      Automatic block without waiver option. Fix required.
+
+# ------------------------------------------------------------------------------
+# WAIVER POLICY
+# ------------------------------------------------------------------------------
+waiver_policy:
+  who_can_grant: apex-lead only
+  waivable_gates:
+    - QG-AX-007 (performance): max severity CONCERNS (not FAIL)
+    - QG-AX-008 (visual): only when inputs.allow_visual_waiver == true
+    - QG-AX-009 (xplatform): max severity MEDIUM bugs
+  non_waivable_gates:
+    - QG-AX-010 (lead sign-off): always required, cannot be waived
+  waiver_format:
+    required_fields:
+      - gate_id
+      - issue_description
+      - justification
+      - accepted_risk
+      - tracking_issue_url
+      - granted_by
+      - granted_at
+
+# ------------------------------------------------------------------------------
+# EXPEDITED MODE POLICY
+# ------------------------------------------------------------------------------
+expedited_mode:
+  activation_requires: apex-lead explicit approval before workflow starts
+  use_cases:
+    - Critical hotfix (P0 production incident)
+    - Time-sensitive release with hard deadline
+    - Change is documentation-only (no code changes)
+  excluded_checks:
+    - Runtime performance profiling
+    - High contrast mode verification
+    - Mobile device testing (reduced to web only)
+    - Responsive layout full matrix (mobile + desktop minimum only)
+  never_skip:
+    - QG-AX-007  # Performance budget
+    - QG-AX-008  # Visual regression
+    - QG-AX-009  # Cross-platform compatibility
+    - QG-AX-010  # Lead sign-off
+  always_required_even_in_expedited:
+    - Lighthouse CI (minimum 1 run per page)
+    - Bundle size check
+    - Chrome + Safari visual regression
+    - Cross-platform E2E tests (Playwright minimum)
+    - apex-lead sign-off (QG-AX-010 never waivable)

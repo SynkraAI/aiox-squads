@@ -1,0 +1,706 @@
+---
+# ==============================================================================
+# APEX SQUAD — WORKFLOW: Design to Code
+# wf-design-to-code.yaml
+# ==============================================================================
+# Purpose:  Translates Figma design files into production-ready, token-driven
+#           code. Ensures pixel-perfect fidelity, semantic token extraction,
+#           platform-specific component builds, and visual regression sign-off.
+#
+# Trigger:  Designer delivers completed Figma spec (all states, breakpoints,
+#           and annotations present) or story requires design-first execution.
+# Owner:    interaction-dsgn
+# Squad:    Apex (Frontend Ultra-Premium)
+# Version:  1.0.0
+# ==============================================================================
+
+id: wf-design-to-code
+name: Design to Code
+description: >
+  Four-phase pipeline that takes a Figma design from spec to production code.
+  Covers design specification review, design token extraction, platform-specific
+  component implementation, and final visual verification against the source
+  design. All phases are gated to enforce pixel-perfect fidelity.
+
+metadata:
+  version: "1.0.0"
+  owner: interaction-dsgn
+  squad: apex
+  created: "2026-03-01"
+  tags:
+    - design
+    - tokens
+    - figma
+    - visual-fidelity
+    - components
+
+# ------------------------------------------------------------------------------
+# INPUTS
+# ------------------------------------------------------------------------------
+inputs:
+  required:
+    - figma_url:
+        type: string
+        description: >
+          Figma file URL containing the completed design spec. Must include
+          all interactive states, responsive breakpoints, and a11y annotations.
+    - story_id:
+        type: string
+        description: Associated story ID (e.g. "2.4")
+    - component_names:
+        type: array
+        description: List of component names to be built from this design
+  optional:
+    - token_scope:
+        type: string
+        default: component
+        enum: [global, semantic, component]
+        description: >
+          Scope of token extraction. "global" updates shared primitives,
+          "semantic" maps to semantic layer, "component" is component-scoped only.
+    - target_platforms:
+        type: array
+        default: [web, mobile]
+        description: Platforms to generate component implementations for
+    - strict_fidelity:
+        type: boolean
+        default: true
+        description: >
+          When true, visual diff tolerance is 0px. When false, allows 2px
+          tolerance for anti-aliasing differences.
+    - export_storybook:
+        type: boolean
+        default: true
+        description: Generate Storybook stories during component build phase
+
+# ------------------------------------------------------------------------------
+# OUTPUTS
+# ------------------------------------------------------------------------------
+outputs:
+  - design_spec_doc:
+      description: Parsed and structured design specification document
+      path: docs/design/{story_id}-spec.md
+      type: file
+  - extracted_tokens:
+      description: Design tokens extracted from Figma, ready for packages/tokens/
+      path: packages/tokens/src/{story_id}.tokens.json
+      type: file
+  - component_files:
+      description: All implemented component source files across platforms
+      type: array
+  - storybook_stories:
+      description: Storybook story files for all components (if export_storybook)
+      type: array
+  - visual_verification_report:
+      description: Visual regression comparison report with pass/fail per component
+      path: docs/qa/visual/{story_id}-report.md
+      type: file
+  - fidelity_score:
+      description: Percentage fidelity score across all components (target >= 98%)
+      type: number
+
+# ------------------------------------------------------------------------------
+# ENFORCEMENT
+# ------------------------------------------------------------------------------
+enforcement:
+  veto_registry: data/veto-conditions.yaml
+  performance_budgets: data/performance-budgets.yaml
+  pre_execution_validation:
+    validate_agents: true
+    action: "BLOCK workflow if any referenced agent not in data/agent-registry.yaml"
+
+# ------------------------------------------------------------------------------
+# QUALITY GATES (with veto conditions)
+# ------------------------------------------------------------------------------
+gates:
+  - id: QG-AX-001
+    name: Design Token Spec Validated
+    description: >
+      All design tokens are correctly named, typed, and reference valid Figma
+      variables. No raw hex values or magic numbers in component code.
+    blocking: true
+    owner: design-sys-eng
+    criteria:
+      - Token naming follows convention: {category}/{variant}/{state}
+      - All color tokens reference semantic layer (not primitives directly)
+      - Typography tokens cover all text styles present in design
+      - Spacing tokens cover all layout gaps present in design
+    veto_conditions:
+      - ref: VC-001-A  # No hardcoded hex values
+      - ref: VC-001-B  # No hardcoded pixel spacing
+      - ref: VC-001-C  # Token naming convention enforced
+
+  - id: QG-AX-002
+    name: Figma Spec Completeness
+    description: >
+      Figma file contains all required states, breakpoints, and annotations
+      before component build begins.
+    blocking: true
+    owner: interaction-dsgn
+    criteria:
+      - All interactive states present (default, hover, focus, active, disabled)
+      - Responsive variants for mobile (375px), tablet (768px), desktop (1440px)
+      - WCAG contrast annotations on all text elements
+      - Component variants exported as Figma component set
+    veto_conditions:
+      - ref: VC-002-A  # Design spec document must exist
+      - ref: VC-002-B  # Token delta list must be produced
+
+  - id: QG-AX-003
+    name: Design Spec Approved
+    description: >
+      Design specification document reviewed and approved by apex-lead before
+      implementation begins.
+    blocking: true
+    owner: interaction-dsgn
+    veto_conditions:
+      - ref: VC-003-A  # APPROVED marker in design spec
+      - ref: VC-003-B  # All design artifacts exist
+
+  - id: QG-AX-008
+    name: Visual Regression Passed
+    description: >
+      Visual regression comparison between implemented components and Figma
+      spec passes fidelity threshold (reference data/performance-budgets.yaml).
+    blocking: true
+    owner: qa-visual
+    criteria:
+      - Fidelity score >= 98% (strict mode) or >= 95% (non-strict)
+      - No structural layout differences
+      - Typography rendering matches within acceptable tolerance
+      - Color values match design tokens (no manual overrides)
+    veto_conditions:
+      - ref: VC-008-A  # Chromatic zero regressions
+      - ref: VC-008-B  # Storybook build succeeds
+
+# ------------------------------------------------------------------------------
+# PHASES
+# ------------------------------------------------------------------------------
+phases:
+
+  # ============================================================================
+  # PHASE 1: DESIGN SPEC
+  # ============================================================================
+  - id: phase-1-design-spec
+    name: Design Spec
+    sequence: 1
+    agent: interaction-dsgn
+    gate: QG-AX-002
+    description: >
+      interaction-dsgn analyzes the Figma file, validates completeness, and
+      produces a structured design specification document that serves as the
+      source of truth for all subsequent phases.
+
+    steps:
+      - id: step-1-1
+        name: Figma Completeness Audit
+        agent: interaction-dsgn
+        checklists:
+          - ref: checklists/figma-sync-checklist.md
+            reviewer: design-sys-eng
+          - ref: checklists/layout-review.md
+            reviewer: interaction-dsgn
+          - ref: checklists/responsive-checklist.md
+            reviewer: interaction-dsgn
+        action: >
+          Open the Figma file at inputs.figma_url. Audit against the
+          completeness checklist:
+          - All component states present and correctly named
+          - Responsive breakpoints covered (375, 768, 1440, and any custom)
+          - Interactive prototypes linked for key flows
+          - Autolayout used consistently (no manual positioning)
+          - Components use Figma variables (not hardcoded values)
+          Flag any gaps with specific frame/layer paths in Figma.
+        gate: QG-AX-002
+        output: Completeness audit notes (internal, not a file artifact)
+        on_error: >
+          BLOCK — If critical gaps found (missing states, missing breakpoints),
+          return Figma to designer with gap list. Do not proceed until resolved.
+
+      - id: step-1-2
+        name: Spec Document Generation
+        agent: interaction-dsgn
+        action: >
+          Parse the validated Figma file and produce docs/design/{story_id}-spec.md
+          containing:
+          - Component inventory (name, variants, states, platforms)
+          - Interaction specifications (hover, focus, click behaviors, transitions)
+          - Responsive behavior per breakpoint
+          - Edge cases and empty/error/loading states
+          - Accessibility notes (roles, labels, keyboard navigation)
+          - Animation notes (duration, easing, trigger)
+        output: docs/design/{story_id}-spec.md
+        on_error: Log parsing failures, complete spec manually for failed sections
+
+      - id: step-1-3
+        name: Token Inventory
+        agent: interaction-dsgn
+        checklists:
+          - ref: checklists/token-compliance.md
+            reviewer: design-sys-eng
+        action: >
+          Extract a list of all design tokens referenced in the Figma file:
+          colors, typography, spacing, radius, shadow, opacity, motion.
+          Compare against existing packages/tokens/src/ to identify new tokens
+          needed. Produce a token delta list.
+        output: docs/design/{story_id}-token-delta.md
+        on_error: Log comparison failures, proceed with full token extraction
+
+      - id: step-1-4
+        name: Spec Review & Gate
+        agent: interaction-dsgn
+        checklists:
+          - ref: checklists/visual-review-checklist.md
+            reviewer: apex-lead
+        action: >
+          Self-review the spec document against the original Figma. Verify
+          all components, states, and behaviors are accurately captured.
+          Submit for apex-lead review.
+        gate: QG-AX-003
+        decision:
+          SUBMIT: Proceed to checkpoint-1 for apex-lead approval
+          REVISE: Fix gaps and resubmit
+
+    checkpoint:
+      id: checkpoint-1
+      name: CP-01 Spec to Token Extract
+      gates:
+        - QG-AX-002
+        - QG-AX-003
+      artifacts_required:
+        - docs/design/{story_id}-spec.md
+        - docs/design/{story_id}-token-delta.md
+      validation:
+        - Spec document covers all components in inputs.component_names
+        - Token delta list is complete
+        - apex-lead has reviewed and approved spec
+      approver: apex-lead
+      on_fail: >
+        Return to phase-1-design-spec with specific gaps listed.
+        Do not extract tokens from an incomplete spec.
+      revision_policy:
+        max_iterations: 3
+        on_max_reached:
+          action: ESCALATE
+          to: apex-lead
+          message: "Design spec checkpoint failing after 3 attempts."
+      on_pass:
+        notify:
+          target: design-sys-eng
+          message: "CP-01 passed. Design spec approved. Token extraction can begin."
+          deadline_hours: 4
+          escalate_on_timeout: apex-lead
+
+  # ============================================================================
+  # PHASE 2: TOKEN EXTRACT
+  # ============================================================================
+  - id: phase-2-token-extract
+    name: Token Extract
+    sequence: 2
+    agent: design-sys-eng
+    gate: QG-AX-001
+    description: >
+      design-sys-eng extracts design tokens from Figma variables, transforms
+      them into the project token schema, validates naming and hierarchy, and
+      integrates them into packages/tokens/.
+
+    steps:
+      - id: step-2-1
+        name: Figma Variables Export
+        agent: design-sys-eng
+        checklists:
+          - ref: checklists/figma-sync-checklist.md
+            reviewer: design-sys-eng
+        action: >
+          Use Figma API or Token Studio plugin to export all Figma variables
+          from the component file as raw JSON. Include all modes/themes if
+          present (light, dark, high-contrast).
+        output: packages/tokens/src/raw/{story_id}-figma-export.json
+        on_error: Fall back to manual token specification from docs/{story_id}-token-delta.md
+
+      - id: step-2-2
+        name: Token Transformation
+        agent: design-sys-eng
+        action: >
+          Transform raw Figma export into project token schema using Style
+          Dictionary configuration. Apply naming convention:
+          {category}/{variant}/{state}. Map to semantic layer where
+          inputs.token_scope is "semantic" or "global".
+          Validate all token references are resolvable (no dangling refs).
+        command: npm run tokens:transform -- --source={story_id}-figma-export.json
+        output: packages/tokens/src/{story_id}.tokens.json
+        on_error: Log transformation errors, fix naming issues manually
+
+      - id: step-2-3
+        name: Token Validation
+        agent: design-sys-eng
+        checklists:
+          - ref: checklists/token-compliance.md
+            reviewer: design-sys-eng
+          - ref: checklists/multi-mode-checklist.md
+            reviewer: design-sys-eng
+        action: >
+          Run token validation suite:
+          - No raw hex values (all colors reference semantic tokens)
+          - No magic number spacing (all spacing references token scale)
+          - No duplicate token names
+          - All referenced tokens exist in the dependency chain
+          - Light/dark mode variants present for all color tokens
+        command: npm run tokens:validate -- --file={story_id}.tokens.json
+        gate: QG-AX-001
+        on_error: BLOCK — token validation must pass before component build
+
+      - id: step-2-4
+        name: Token Integration
+        agent: design-sys-eng
+        action: >
+          Merge validated tokens into packages/tokens/src/index.ts exports.
+          Run token build to generate CSS custom properties, JS/TS exports,
+          and React Native StyleSheet values.
+        command: npm run tokens:build
+        output:
+          - packages/tokens/dist/css/tokens.css (updated)
+          - packages/tokens/dist/js/tokens.js (updated)
+          - packages/tokens/dist/rn/tokens.ts (updated)
+        on_error: Investigate build failures, rollback token merge if build breaks
+
+      - id: step-2-5
+        name: Token Documentation
+        agent: design-sys-eng
+        action: >
+          Generate token documentation page in Storybook: show color swatches,
+          typography specimens, spacing scale, and motion tokens with preview.
+          Update CHANGELOG in packages/tokens/.
+        output:
+          - packages/ui/src/stories/tokens/{story_id}-tokens.stories.tsx
+          - packages/tokens/CHANGELOG.md (updated)
+        on_error: Skip docs if Storybook build fails, log issue for follow-up
+
+    checkpoint:
+      id: checkpoint-2
+      name: CP-02 Token Extract to Component Build
+      gate: QG-AX-001
+      artifacts_required:
+        - packages/tokens/src/{story_id}.tokens.json
+        - packages/tokens/dist/ (rebuilt successfully)
+      validation:
+        - npm run tokens:validate passes with zero errors
+        - npm run tokens:build completes successfully
+        - All tokens in delta list are present in output
+      on_fail: >
+        Return to phase-2-token-extract. Do not begin component build
+        until all tokens are validated and built successfully.
+      revision_policy:
+        max_iterations: 3
+        on_max_reached:
+          action: ESCALATE
+          to: apex-lead
+          message: "Token extraction checkpoint failing after 3 attempts."
+      on_pass:
+        notify:
+          targets: [css-eng, mobile-eng]
+          message: "CP-02 passed. Tokens validated and built. Component build can begin."
+          deadline_hours: 2
+          escalate_on_timeout: apex-lead
+
+  # ============================================================================
+  # PHASE 3: COMPONENT BUILD
+  # ============================================================================
+  - id: phase-3-component-build
+    name: Component Build
+    sequence: 3
+    agents:
+      - css-eng
+      - mobile-eng
+    description: >
+      css-eng and mobile-eng build platform-specific component implementations
+      in parallel, consuming validated design tokens and following the spec
+      document precisely. Components are implemented for all targets in
+      inputs.target_platforms.
+
+    steps:
+      - id: step-3-1
+        name: Component Scaffolding
+        agent: css-eng
+        action: >
+          Create component directories in packages/ui/src/components/ for all
+          components in inputs.component_names. Generate TypeScript interfaces,
+          prop definitions, and file scaffolds. Create Storybook story stubs
+          (if inputs.export_storybook is true).
+        output:
+          - packages/ui/src/components/{ComponentName}/index.tsx (per component)
+          - packages/ui/src/components/{ComponentName}/{ComponentName}.tsx
+          - packages/ui/src/components/{ComponentName}/{ComponentName}.types.ts
+          - packages/ui/src/components/{ComponentName}/{ComponentName}.stories.tsx
+          - packages/ui/src/components/{ComponentName}/{ComponentName}.test.tsx
+        on_error: BLOCK — scaffolding must complete before parallel implementation
+
+      - id: step-3-2
+        name: Web Component Implementation
+        agent: css-eng
+        parallel: true
+        checklists:
+          - ref: checklists/component-review-checklist.md
+            reviewer: react-eng
+          - ref: checklists/css-review-checklist.md
+            reviewer: css-eng
+          - ref: checklists/defensive-css-checklist.md
+            reviewer: interaction-dsgn
+          - ref: checklists/component-quality-checklist.md
+            reviewer: dev + apex-lead
+        action: >
+          Implement all web components from docs/design/{story_id}-spec.md.
+          Rules:
+          - Use design tokens exclusively (no hardcoded values)
+          - Implement all states: default, hover, focus, active, disabled,
+            loading, error, empty
+          - Use CSS Modules or Vanilla Extract (follow existing project pattern)
+          - Implement responsive breakpoints with mobile-first approach
+          - All interactive elements must have visible focus indicators
+          - Export from packages/ui/src/index.ts
+        output:
+          - packages/ui/src/components/{ComponentName}/{ComponentName}.tsx
+          - packages/ui/src/components/{ComponentName}/{ComponentName}.css.ts
+        on_error: Log issue, attempt auto-fix, escalate to design-sys-eng if blocked
+
+      - id: step-3-3
+        name: Mobile Component Implementation
+        agent: mobile-eng
+        parallel: true
+        skip_if: "'mobile' not in inputs.target_platforms"
+        checklists:
+          - ref: checklists/rn-performance-checklist.md
+            reviewer: mobile-eng
+          - ref: checklists/cross-platform-checklist.md
+            reviewer: cross-plat-eng
+        action: >
+          Implement React Native variants for all components flagged for mobile
+          in docs/design/{story_id}-spec.md. Rules:
+          - Use React Native StyleSheet with token values from packages/tokens/dist/rn/
+          - Implement platform-specific adaptations (iOS vs Android) where necessary
+          - Use Animated API or Reanimated for any transitions
+          - Handle safe area insets and notch considerations
+          - Maintain behavioral parity with web implementation
+        output:
+          - packages/ui/src/components/{ComponentName}/{ComponentName}.native.tsx
+          - packages/ui/src/components/{ComponentName}/{ComponentName}.native.styles.ts
+        on_error: Log mobile-specific issue, escalate to frontend-arch if platform gap found
+
+      - id: step-3-4
+        name: Storybook Story Completion
+        agent: css-eng
+        skip_if: "inputs.export_storybook == false"
+        action: >
+          Complete Storybook stories for all components:
+          - Default story with all required props
+          - All variant stories (size, color, state combinations)
+          - Interactive playground with all prop controls enabled
+          - Accessibility addon configured
+          - Chromatic snapshots enabled
+        output:
+          - packages/ui/src/components/{ComponentName}/{ComponentName}.stories.tsx (complete)
+        on_error: Minimum viable story required, skip advanced controls if blocked
+
+      - id: step-3-5
+        name: Unit Tests
+        agent: css-eng
+        action: >
+          Write and run unit tests for all new components:
+          - Render test for each variant/state combination
+          - Event handler tests (click, focus, keyboard)
+          - Prop validation tests
+          - Snapshot tests for structure stability
+          - Coverage >= 80% for all new files
+        command: npm run test -- --coverage --testPathPattern=components/{ComponentName}
+        on_error: BLOCK — test failures must be resolved before visual verification
+
+    checkpoint:
+      id: checkpoint-3
+      name: CP-03 Component Build to Visual Verify
+      artifacts_required:
+        - All components in inputs.component_names implemented
+        - Storybook builds successfully (if export_storybook)
+        - Unit test coverage >= 80%
+        - Zero TypeScript errors
+        - Zero lint errors
+      commands:
+        - npm run typecheck
+        - npm run lint
+        - npm run test -- --coverage
+        - npm run storybook:build (if export_storybook)
+      on_fail: Return to phase-3-component-build with failing checks
+      revision_policy:
+        max_iterations: 3
+        on_max_reached:
+          action: ESCALATE
+          to: apex-lead
+          message: "Component build checkpoint failing after 3 attempts."
+      on_pass:
+        notify:
+          target: qa-visual
+          message: "CP-03 passed. Components built and tested. Visual verification ready."
+          deadline_hours: 4
+          escalate_on_timeout: apex-lead
+
+  # ============================================================================
+  # PHASE 4: VISUAL VERIFY
+  # ============================================================================
+  - id: phase-4-visual-verify
+    name: Visual Verify
+    sequence: 4
+    agent: qa-visual
+    gate: QG-AX-008
+    description: >
+      qa-visual performs pixel-level comparison of implemented components
+      against the Figma source design. Runs automated visual regression,
+      manual review of flagged diffs, and produces a fidelity report.
+      Fidelity score must meet threshold before workflow completes.
+
+    steps:
+      - id: step-4-1
+        name: Figma Screenshot Export
+        agent: qa-visual
+        action: >
+          Export PNG screenshots from Figma for all components in
+          inputs.component_names at 2x resolution. Export all states
+          (default, hover, focus, active, disabled, loading, error, empty)
+          and all responsive breakpoints. Store in .tmp/figma-ref/{story_id}/.
+        output:
+          - .tmp/figma-ref/{story_id}/{ComponentName}/{state}@2x.png (per component/state)
+        on_error: Fall back to manual Figma screenshots if API export fails
+
+      - id: step-4-2
+        name: Storybook Screenshot Capture
+        agent: qa-visual
+        action: >
+          Start Storybook and capture screenshots of all component stories
+          at matching states and breakpoints. Use Chromatic or Playwright
+          for automated capture. Store in .tmp/impl-ref/{story_id}/.
+        command: npm run test:visual:capture -- --story-id={story_id}
+        output:
+          - .tmp/impl-ref/{story_id}/{ComponentName}/{state}@2x.png (per component/state)
+        on_error: Fall back to manual browser screenshots if capture fails
+
+      - id: step-4-3
+        name: Pixel Diff Analysis
+        agent: qa-visual
+        checklists:
+          - ref: checklists/visual-qa-checklist.md
+            reviewer: qa-visual
+          - ref: checklists/visual-review-checklist.md
+            reviewer: apex-lead
+        action: >
+          Run pixel-by-pixel diff between Figma reference screenshots and
+          Storybook captures. Apply tolerance based on inputs.strict_fidelity:
+          - strict: 0px tolerance (exact match required)
+          - non-strict: 2px tolerance (anti-aliasing allowed)
+          Compute fidelity score = (passing pixels / total pixels) * 100.
+          Flag any component with fidelity < threshold.
+        command: npm run test:visual:diff -- --story-id={story_id} --strict={strict_fidelity}
+        output:
+          - docs/qa/visual/{story_id}-diff-report.json
+          - docs/qa/visual/{story_id}-diff-screenshots/ (diff images for failures)
+        on_error: Log diff tool failure, fall back to manual visual review
+
+      - id: step-4-4
+        name: Manual Review of Flagged Diffs
+        agent: qa-visual
+        action: >
+          For each component with fidelity < threshold or visual anomalies,
+          perform manual side-by-side review in browser vs Figma. Categorize
+          each diff:
+          - ACCEPTABLE: Rendering artifact, font hinting difference (document)
+          - NEEDS_FIX: Incorrect spacing, color, or typography (return to dev)
+          - DESIGN_GAP: Figma spec is ambiguous (return to interaction-dsgn)
+        output:
+          - Manual review annotations in docs/qa/visual/{story_id}-report.md
+        on_error: Log review findings, escalate ambiguous cases to apex-lead
+
+      - id: step-4-5
+        name: Fidelity Report & Verdict
+        agent: qa-visual
+        action: >
+          Compile final visual verification report:
+          - Overall fidelity score
+          - Per-component fidelity score
+          - List of NEEDS_FIX items (returned to css-eng or mobile-eng)
+          - List of DESIGN_GAP items (returned to interaction-dsgn)
+          - List of ACCEPTABLE diffs (documented, no fix needed)
+          Issue verdict: PASS (score >= threshold) or FAIL.
+        gate: QG-AX-008
+        output:
+          - docs/qa/visual/{story_id}-report.md (final)
+          - outputs.fidelity_score (numeric)
+          - outputs.visual_verification_report (file path)
+        decision:
+          PASS: Workflow complete — all outputs archived
+          FAIL: Return NEEDS_FIX list to phase-3-component-build
+
+    checkpoint:
+      id: checkpoint-4
+      name: CP-04 Visual Verify Complete
+      gate: QG-AX-008
+      artifacts_required:
+        - docs/qa/visual/{story_id}-report.md
+        - outputs.fidelity_score >= 98 (strict) or >= 95 (non-strict) per data/performance-budgets.yaml
+      validation:
+        - Zero unresolved NEEDS_FIX items
+        - All DESIGN_GAP items either resolved or documented as accepted
+        - Fidelity score meets threshold
+      on_fail: >
+        Return NEEDS_FIX items to phase-3-component-build.
+        Return DESIGN_GAP items to phase-1-design-spec.
+        Re-run phase-4-visual-verify after fixes.
+      revision_policy:
+        max_iterations: 3
+        on_max_reached:
+          action: ESCALATE
+          to: apex-lead
+          message: "Visual verification failing after 3 cycles. May need design revision."
+      on_pass:
+        notify:
+          target: apex-lead
+          message: "Design-to-code workflow complete. Visual fidelity verified."
+
+# ------------------------------------------------------------------------------
+# ERROR HANDLING
+# ------------------------------------------------------------------------------
+error_handling:
+  global_retry_limit: 3
+  on_unrecoverable_error:
+    action: ESCALATE
+    escalate_to: interaction-dsgn
+    then: apex-lead
+    then_last: aios-master
+  on_figma_unavailable:
+    action: PAUSE
+    notify: interaction-dsgn
+    message: >
+      Figma API unavailable or file access revoked. Workflow paused.
+      Check Figma permissions and re-trigger when resolved.
+  on_token_conflict:
+    action: BLOCK
+    notify: design-sys-eng
+    message: >
+      Token name conflict detected with existing tokens. Manual resolution
+      required before build can proceed.
+  on_fidelity_below_minimum:
+    minimum_fidelity: 90
+    action: ESCALATE
+    message: >
+      Fidelity score below 90% minimum. Escalating to apex-lead for
+      architectural review — may indicate a systematic implementation issue.
+
+# ------------------------------------------------------------------------------
+# DOWNSTREAM WORKFLOWS
+# ------------------------------------------------------------------------------
+triggers_downstream:
+  - workflow: wf-component-create
+    condition: >
+      If new reusable components are identified during phase-3-component-build
+      that should be promoted to the design system, trigger wf-component-create
+      for those components.
+  - workflow: wf-ship-validation
+    condition: >
+      After phase-4-visual-verify PASS, trigger wf-ship-validation if this
+      design-to-code pipeline is part of a larger feature build.
