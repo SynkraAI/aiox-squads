@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  chatbot:
+    build:
+      context: .
+      dockerfile: chatbot/Dockerfile
+    image: aiox-chatbot:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
