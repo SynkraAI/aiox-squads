@@ -1,0 +1,21 @@
+{
+  "name": "aiox-chatbot",
+  "version": "1.0.0",
+  "description": "Ambiente de conversação com agentes AIOX — suporta streaming, file upload e troca de agente em tempo real",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.54.0",
+    "chalk": "^5.4.1",
+    "readline": "^1.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}
