@@ -219,7 +219,7 @@ node squads/kaizen-v2/scripts/session-briefing.cjs
 # {"hookEventName":"SessionStart","hookSpecificOutput":{"additionalContext":"..."}}
 
 # Check briefing size (cross-platform)
-node squads/kaizen-v2/scripts/session-briefing.cjs | jq -r '.hookSpecificOutput.additionalContext' | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>console.log(d.length))"
+node squads/kaizen-v2/scripts/session-briefing.cjs | jq -r '.hookSpecificOutput.additionalContext' | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>console.log(Buffer.byteLength(d,'utf8')))"
 ```
 
 ## Integration with AIOS/AIOX

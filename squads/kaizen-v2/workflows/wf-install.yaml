@@ -144,5 +144,5 @@ success_criteria:
 rollback_plan:
   - If hooks_registered fails: Restore settings.json from backup (step 2.1b)
   - If dirs fail: Dirs can be manually created
-  - If patterns.yaml fails: Restore from squads/kaizen-v2/ template
+  - If patterns.yaml fails: Restore from squads/kaizen-v2/config/templates/patterns-template.yaml
   - If any fatal error: User can re-run *install (idempotent)

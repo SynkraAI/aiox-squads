@@ -89,7 +89,7 @@ task:
         Para cada problema encontrado:
         - PROBLEMA com dados
         - AÇÃO específica (arquivo + mudança)
-        - TIPO: CALIBRAR | TRIGGER | BASELINE | TEMPLATE | AGENTE
+        - TIPO: CALIBRAR | TRIGGER | ATUALIZAR_BASELINE | TEMPLATE | AGENTE
         - ESFORÇO: P/M/G
         Se esforço P, não-destrutivo e tipo ATUALIZAR_BASELINE:
         1. Criar snapshot diff dos arquivos afetados antes de aplicar

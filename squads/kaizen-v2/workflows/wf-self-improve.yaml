@@ -177,6 +177,7 @@ workflow:
 
   output:
     primary: "data/reports/self-improve-{date}.md"
+    updated_baseline: "data/baselines/ecosystem-baseline.yaml"
     changelog_path: "CHANGELOG.md"
     sections:
       - meta_diagnostico (saúde do próprio squad)

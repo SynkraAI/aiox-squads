@@ -193,7 +193,7 @@ workflow:
             - "phase_0 outputs"
             - "capability_report"
             - "current_radar: data/radar/initial-radar.yaml"
-            - "tool_usage_data: phase_0.usage_data"
+            - "tool_usage_data: performance_report.usage_metrics"
           output: "radar_report"
           framework: "Technology Radar + Fitness Functions"
 
@@ -213,7 +213,7 @@ workflow:
         - agent: cost-analyst
           task: "Calculate costs, ROI per squad, identify waste"
           input:
-            - "tool_inventory: radar_report.tool_inventory"
+            - "tool_inventory: radar_report.quadrants"
             - "usage_metrics: performance_report.usage_metrics"
             - "previous_reports: [topology_report, performance_report, bottleneck_report, capability_report, radar_report]"
           output: "cost_report"
@@ -240,7 +240,7 @@ workflow:
             squads/kaizen-v2/checklists/analysis-quality-checklist.md
             section "Validação Sistêmica (7 Pontos)" + "Stress Test Mental (3 Inputs)".
             Any items failing become findings in the unified list.
-          reference: "docs/research/2026-03-05-cognitive-systems-architecture/systemic-validation-checklist.md"
+          reference: "squads/kaizen-v2/checklists/analysis-quality-checklist.md"
           output: "systemic_validation_findings"
 
         - id: "4.1"

@@ -74,7 +74,7 @@ Generate `data/intelligence/archive/cleanup-YYYY-MM-DD.log`:
 ## Patterns
 - Patterns archived: N
   - Archive file: data/intelligence/archive/patterns.yaml.archive (appended)
-- Patterns deleted: N (decay < 0.05)
+- Patterns deleted: N (decay < {delete_threshold})
   - IDs: [p001, p002, ...]
 - Active patterns remain: N
 
