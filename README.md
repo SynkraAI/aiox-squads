@@ -151,9 +151,17 @@ cp -r aiox-squads/squads/copy ./squads/copy
 
 Squads publicados pela comunidade neste repositório.
 
-| Squad | O que faz | Status |
-|-------|-----------|--------|
-| _Nenhum squad publicado ainda_ | Seja o primeiro a contribuir! | — |
+| Squad | O que faz | PR | Enviado por |
+|-------|-----------|----|-------------|
+| [Apex](squads/apex/) | Frontend ultra-premium para web, mobile e spatial, com foco em design system, motion, acessibilidade e performance. | [#7](https://github.com/SynkraAI/aiox-squads/pull/7) | [@gamagab-code](https://github.com/gamagab-code) |
+| [Brand](squads/brand/) | Estratégia de marca, posicionamento, naming, identidade visual e arquitetura de movimento. | [#8](https://github.com/SynkraAI/aiox-squads/pull/8) | [@pulsifyai-dev](https://github.com/pulsifyai-dev) |
+| [Curator](squads/curator/) | Curadoria de conteúdo em vídeo com mineração de transcrições, timestamps exatos e roteiros de corte. | [#1](https://github.com/SynkraAI/aiox-squads/pull/1) | [@diegodiniz1](https://github.com/diegodiniz1) |
+| [Deep Research](squads/deep-research/) | Pesquisa profunda baseada em evidências com pipeline de diagnóstico, execução e QA. | [#6](https://github.com/SynkraAI/aiox-squads/pull/6) | [@oalanicolas](https://github.com/oalanicolas) |
+| [Dispatch](squads/dispatch/) | Execução paralela de PRDs, stories e tarefas com decomposição em DAG, roteamento e subagentes. | [#1](https://github.com/SynkraAI/aiox-squads/pull/1) | [@diegodiniz1](https://github.com/diegodiniz1) |
+| [Education](squads/education/) | Engenharia instrucional para transformar expertise em cursos online com ciência cognitiva e compliance. | [#1](https://github.com/SynkraAI/aiox-squads/pull/1) | [@diegodiniz1](https://github.com/diegodiniz1) |
+| [Kaizen](squads/kaizen/) | Melhoria contínua do ecossistema de squads, com análise de gaps, métricas e recomendações. | [#4](https://github.com/SynkraAI/aiox-squads/pull/4) | [@Tiag8](https://github.com/Tiag8) |
+| [Legal Analyst](squads/legal-analyst/) | Análise processual com jurisprudência, precedentes, diretrizes do CNJ e estrutura alinhada ao DATAJUD. | [#9](https://github.com/SynkraAI/aiox-squads/pull/9) | [@felippepestana](https://github.com/felippepestana) |
+| [SEO](squads/seo/) | Auditoria, otimização e relatório SEO pós-design com score 0-100 e comparação antes/depois. | [#3](https://github.com/SynkraAI/aiox-squads/pull/3) | [@rodrigofaerman](https://github.com/rodrigofaerman) |
 
 > Tem um squad pronto? [Abra um PR](#contribuindo) e compartilhe com a comunidade.
 
