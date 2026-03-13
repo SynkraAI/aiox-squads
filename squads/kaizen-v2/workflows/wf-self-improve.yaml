@@ -164,16 +164,20 @@ workflow:
         - id: "2.4"
           name: "Auto-aplicar melhorias triviais"
           action: |
-            Se a melhoria é tipo ATUALIZAR_BASELINE com esforço P:
-            → Aplicar automaticamente e registrar no changelog
+            Se a melhoria é tipo ATUALIZAR_BASELINE com esforço P e não-destrutiva:
+            1. Criar snapshot diff dos arquivos afetados antes de aplicar
+            2. Aplicar automaticamente
+            3. Validar resultado contra quality gate (acceptance_criteria)
+            4. Se validação falhar, reverter usando snapshot diff
+            5. Registrar resultado (aplicado ou revertido) no CHANGELOG.md
             Se a melhoria é tipo CALIBRAR_HEURÍSTICA (qualquer esforço):
             → SEMPRE reportar ao operador para aprovação (heurísticas não podem ser auto-modificadas)
-            Senão:
+            Senão (esforço M/G, destrutivo, ou tipo diferente de ATUALIZAR_BASELINE):
             → Reportar ao operador para aprovação
 
   output:
     primary: "data/reports/self-improve-{date}.md"
-    changelog_path: "data/reports/self-improve-{date}.md"
+    changelog_path: "CHANGELOG.md"
     sections:
       - meta_diagnostico (saúde do próprio squad)
       - recomendações_implementadas_vs_ignoradas

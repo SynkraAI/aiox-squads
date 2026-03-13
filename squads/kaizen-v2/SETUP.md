@@ -97,7 +97,7 @@ intelligence:
 
 ### Stop Hook Not Running
 
-**Symptom:** No daily/YYYY-MM-DD.yaml files created
+**Symptom:** No `squads/kaizen-v2/data/intelligence/daily/YYYY-MM-DD.yaml` files created
 
 **Diagnosis:**
 ```bash
@@ -136,7 +136,7 @@ tail -f .aios/logs/kaizen-session-briefing.log
 **Fix:**
 1. Verify SessionStart hook is registered
 2. Ensure patterns.yaml exists: `squads/kaizen-v2/data/intelligence/knowledge/patterns.yaml`
-3. Check briefing size: `wc -c < briefing.txt` (should be < 2048 bytes)
+3. Check briefing size: `node squads/kaizen-v2/scripts/session-briefing.cjs | jq -r '.hookSpecificOutput.additionalContext' | wc -c` (should be < 2048 bytes)
 4. Run `/kaizen-v2:*health` to verify installation
 
 ### Windows Compatibility Issues
@@ -218,9 +218,8 @@ node squads/kaizen-v2/scripts/session-briefing.cjs
 # Should output JSON like:
 # {"hookEventName":"SessionStart","hookSpecificOutput":{"additionalContext":"..."}}
 
-# Check briefing size
-node -e "console.log(require('fs').readFileSync('/dev/stdin', 'utf8').length)" \
-  < <(node squads/kaizen-v2/scripts/session-briefing.cjs | jq -r '.hookSpecificOutput.additionalContext')
+# Check briefing size (cross-platform)
+node squads/kaizen-v2/scripts/session-briefing.cjs | jq -r '.hookSpecificOutput.additionalContext' | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>console.log(d.length))"
 ```
 
 ## Integration with AIOS/AIOX

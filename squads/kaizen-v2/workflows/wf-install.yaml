@@ -63,10 +63,9 @@ phases:
         output: "All directories created"
 
       - step: 3.2
-        name: "Copy patterns.yaml Template"
-        source: "squads/kaizen-v2/data/intelligence/knowledge/patterns.yaml"
-        dest: "squads/kaizen-v2/data/intelligence/knowledge/patterns.yaml"
-        output: "patterns.yaml initialized"
+        name: "Initialize patterns.yaml"
+        action: "test -f squads/kaizen-v2/data/intelligence/knowledge/patterns.yaml || cp squads/kaizen-v2/config/templates/patterns-template.yaml squads/kaizen-v2/data/intelligence/knowledge/patterns.yaml"
+        output: "patterns.yaml initialized (created from template if missing, preserved if exists)"
 
       - step: 3.3
         name: "Create .gitkeep Files"
@@ -79,7 +78,7 @@ phases:
       - step: 4.1
         name: "Capture First Daily"
         task: "tasks/capture-daily.md"
-        output: "data/intelligence/daily/YYYY-MM-DD.yaml"
+        output: "squads/kaizen-v2/data/intelligence/daily/YYYY-MM-DD.yaml"
 
       - step: 4.2
         name: "Generate First Briefing"
@@ -124,8 +123,8 @@ quality_gates:
 
 outputs:
   - ".claude/settings.json (updated with hooks)"
-  - "data/intelligence/ (initialized)"
-  - "data/intelligence/daily/YYYY-MM-DD.yaml (first capture)"
+  - "squads/kaizen-v2/data/intelligence/ (initialized)"
+  - "squads/kaizen-v2/data/intelligence/daily/YYYY-MM-DD.yaml (first capture)"
   - "Installation report"
 
 error_handling:

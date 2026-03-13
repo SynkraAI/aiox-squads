@@ -21,16 +21,16 @@ task:
 
 ### Output
 - **Rotate dailies:** Move `daily/` files > 90 days old to `data/intelligence/archive/dailies/`
-- **Delete patterns:** Remove patterns with decay < 0.05
-- **Archive patterns:** Move patterns with 0.05 <= decay < 0.1 to `data/intelligence/archive/patterns.yaml.archive`
-- **Keep patterns:** Patterns with decay >= 0.1 remain active
+- **Delete patterns:** Remove unverified patterns with `decay < delete_threshold` (default 0.05). Verified or missing-verified patterns with `decay < delete_threshold` are archived instead (see Phase 2 precedence rules).
+- **Archive patterns:** Move patterns with `delete_threshold <= decay < archive_threshold` (default 0.05-0.1) to `data/intelligence/archive/patterns.yaml.archive`
+- **Keep patterns:** Patterns with `decay >= archive_threshold` (default 0.1) remain active
 - **Backup:** Create `patterns.yaml.bak` before modifications
 - Updated `data/intelligence/knowledge/patterns.yaml` (cleaned)
 
 ### Acceptance Criteria
 - [ ] All daily files > 90 days old moved to `data/intelligence/archive/dailies/`
-- [ ] All patterns with decay < 0.05 deleted (with audit log)
-- [ ] All patterns with 0.05 <= decay < 0.1 moved to `data/intelligence/archive/patterns.yaml.archive`
+- [ ] All unverified patterns with `decay < delete_threshold` deleted (with audit log); verified/missing-verified patterns archived instead
+- [ ] All patterns with `delete_threshold <= decay < archive_threshold` moved to `data/intelligence/archive/patterns.yaml.archive`
 - [ ] `patterns.yaml.bak` created before cleanup
 - [ ] patterns.yaml metadata updated (total_patterns, deleted_patterns, archived_patterns)
 - [ ] Cleanup log generated with: files archived, patterns archived, patterns deleted
@@ -51,19 +51,19 @@ task:
 > **Note:** Thresholds referenced below are defined in `config/config.yaml` (`delete_threshold: 0.05`, `archive_threshold: 0.1`). Always use config values as authoritative source.
 
 1. Load `patterns.yaml`
-2. Create backup: `cp patterns.yaml data/intelligence/knowledge/patterns.yaml.bak`
-3. For each pattern:
-   - If `decay_score < 0.05` AND `verified === true`: Archive + flag `archived_verified: true` (never delete verified patterns). Flag is stored in the archived pattern's YAML entry in `patterns.yaml.archive`.
-   - Else if `decay_score < 0.05` AND `verified === false`: Delete entirely + log to audit.log
-   - Else if `decay_score < 0.05` AND `verified` is missing/null: Archive (do not delete) + log to audit.log with warning "missing verified field — archived as precaution"
-   - Else if `0.05 <= decay_score < 0.1`: Move to `data/intelligence/archive/patterns.yaml.archive`
-   - Else: Keep in active patterns.yaml
+2. Create backup: `cp data/intelligence/knowledge/patterns.yaml data/intelligence/knowledge/patterns.yaml.bak`
+3. For each pattern (thresholds from config: `delete_threshold`, `archive_threshold`):
+   - If `decay_score < delete_threshold` AND `verified === true`: Archive + flag `archived_verified: true` (never delete verified patterns). Flag is stored in the archived pattern's YAML entry in `patterns.yaml.archive`.
+   - Else if `decay_score < delete_threshold` AND `verified === false`: Delete entirely + log to audit.log
+   - Else if `decay_score < delete_threshold` AND `verified` is missing/null: Archive (do not delete) + log to audit.log with warning "missing verified field — archived as precaution"
+   - Else if `delete_threshold <= decay_score < archive_threshold`: Move to `data/intelligence/archive/patterns.yaml.archive`
+   - Else (`decay_score >= archive_threshold`): Keep in active patterns.yaml
 4. Update metadata: total_patterns, archived_patterns, deleted_patterns
 5. Log: N patterns archived, N patterns deleted
 
 ### Phase 3: Cleanup Log
 Generate `data/intelligence/archive/cleanup-YYYY-MM-DD.log`:
-```
+```text
 # Compact-Archive Run — YYYY-MM-DD HH:MM:SS
 
 ## Daily Files
@@ -79,14 +79,14 @@ Generate `data/intelligence/archive/cleanup-YYYY-MM-DD.log`:
 - Active patterns remain: N
 
 ## Backup
-- Backup created: patterns.yaml.bak (timestamp)
-- Recovery: cp patterns.yaml.bak patterns.yaml if needed
+- Backup created: data/intelligence/knowledge/patterns.yaml.bak (timestamp)
+- Recovery: cp data/intelligence/knowledge/patterns.yaml.bak data/intelligence/knowledge/patterns.yaml if needed
 
 ## Status: OK
 ```
 
 ### Constraints
-- Decay decision tree (verified field determines precedence): `< 0.05` AND `verified: true` = archive + flag (never delete), `< 0.05` AND `verified: false` = delete, `< 0.05` AND `verified` missing/null = archive as precaution, `0.05 <= decay < 0.1` = archive, `>= 0.1` = keep
+- Decay decision tree (verified field determines precedence): `< delete_threshold` AND `verified: true` = archive + flag (never delete), `< delete_threshold` AND `verified: false` = delete, `< delete_threshold` AND `verified` missing/null = archive as precaution, `delete_threshold <= decay < archive_threshold` = archive, `>= archive_threshold` = keep
 - Never delete patterns with `verified: true` — archive with `archived_verified: true` flag instead
 - Always create backup before deletions
 - Mutex: Do not execute compact-archive while reflect is in progress

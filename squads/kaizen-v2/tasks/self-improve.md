@@ -16,8 +16,8 @@ Entrada:
     descricao: "ecosystem-baseline.yaml atual para comparação e atualização"
   - nome: changelog
     tipo: markdown
-    obrigatorio: false
-    descricao: "CHANGELOG.md para rastrear mudanças aplicadas"
+    obrigatorio: true
+    descricao: "CHANGELOG.md para rastrear mudanças aplicadas (criado automaticamente se inexistente)"
 Saida:
   - nome: improvement_report
     tipo: markdown
@@ -91,13 +91,13 @@ task:
         - AÇÃO específica (arquivo + mudança)
         - TIPO: CALIBRAR | TRIGGER | BASELINE | TEMPLATE | AGENTE
         - ESFORÇO: P/M/G
-        Se esforço P e não-destrutivo:
+        Se esforço P, não-destrutivo e tipo ATUALIZAR_BASELINE:
         1. Criar snapshot diff dos arquivos afetados antes de aplicar
         2. Aplicar a melhoria automaticamente
         3. Validar resultado contra quality gate (acceptance_criteria)
         4. Se validação falhar, reverter usando snapshot diff
         5. Registrar resultado (aplicado ou revertido) no CHANGELOG
-        Se esforço M/G ou destrutivo, reportar para aprovação humana.
+        Se esforço M/G, destrutivo, ou tipo diferente de ATUALIZAR_BASELINE, reportar para aprovação humana.
 
     - id: "5"
       name: "Atualizar baseline"

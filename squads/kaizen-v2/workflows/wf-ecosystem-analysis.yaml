@@ -19,11 +19,15 @@ agent_sequence:
   - tech-radar          # Phase 2b: sequential (depends on capability_report from 2a)
   - cost-analyst        # Phase 3: sequential
   - kaizen-chief  # Phase 4: synthesis and report
+phase_checkpoints:
+  QG-KZ-001: "Phase 0 data collection complete (squad_list, active_squads, agent_counts)"
+  QG-KZ-001.5: "Phase 0.5 autonomy & output quality audit complete"
+  QG-KZ-002: "Phase 1 Tier 0 diagnosis complete (topology + performance reports)"
 success_indicators:
   - "Report has all 6 dimensions analyzed"
   - "Max 5 prioritized recommendations (RULE-RD-001: N>=3 enforced)"
   - "Each recommendation has evidence + action + cost + ROI"
-  - "All quality gates (QG-KZ-001 through QG-KZ-003) passed"
+  - "All phase checkpoints (QG-KZ-001, QG-KZ-001.5, QG-KZ-002) passed"
 
 workflow:
   id: wf-ecosystem-analysis
@@ -209,7 +213,7 @@ workflow:
         - agent: cost-analyst
           task: "Calculate costs, ROI per squad, identify waste"
           input:
-            - "tool_inventory: phase_1.tool_inventory"
+            - "tool_inventory: radar_report.tool_inventory"
             - "usage_metrics: performance_report.usage_metrics"
             - "previous_reports: [topology_report, performance_report, bottleneck_report, capability_report, radar_report]"
           output: "cost_report"
@@ -244,15 +248,22 @@ workflow:
           action: "Combine 6 reports + systemic_validation_findings into unified findings list"
 
         - id: "4.1.5"
-          name: "Enforce RULE-RD-001 (N<3 validation)"
+          name: "Enforce RULE-RD-001 (N<3 validation + GATE-RD)"
           action: |
             For each finding in unified list:
-            1. Count N = number of independent evidence occurrences across source reports
-            2. IF N >= 3 → KEEP as actionable finding
-            3. IF N < 3 → DOWNGRADE level to MONITORAR (do NOT promote to recommendation)
-            4. Log all downgrades: "{finding} downgraded: N={N}, sources={list}"
-          veto: "IF any recommendation with N<3 passes to step 4.3 → BLOCK and re-run 4.1.5"
-          output: "validated_findings (only N>=3 proceed to ranking)"
+            1. Classify each evidence item into one of the 4 types from rules/recommendation-defensibility.md:
+               - Métrica objetiva (quantitative data)
+               - Padrão observado (pattern across multiple sources)
+               - Sinal fraco (single occurrence, qualitative)
+               - Especulação (no direct evidence)
+            2. Count N = number of independent evidence items of allowed types (exclude Especulação)
+            3. IF N >= 3 → KEEP as actionable finding
+            4. IF N < 3 → DOWNGRADE level to MONITORAR (do NOT promote to recommendation)
+            5. Execute GATE-RD 5-point checklist (from rules/recommendation-defensibility.md) per finding:
+               - Attach result: {gateRdStatus: PASS|FAIL, timestamp, details}
+            6. Log all downgrades: "{finding} downgraded: N={N}, sources={list}"
+          veto: "IF any recommendation with N<3 or gateRdStatus=FAIL passes to step 4.3 → BLOCK and re-run 4.1.5"
+          output: "validated_findings with evidence_classifications and gate_rd_results (only N>=3 AND GATE-RD PASS proceed to ranking)"
 
         - id: "4.2"
           name: "Rank by impact"
