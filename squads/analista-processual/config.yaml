@@ -1,11 +1,11 @@
 name: analista-processual
 display_name: "Analista Processual"
-version: "1.0.0"
+version: "1.1.0"
 domain: juridico
 subdomain: direito-processual-civil
 language: "pt-BR"
 jurisdiction: "Brasil"
-description: "Squad especializado em análise de processos judiciais brasileiros. Extrai dados estruturados, mapeia prazos processuais com base no CPC/2015, identifica riscos e gera relatórios executivos para equipes jurídicas."
+description: "Squad especializado em análise de processos judiciais brasileiros. Gerencia um sistema de pastas fixas, extrai dados estruturados de peças processuais, mapeia prazos (CPC/2015), identifica riscos, elabora minutas e mantém uma Biblioteca de Conhecimento jurídico indexada."
 
 keywords:
   - processo judicial
@@ -14,6 +14,7 @@ keywords:
   - CPC 2015
   - direito processual civil
   - petição inicial
+  - contestação
   - sentença
   - recurso
   - prazo recursal
@@ -23,25 +24,93 @@ keywords:
   - advogado
   - peças processuais
   - relatório jurídico
+  - minuta
+  - biblioteca jurídica
+  - conhecimento jurídico
 
 status: OPERATIONAL
 maturity_score: 9.2
 maturity_badge: "🟢"
 
+# ═══════════════════════════════════════════════════════
+# SISTEMA DE PASTAS
+# ═══════════════════════════════════════════════════════
+file_system:
+  root: "K:\\Meu Drive\\Processos_Judiciais_IA"
+  config: "squads/analista-processual/data/paths-config.yaml"
+
+  estrutura_principal:
+    demandas: "K:\\Meu Drive\\Processos_Judiciais_IA\\{N}. {Nome da Demanda}"
+    correlatas: "K:\\Meu Drive\\Processos_Judiciais_IA\\{N}. {Nome}\\{N}.{S} {Nome Correlato}"
+    biblioteca: "K:\\Meu Drive\\Processos_Judiciais_IA\\Biblioteca de Conhecimento"
+
+  convencao_pastas:
+    demanda_principal: "{N}. {Nome da Demanda}"
+    demanda_correlata: "{N}.{S} {Nome da Demanda Correlata}"
+    arquivo_processo: "NNNNNNN-DD.AAAA.J.TT.OOOO.pdf"
+    minuta: "{tipo}_v{N}_{YYYY-MM-DD}.md"
+
+  subpastas_demanda:
+    - "01_Processo"
+    - "02_Peticoes"
+    - "03_Decisoes"
+    - "04_Documentos_Probatorios"
+    - "05_Intimacoes"
+    - "06_Minutas"
+    - "07_Cronograma_Prazos"
+    - "08_Relatorios_Analise"
+    - "09_Correspondencias"
+    - "10_Notas_Internas"
+
+  biblioteca_areas:
+    - "01_Direito_Civil"
+    - "02_Direito_Processual_Civil"
+    - "03_Direito_Trabalhista"
+    - "04_Direito_Tributario_e_Fiscal"
+    - "05_Direito_Administrativo"
+    - "06_Direito_Constitucional"
+    - "07_Direito_do_Consumidor"
+    - "08_Direito_Empresarial"
+    - "09_Direito_Imobiliario"
+    - "10_Direito_Previdenciario"
+    - "11_Direito_Penal"
+    - "12_Jurisprudencia"
+    - "13_Doutrina_e_Livros"
+    - "14_Modelos_e_Minutas"
+    - "15_Pesquisas_e_Analises"
+
+# ═══════════════════════════════════════════════════════
+# ARQUITETURA DE AGENTES
+# ═══════════════════════════════════════════════════════
 tier_structure:
   tier_0:
-    role: "Orquestração e Análise Completa"
-    agents: ["analista-processual"]
+    role: "Orquestração, Análise e Elaboração de Minutas"
+    agents:
+      - id: "analista-processual"
+        focus: "Orquestrador principal — análise completa, minutas, coordenação de agentes e biblioteca"
+
   tier_1:
     role: "Especialistas por Domínio"
     agents:
+      - id: "navegador-arquivos"
+        focus: "Gestão de pastas fixas — seleção de demanda, navegação, criação de estrutura"
+        acionado: "Automaticamente ao iniciar sessão"
       - id: "extrator-documentos"
         focus: "Extração estruturada de dados de peças processuais"
+        acionado: "*analisar-processo, *analisar-peticao"
       - id: "calculador-prazos"
         focus: "Cálculo de prazos processuais (CPC/2015 + legislação especial)"
+        acionado: "*mapear-prazos, *analisar-processo"
       - id: "mapeador-riscos"
         focus: "Identificação de riscos, vícios e nulidades processuais"
+        acionado: "*riscos, *analisar-processo"
+      - id: "gestor-biblioteca"
+        focus: "Indexação, pesquisa e gestão da Biblioteca de Conhecimento"
+        acionado: "*pesquisar-biblioteca, *salvar-conhecimento, *indexar-biblioteca"
 
+# ═══════════════════════════════════════════════════════
+# NORMATIVE BASIS
+# ═══════════════════════════════════════════════════════
 normative_basis:
   primary:
     - name: "CPC/2015"
@@ -55,6 +124,7 @@ normative_basis:
     - "Lei 6.830/1980 — Execução Fiscal"
     - "Lei 9.099/1995 — Juizados Especiais"
     - "Lei 12.016/2009 — Mandado de Segurança"
+    - "Lei 14.133/2021 — Licitações e Contratos"
 
 minds:
   - name: "Humberto Theodoro Júnior"
@@ -67,35 +137,63 @@ minds:
     obra: "Manual do Processo Civil"
     contribuicao: "Aplicação prática do CPC/2015"
 
+# ═══════════════════════════════════════════════════════
+# COMANDOS
+# ═══════════════════════════════════════════════════════
 commands_summary:
-  chief:
-    - "*analisar-processo — Análise completa do processo"
-    - "*resumir-processo — Resumo executivo"
-    - "*mapear-prazos — Mapeamento de prazos"
-    - "*extrair-partes — Identificar partes e advogados"
+  navegacao:
+    - "*selecionar-demanda — Selecionar demanda ativa (pasta de trabalho)"
+    - "*listar-demandas [n] — Listar demandas (padrão: 10 últimas)"
+    - "*criar-demanda — Criar nova pasta com estrutura padrão"
+    - "*demanda-ativa — Mostrar demanda e caminho ativos"
+
+  analise:
+    - "*analisar-processo — Análise completa: partes, prazos, cronologia, riscos"
+    - "*resumir-processo — Resumo executivo de 1 página"
+    - "*mapear-prazos — Tabela de prazos com alertas de urgência"
     - "*cronologia — Linha do tempo processual"
-    - "*riscos — Mapeamento de riscos"
-    - "*analisar-sentenca — Análise estruturada de sentença"
+    - "*riscos — Mapeamento de riscos e vícios"
+    - "*analisar-sentenca — Análise de sentença (rel./fund./disp.)"
     - "*analisar-peticao — Análise de petição"
 
+  minutas:
+    - "*contestacao — Elaborar minuta de contestação"
+    - "*recurso {tipo} — Elaborar recurso (apelação/agravo/embargos)"
+    - "*manifestacao — Elaborar manifestação ou petição simples"
+    - "*peticao-inicial — Elaborar minuta de petição inicial"
+
+  biblioteca:
+    - "*pesquisar-biblioteca {tema} — Pesquisar na Biblioteca de Conhecimento"
+    - "*pesquisar-jurisprudencia {tema} {tribunal} — Buscar precedentes"
+    - "*salvar-conhecimento — Salvar conteúdo gerado (versão genérica)"
+    - "*indexar-biblioteca — Reindexar documentos da biblioteca"
+
+# ═══════════════════════════════════════════════════════
+# CASOS DE USO
+# ═══════════════════════════════════════════════════════
 use_cases:
+  - "Gestão organizada de carteira de processos judiciais"
   - "Análise de processo para reunião de estratégia"
-  - "Onboarding de novos processos na carteira do escritório"
+  - "Onboarding de novos processos"
   - "Monitoramento de prazos processuais"
+  - "Elaboração de minutas de peças processuais"
   - "Preparação de relatórios para clientes"
   - "Due diligence jurídica em aquisições"
-  - "Triagem de processos em massa"
   - "Análise de sentença para decisão de recurso"
+  - "Construção progressiva de biblioteca jurídica institucional"
+  - "Pesquisa de precedentes e jurisprudência"
 
 limitations:
   - "Não acessa sistemas judiciais (PJe, e-SAJ, PROJUDI) diretamente"
-  - "Não emite pareceres jurídicos"
-  - "Não garanta a completude quando documentos não são fornecidos"
+  - "Não emite pareceres jurídicos — análise factual e processual apenas"
+  - "Minutas são rascunhos — revisão e assinatura do advogado são obrigatórias"
   - "Cálculo de feriados locais depende de informação do usuário"
   - "Não verifica dados em tempo real nos tribunais"
+  - "Requer que os arquivos estejam no caminho K:\\Meu Drive\\Processos_Judiciais_IA"
 
 compatibility:
   aiox_version: ">=1.0.0"
+  os: "Windows (caminhos K:\\ hardcoded)"
   ides:
     - "Claude Code (suporte completo)"
     - "Cursor"

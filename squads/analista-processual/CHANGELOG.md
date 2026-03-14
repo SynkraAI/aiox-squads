@@ -1,5 +1,37 @@
 # Changelog — Analista Processual Squad
 
+## [1.1.0] — 2026-03-14
+
+### Adicionado
+- `navegador-arquivos` (Tier 1) — Gestor de pastas fixas, seleção de demandas e navegação entre correlatas
+- `gestor-biblioteca` (Tier 1) — Indexação, pesquisa e curadoria da Biblioteca de Conhecimento
+- `data/paths-config.yaml` — Configuração completa de caminhos, estrutura de pastas e convenções de nomenclatura
+- Task `selecionar-demanda` — Seleção interativa de demanda ativa ao iniciar sessão (automático)
+- Task `indexar-biblioteca` — Indexação em lote e salvamento de conhecimento na biblioteca
+- Task `elaborar-minuta` — Elaboração de minutas (contestação, apelação, embargos, agravo, manifestação, petição inicial)
+
+### Sistema de Pastas Fixas
+- Raiz: `K:\Meu Drive\Processos_Judiciais_IA\`
+- Convenção de demandas: `{N}. {Nome da Demanda}`
+- Convenção de correlatas: `{N}.{S} {Nome da Demanda Correlata}`
+- 10 subpastas padrão por demanda (01_Processo a 10_Notas_Internas)
+- Acesso cruzado entre demandas correlatas para contexto complementar
+
+### Biblioteca de Conhecimento
+- 15 áreas jurídicas organizadas com subpastas temáticas
+- Indexação via `_indice.yaml` mantido pelo gestor-biblioteca
+- Protocolo de generalização para reutilização de conteúdo
+- Versionamento de documentos (v1, v2...)
+
+### Modificado
+- `analista-processual` (chief) atualizado para v1.1.0 com:
+  - Seleção obrigatória de demanda ao iniciar sessão
+  - Novos comandos de navegação, minutas e biblioteca
+  - Integração com paths-config.yaml
+- `config.yaml` atualizado para v1.1.0 com arquitetura completa
+
+---
+
 Todas as mudanças relevantes deste squad são documentadas aqui.
 
 ## [1.0.0] — 2026-03-14
