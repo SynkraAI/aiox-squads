@@ -1,0 +1,11 @@
+settings:
+  brand:
+    name: Vibe Code
+    primary_color: "#6200EE"
+    secondary_color: "#03DAC6"
+  thresholds:
+    min_contrast_ratio: 4.5
+    performance_budget_ms: 2000
+  endpoints:
+    figma_api: "https://api.figma.com/v1"
+    analytics_dashboard: "https://analytics.vibecode.io"
