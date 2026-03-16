@@ -1,0 +1,52 @@
+name: design-squad
+version: 1.0.0
+description: Squad focado em UX/UI, prototipagem, design system e experiência do usuário seguindo fluxo ETL.
+author: Claudiney Oliveira
+license: MIT
+slashPrefix: design
+
+aiox:
+  minVersion: "2.1.0"
+  type: squad
+
+components:
+  tasks:
+    - audit-interface.md
+    - design-components.md
+    - prototyping.md
+    - lead-agent-process-data.md
+    - lead-agent-new-task.md
+  agents:
+    - ux-agent.md
+    - ui-agent.md
+    - analytics-agent.md
+    - lead-agent.md
+  workflows:
+    - daily-processing.yaml
+  checklists:
+    - quality-checklist.md
+  templates:
+    - report-template.md
+  tools:
+    - data-validator.js
+  scripts:
+    - migration-helper.js
+  data:
+    - config-data.yaml
+
+config:
+  extends: extend
+  coding-standards: config/coding-standards.md
+  tech-stack: config/tech-stack.md
+  source-tree: config/source-tree.md
+
+dependencies:
+  node: []
+  python: []
+  squads: []
+
+tags:
+  - ux-ui
+  - product-design
+  - design-system
+  - automation

@@ -1,0 +1,14 @@
+{
+  "version": "1.0.0",
+  "squads": {
+    "official": [],
+    "community": [
+      {
+        "name": "design-squad",
+        "version": "1.0.0",
+        "description": "Squad focado em UX/UI, prototipagem, design system e experiência do usuário seguindo fluxo ETL.",
+        "author": "Claudiney Oliveira"
+      }
+    ]
+  }
+}

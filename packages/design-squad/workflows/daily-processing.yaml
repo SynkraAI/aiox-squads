@@ -1,0 +1,31 @@
+workflow:
+  id: daily-processing
+  name: Daily Processing Workflow
+  description: Workflow diário para processamento de dados e auditoria de interface.
+  type: maintenance
+  story_id: SQS-11
+  
+  sequence:
+    - step: 1
+      task: audit-interface
+      agent: ux-agent
+      description: Realizar auditoria diária de interface.
+      validates: [ "ui-consistency", "usability-heuristics" ]
+    
+    - step: 2
+      task: lead-agent-process-data
+      agent: lead-agent
+      description: Processar insights gerados pela auditoria.
+      updates: [ "squad-insights" ]
+      requires: [ 1 ]
+
+    - step: 3
+      task: design-components
+      agent: ui-agent
+      description: Atualizar componentes baseados nos insights.
+      creates: [ "updated-component-specs" ]
+      requires: [ 2 ]
+
+  handoff_prompts:
+    ux-agent_to_lead-agent: "Aqui estão os pontos de fricção identificados na auditoria. Por favor, priorize as correções."
+    lead-agent_to_ui-agent: "Inicie o refinamento dos componentes conforme os insights processados. Foco em acessibilidade."
