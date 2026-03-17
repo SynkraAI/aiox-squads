@@ -1,0 +1,172 @@
+# Feriados Nacionais e Férias Forenses — Brasil
+# Analista Processual Squad v1.2.0
+# Base: Lei 9.093/1995, Lei 6.802/1980, CPC/2015 Art. 220
+
+schema_version: "1.0.0"
+updated: "2026-03-17"
+
+# ─────────────────────────────────────────────
+# FÉRIAS FORENSES (CPC/2015, Art. 220)
+# ─────────────────────────────────────────────
+ferias_forenses:
+  periodo: "20 de dezembro a 20 de janeiro"
+  fundamento: "Art. 220, CPC/2015"
+  efeito: "Suspensão de todos os prazos processuais"
+  retomada: "Primeiro dia útil após 20 de janeiro"
+  excecoes:
+    - "Ações de alimentos (Art. 531)"
+    - "Ações de interdição (Art. 747)"
+    - "Habeas corpus"
+    - "Mandado de segurança"
+    - "Medidas de urgência (Art. 300)"
+    - "Execução de alimentos"
+
+# ─────────────────────────────────────────────
+# FERIADOS NACIONAIS 2026
+# ─────────────────────────────────────────────
+feriados_nacionais_2026:
+  - data: "2026-01-01"
+    nome: "Confraternização Universal (Ano Novo)"
+    tipo: "nacional"
+    fundamento: "Lei 9.093/1995"
+
+  - data: "2026-02-16"
+    nome: "Carnaval (segunda-feira)"
+    tipo: "ponto_facultativo_nacional"
+    observacao: "Suspensão de expediente forense em muitos tribunais"
+
+  - data: "2026-02-17"
+    nome: "Carnaval (terça-feira)"
+    tipo: "ponto_facultativo_nacional"
+    observacao: "Verificar portaria do tribunal competente"
+
+  - data: "2026-02-18"
+    nome: "Quarta-feira de Cinzas (meio expediente)"
+    tipo: "ponto_facultativo_nacional"
+
+  - data: "2026-04-03"
+    nome: "Sexta-feira Santa (Paixão de Cristo)"
+    tipo: "nacional"
+    fundamento: "Lei 9.093/1995"
+
+  - data: "2026-04-21"
+    nome: "Tiradentes"
+    tipo: "nacional"
+    fundamento: "Lei 9.093/1995"
+
+  - data: "2026-05-01"
+    nome: "Dia do Trabalho"
+    tipo: "nacional"
+    fundamento: "Lei 9.093/1995"
+
+  - data: "2026-06-04"
+    nome: "Corpus Christi"
+    tipo: "ponto_facultativo_nacional"
+    observacao: "Adotado como feriado em muitos tribunais; verificar"
+
+  - data: "2026-09-07"
+    nome: "Independência do Brasil"
+    tipo: "nacional"
+    fundamento: "Lei 9.093/1995"
+
+  - data: "2026-10-12"
+    nome: "Nossa Senhora Aparecida (Padroeira do Brasil)"
+    tipo: "nacional"
+    fundamento: "Lei 9.093/1995"
+
+  - data: "2026-11-02"
+    nome: "Finados"
+    tipo: "nacional"
+    fundamento: "Lei 9.093/1995"
+
+  - data: "2026-11-15"
+    nome: "Proclamação da República"
+    tipo: "nacional"
+    fundamento: "Lei 9.093/1995"
+
+  - data: "2026-11-20"
+    nome: "Dia da Consciência Negra"
+    tipo: "nacional"
+    fundamento: "Lei 12.519/2011"
+
+  - data: "2026-12-25"
+    nome: "Natal"
+    tipo: "nacional"
+    fundamento: "Lei 9.093/1995"
+
+# ─────────────────────────────────────────────
+# FERIADOS NACIONAIS 2027
+# ─────────────────────────────────────────────
+feriados_nacionais_2027:
+  - data: "2027-01-01"
+    nome: "Confraternização Universal"
+    tipo: "nacional"
+
+  - data: "2027-02-08"
+    nome: "Segunda de Carnaval"
+    tipo: "ponto_facultativo_nacional"
+
+  - data: "2027-02-09"
+    nome: "Terça de Carnaval"
+    tipo: "ponto_facultativo_nacional"
+
+  - data: "2027-03-26"
+    nome: "Sexta-feira Santa"
+    tipo: "nacional"
+
+  - data: "2027-04-21"
+    nome: "Tiradentes"
+    tipo: "nacional"
+
+  - data: "2027-05-01"
+    nome: "Dia do Trabalho"
+    tipo: "nacional"
+
+  - data: "2027-05-27"
+    nome: "Corpus Christi"
+    tipo: "ponto_facultativo_nacional"
+
+  - data: "2027-09-07"
+    nome: "Independência do Brasil"
+    tipo: "nacional"
+
+  - data: "2027-10-12"
+    nome: "Nossa Senhora Aparecida"
+    tipo: "nacional"
+
+  - data: "2027-11-02"
+    nome: "Finados"
+    tipo: "nacional"
+
+  - data: "2027-11-15"
+    nome: "Proclamação da República"
+    tipo: "nacional"
+
+  - data: "2027-11-20"
+    nome: "Dia da Consciência Negra"
+    tipo: "nacional"
+
+  - data: "2027-12-25"
+    nome: "Natal"
+    tipo: "nacional"
+
+# ─────────────────────────────────────────────
+# RECESSO FORENSE (CNJ Resolução 244/2020)
+# ─────────────────────────────────────────────
+recesso_forense:
+  periodo_dezembro_janeiro:
+    inicio: "20 de dezembro"
+    fim: "20 de janeiro"
+    fundamento: "Art. 220, CPC/2015 + Resolução CNJ 244/2020"
+    efeito: "Suspensão de prazos (não é férias do advogado, apenas judicial)"
+
+# ─────────────────────────────────────────────
+# NOTAS PARA O CALCULADOR DE PRAZOS
+# ─────────────────────────────────────────────
+instrucoes_calculador:
+  - "SEMPRE verificar feriados ESTADUAIS e MUNICIPAIS da comarca — não incluídos aqui"
+  - "Carnaval e Corpus Christi variam: confirmar portaria do tribunal"
+  - "Tribunais podem ter recessos adicionais (Semana Santa, etc.)"
+  - "Feriados de segunda-feira: CUIDADO com prazos que vencem na sexta anterior"
+  - "Fonte: calendário oficial do tribunal sempre prevalece sobre este arquivo"
+  - "Atualizar anualmente com as portarias de calendário forense dos TJs relevantes"

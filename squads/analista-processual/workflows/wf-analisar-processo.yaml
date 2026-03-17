@@ -1,0 +1,304 @@
+# Workflow: Análise Completa de Processo Judicial
+# ID: wf-analisar-processo
+# Version: 1.0.0
+# Purpose: Orquestrar análise multi-agente de processo judicial com mapeamento de prazos e riscos
+# Orchestrator: analista-processual
+# Mode: Autonomous (YOLO)
+
+workflow_name: analisar_processo
+description: >-
+  Orquestra análise completa de processo judicial em 5 fases sequenciais:
+  identificação do processo, extração de documentos, cálculo de prazos,
+  mapeamento de riscos e síntese com relatório final.
+  Gate de qualidade: prazo CRÍTICO identificado na fase 3 é destacado
+  no topo do relatório antes de prosseguir para a síntese.
+agent_sequence:
+  - analista-processual   # Fase 1: identificação do processo (chief)
+  - extrator-documentos   # Fase 2: extração de partes, pedidos e cronologia
+  - calculador-prazos     # Fase 3: cálculo de todos os prazos vigentes
+  - mapeador-riscos       # Fase 4: mapeamento de riscos em 5 níveis
+  - analista-processual   # Fase 5: síntese e relatório final (chief)
+success_indicators:
+  - "Processo identificado com número, tribunal e fase processual"
+  - "Partes, pedidos e cronologia extraídos com completude"
+  - "Todos os prazos vigentes calculados e classificados"
+  - "Riscos mapeados nos 5 níveis com evidências"
+  - "Relatório final consolidado em relatorio-analise-processual.md"
+
+workflow:
+  id: wf-analisar-processo
+  name: "Análise Completa de Processo Judicial"
+  version: "1.0.0"
+  orchestrator: analista-processual
+  mode: autonomous
+  estimated_duration: "8-15 minutos"
+
+  triggers:
+    reactive:
+      - command: "*analisar-processo"
+
+  phases:
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # FASE 1: IDENTIFICAÇÃO DO PROCESSO
+    # ═══════════════════════════════════════════════════════════════════════════
+    phase_1:
+      name: "Identificação do Processo"
+      executor: analista-processual
+      duration: "1-2 minutos"
+      checkpoint: "QG-AP-001"
+
+      steps:
+        - id: "1.1"
+          name: "Receber número do processo"
+          action: "Capturar NUP informado pelo usuário (formato CNJ: NNNNNNN-NN.NNNN.N.NN.NNNN)"
+          output: "numero_processo"
+
+        - id: "1.2"
+          name: "Identificar tribunal e instância"
+          action: "Determinar tribunal de origem, instância atual e competência (estadual/federal/trabalhista)"
+          input: "numero_processo"
+          output: "tribunal_instancia"
+
+        - id: "1.3"
+          name: "Determinar fase processual"
+          action: "Classificar fase: conhecimento, cumprimento, execução, recursal, ADIs ou outros"
+          input: "numero_processo + tribunal_instancia"
+          output: "fase_processual"
+
+        - id: "1.4"
+          name: "Mapear documentos disponíveis"
+          action: "Solicitar ao usuário lista de documentos disponíveis para análise"
+          output: "documentos_disponiveis"
+
+      checkpoint_criteria:
+        - "numero_processo validado no formato CNJ"
+        - "tribunal_instancia identificado"
+        - "fase_processual classificada"
+      veto_conditions:
+        - "IF numero_processo inválido → SOLICITAR correção antes de prosseguir"
+        - "IF nenhum documento disponível → ALERTAR usuário e aguardar"
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # FASE 2: EXTRAÇÃO DE DOCUMENTOS
+    # ═══════════════════════════════════════════════════════════════════════════
+    phase_2:
+      name: "Extração de Documentos"
+      executor: extrator-documentos
+      duration: "2-4 minutos"
+      depends_on: phase_1
+      checkpoint: "QG-AP-002"
+
+      steps:
+        - id: "2.1"
+          name: "Identificar partes do processo"
+          action: "Extrair autores, réus, terceiros intervenientes, MP e representantes legais"
+          input: "documentos_disponiveis"
+          output: "partes_processo"
+
+        - id: "2.2"
+          name: "Extrair pedidos"
+          action: "Mapear pedidos principais e subsidiários, identificar cumulação e valor da causa"
+          input: "documentos_disponiveis"
+          output: "pedidos_mapeados"
+
+        - id: "2.3"
+          name: "Construir cronologia processual"
+          action: "Listar todos os atos processuais em ordem cronológica com datas e movimentações"
+          input: "documentos_disponiveis"
+          output: "cronologia_processual"
+
+        - id: "2.4"
+          name: "Identificar decisões relevantes"
+          action: "Destacar decisões interlocutórias, sentenças, acórdãos e despachos determinantes"
+          input: "cronologia_processual"
+          output: "decisoes_relevantes"
+
+      checkpoint_criteria:
+        - "partes_processo identificadas com qualificação completa"
+        - "pedidos_mapeados com distinção de principais e subsidiários"
+        - "cronologia_processual ordenada cronologicamente"
+        - "decisoes_relevantes destacadas"
+      veto_conditions:
+        - "IF partes não identificadas → SINALIZAR lacuna e prosseguir com parcial"
+        - "IF pedidos não localizados → SOLICITAR petição inicial ao usuário"
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # FASE 3: CÁLCULO DE PRAZOS
+    # ═══════════════════════════════════════════════════════════════════════════
+    phase_3:
+      name: "Cálculo de Prazos"
+      executor: calculador-prazos
+      duration: "2-3 minutos"
+      depends_on: phase_2
+      checkpoint: "QG-AP-003"
+
+      steps:
+        - id: "3.1"
+          name: "Identificar prazos em curso"
+          action: "Localizar todas as intimações e citações sem resposta registrada"
+          input: "cronologia_processual + decisoes_relevantes"
+          output: "intimacoes_pendentes"
+
+        - id: "3.2"
+          name: "Calcular prazos processuais"
+          action: |
+            Para cada intimação pendente:
+            1. Identificar tipo de prazo (resposta, recurso, cumprimento)
+            2. Calcular prazo legal conforme CPC/2015, legislação especial ou regimento
+            3. Considerar suspensões, interrupções e feriados
+            4. Calcular data fatal
+          input: "intimacoes_pendentes"
+          output: "prazos_calculados"
+
+        - id: "3.3"
+          name: "Classificar criticidade dos prazos"
+          action: |
+            Classificar cada prazo em:
+            - CRÍTICO: vence em até 3 dias úteis
+            - URGENTE: vence em até 7 dias úteis
+            - ATENÇÃO: vence em até 15 dias úteis
+            - MONITORAR: vence após 15 dias úteis
+          input: "prazos_calculados"
+          output: "prazos_classificados"
+
+        - id: "3.4"
+          name: "Gate: verificar prazos CRÍTICOS"
+          action: |
+            IF existe prazo classificado como CRÍTICO:
+              → gerar alerta_prazo_critico com destaque
+              → marcar flag prazo_critico_detectado = true
+              → preparar bloco de alerta para topo do relatório final
+            ELSE:
+              → prazo_critico_detectado = false
+          input: "prazos_classificados"
+          output: "alerta_prazo_critico + prazo_critico_detectado"
+
+      checkpoint_criteria:
+        - "Todos os prazos em curso calculados com data fatal"
+        - "Classificação de criticidade aplicada a cada prazo"
+        - "Flag prazo_critico_detectado definida"
+      veto_conditions:
+        - "IF data de intimação não encontrada → SOLICITAR ao usuário antes de calcular"
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # FASE 4: MAPEAMENTO DE RISCOS
+    # ═══════════════════════════════════════════════════════════════════════════
+    phase_4:
+      name: "Mapeamento de Riscos"
+      executor: mapeador-riscos
+      duration: "2-3 minutos"
+      depends_on: phase_3
+      checkpoint: "QG-AP-004"
+
+      steps:
+        - id: "4.1"
+          name: "Identificar riscos processuais"
+          action: "Mapear riscos de nulidade, preclusão, prescrição, decadência e revelia"
+          input: "cronologia_processual + prazos_classificados + decisoes_relevantes"
+          output: "riscos_processuais"
+
+        - id: "4.2"
+          name: "Avaliar riscos de mérito"
+          action: "Analisar robustez dos pedidos, defesa e probabilidade de êxito com base em jurisprudência"
+          input: "pedidos_mapeados + partes_processo"
+          output: "riscos_mérito"
+
+        - id: "4.3"
+          name: "Classificar riscos em 5 níveis"
+          action: |
+            Classificar cada risco identificado:
+            - NÍVEL 1 (CRÍTICO): risco imediato de perda irreparável ou extinção do processo
+            - NÍVEL 2 (ALTO): risco relevante com prazo curto ou impacto material elevado
+            - NÍVEL 3 (MÉDIO): risco monitorável com prazo razoável para mitigação
+            - NÍVEL 4 (BAIXO): risco de impacto limitado ou facilmente mitigável
+            - NÍVEL 5 (RESIDUAL): risco teórico sem evidência concreta de materialização
+          input: "riscos_processuais + riscos_mérito"
+          output: "mapa_riscos"
+
+        - id: "4.4"
+          name: "Propor ações de mitigação"
+          action: "Para cada risco Nível 1 e 2, propor ação de mitigação com prazo sugerido"
+          input: "mapa_riscos"
+          output: "acoes_mitigacao"
+
+      checkpoint_criteria:
+        - "mapa_riscos com todos os riscos classificados nos 5 níveis"
+        - "acoes_mitigacao para todos os riscos Nível 1 e 2"
+      veto_conditions:
+        - "IF nenhum risco identificado → REVISAR análise antes de prosseguir"
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # FASE 5: SÍNTESE E RELATÓRIO FINAL
+    # ═══════════════════════════════════════════════════════════════════════════
+    phase_5:
+      name: "Síntese e Relatório Final"
+      executor: analista-processual
+      duration: "2-3 minutos"
+      depends_on: phase_4
+
+      steps:
+        - id: "5.1"
+          name: "Verificar gate de prazo crítico"
+          action: |
+            IF prazo_critico_detectado = true:
+              → Inserir alerta_prazo_critico em destaque NO TOPO do relatório
+              → Formato: bloco "PRAZO CRÍTICO" com data fatal, tipo de ato e consequência do descumprimento
+            ELSE:
+              → Prosseguir normalmente para síntese
+          input: "prazo_critico_detectado + alerta_prazo_critico"
+
+        - id: "5.2"
+          name: "Consolidar sumário executivo"
+          action: "Gerar sumário em 3-5 frases: identificação do processo, estado atual e prioridade imediata"
+          input: "Todos os outputs das fases anteriores"
+          output: "sumario_executivo"
+
+        - id: "5.3"
+          name: "Montar seções do relatório"
+          action: |
+            Estruturar relatório com seções:
+            1. [se prazo crítico] ALERTA DE PRAZO CRÍTICO
+            2. Sumário Executivo
+            3. Identificação do Processo
+            4. Partes e Representações
+            5. Pedidos Mapeados
+            6. Cronologia Processual
+            7. Prazos Vigentes (por criticidade)
+            8. Mapa de Riscos (por nível)
+            9. Ações Prioritárias Recomendadas
+          output: "relatorio_estruturado"
+
+        - id: "5.4"
+          name: "Salvar relatório"
+          action: "Salvar como relatorio-analise-processual.md no diretório de trabalho"
+          input: "relatorio_estruturado"
+          output: "relatorio-analise-processual.md"
+
+      checkpoint_criteria:
+        - "Alerta de prazo crítico no topo se prazo_critico_detectado = true"
+        - "Sumário executivo presente"
+        - "Todas as 9 seções preenchidas"
+        - "Arquivo salvo como relatorio-analise-processual.md"
+      veto_conditions:
+        - "IF prazo_critico_detectado = true e alerta não está no topo → BLOQUEAR salvamento"
+
+  # Output
+  output:
+    primary: "relatorio-analise-processual.md"
+    format: "Relatório de Análise Processual (Markdown)"
+    distribution:
+      - "Exibir ao usuário"
+      - "Salvar no diretório de trabalho"
+
+  # Error Handling
+  error_handling:
+    agent_timeout:
+      threshold: "5 minutos por agente"
+      action: "Sinalizar lacuna no relatório e prosseguir"
+    agent_failure:
+      action: "Tentar uma vez, depois sinalizar seção como incompleta"
+    data_unavailable:
+      action: "Gerar relatório com dados disponíveis, sinalizar lacunas com DADO INDISPONÍVEL"
+    documento_ilegivel:
+      action: "Solicitar reenvio ao usuário antes de prosseguir na fase afetada"

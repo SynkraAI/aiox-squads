@@ -1,6 +1,6 @@
 name: analista-processual
 display_name: "Analista Processual"
-version: "1.1.0"
+version: "1.2.0"
 domain: juridico
 subdomain: direito-processual-civil
 language: "pt-BR"
@@ -127,15 +127,84 @@ normative_basis:
     - "Lei 14.133/2021 — Licitações e Contratos"
 
 minds:
-  - name: "Humberto Theodoro Júnior"
+  - id: "humberto_theodoro_junior"
+    name: "Humberto Theodoro Júnior"
     obra: "Código de Processo Civil Comentado"
     contribuicao: "Sistematização processual e pressupostos"
-  - name: "Ada Pellegrini Grinover"
+    heuristics: ["HTJ_PP_001", "HTJ_NU_001"]
+    path: "minds/humberto_theodoro_junior/"
+  - id: "ada_pellegrini_grinover"
+    name: "Ada Pellegrini Grinover"
     obra: "Teoria Geral do Processo"
-    contribuicao: "Fundamentos teóricos"
-  - name: "Cássio Scarpinella Bueno"
+    contribuicao: "Garantias constitucionais do processo"
+    heuristics: ["APG_CF_001", "APG_CT_001"]
+    path: "minds/ada_pellegrini_grinover/"
+  - id: "cassio_scarpinella_bueno"
+    name: "Cássio Scarpinella Bueno"
     obra: "Manual do Processo Civil"
     contribuicao: "Aplicação prática do CPC/2015"
+    heuristics: ["CSB_PC_001", "CSB_AR_001"]
+    path: "minds/cassio_scarpinella_bueno/"
+
+# ═══════════════════════════════════════════════════════
+# DATA FILES
+# ═══════════════════════════════════════════════════════
+data_files:
+  - file: "data/paths-config.yaml"
+    descricao: "Caminhos e estrutura de pastas (Windows/Google Drive)"
+  - file: "data/prazos-cpc2015.yaml"
+    descricao: "Prazos processuais — CPC/2015 e legislação especial"
+  - file: "data/feriados-nacionais.yaml"
+    descricao: "Feriados nacionais 2026/2027 e férias forenses"
+  - file: "data/tribunais.yaml"
+    descricao: "Códigos CNJ de todos os tribunais brasileiros"
+  - file: "data/classes-cnj.yaml"
+    descricao: "Classes processuais e assuntos — Tabelas Processuais Unificadas"
+
+# ═══════════════════════════════════════════════════════
+# WORKFLOWS
+# ═══════════════════════════════════════════════════════
+workflows:
+  - id: "wf-analisar-processo"
+    file: "workflows/wf-analisar-processo.yaml"
+    trigger: "*analisar-processo"
+    agentes: ["analista-processual", "extrator-documentos", "calculador-prazos", "mapeador-riscos"]
+  - id: "wf-elaborar-minuta"
+    file: "workflows/wf-elaborar-minuta.yaml"
+    trigger: "*contestacao, *recurso, *manifestacao"
+    agentes: ["analista-processual", "calculador-prazos"]
+  - id: "wf-indexar-biblioteca"
+    file: "workflows/wf-indexar-biblioteca.yaml"
+    trigger: "*indexar-biblioteca"
+    agentes: ["gestor-biblioteca"]
+
+# ═══════════════════════════════════════════════════════
+# TEMPLATES
+# ═══════════════════════════════════════════════════════
+templates:
+  analise:
+    - "templates/relatorio-analise-processual-tmpl.md"
+    - "templates/relatorio-prazos-tmpl.md"
+    - "templates/relatorio-riscos-tmpl.md"
+    - "templates/resumo-executivo-tmpl.md"
+    - "templates/analise-sentenca-tmpl.md"
+  minutas:
+    - "templates/minuta-contestacao-tmpl.md"
+    - "templates/minuta-apelacao-tmpl.md"
+    - "templates/minuta-embargos-declaracao-tmpl.md"
+    - "templates/minuta-agravo-instrumento-tmpl.md"
+    - "templates/minuta-manifestacao-tmpl.md"
+
+# ═══════════════════════════════════════════════════════
+# CHECKLISTS / QUALITY GATES
+# ═══════════════════════════════════════════════════════
+checklists:
+  - file: "checklists/checklist-minuta.md"
+    aplicacao: "Toda minuta antes de entrega"
+  - file: "checklists/checklist-prazo.md"
+    aplicacao: "Todo cálculo de prazo"
+  - file: "checklists/quality-gate.md"
+    aplicacao: "Gate final para qualquer output"
 
 # ═══════════════════════════════════════════════════════
 # COMANDOS

@@ -1,0 +1,356 @@
+# Workflow: Indexação e Gestão da Biblioteca de Conhecimento
+# ID: wf-indexar-biblioteca
+# Version: 1.0.0
+# Purpose: Indexar, generalizar e versionar conteúdo da Biblioteca de Conhecimento Jurídico
+# Orchestrator: gestor-biblioteca
+# Mode: Autonomous (YOLO)
+
+workflow_name: indexar_biblioteca
+description: >-
+  Gerencia a Biblioteca de Conhecimento Jurídico em dois modos:
+  modo_full escaneia todas as 15 áreas e gera relatório completo de indexação;
+  modo_incremental recebe conteúdo novo, aplica protocolo de generalização
+  (remoção de dados de partes), versiona e salva na área correta.
+  Ambos os modos atualizam o _indice.yaml ao final.
+agent_sequence:
+  - gestor-biblioteca   # Modo full: escaneia todas as 15 áreas
+  - gestor-biblioteca   # Modo incremental: generaliza, versiona e indexa conteúdo novo
+success_indicators:
+  - "_indice.yaml atualizado com todos os documentos da biblioteca"
+  - "Protocolo de generalização aplicado (sem dados de partes reais)"
+  - "Versionamento correto aplicado (_v1, _v2, ...)"
+  - "Relatório de indexação gerado"
+  - "Conteúdo salvo na área temática correta"
+
+workflow:
+  id: wf-indexar-biblioteca
+  name: "Indexação e Gestão da Biblioteca de Conhecimento"
+  version: "1.0.0"
+  orchestrator: gestor-biblioteca
+  mode: autonomous
+  estimated_duration: "3-10 minutos (full) / 1-3 minutos (incremental)"
+
+  triggers:
+    reactive:
+      - command: "*indexar-biblioteca"
+        mode: modo_full
+      - command: "*salvar-conhecimento"
+        mode: modo_incremental
+
+  # Protocolo de generalização obrigatório
+  protocolo_generalizacao:
+    description: "Substituições obrigatórias antes de salvar qualquer conteúdo na biblioteca"
+    substituicoes:
+      - original: "nome de pessoa física (parte autora)"
+        substituto: "[PARTE AUTORA]"
+      - original: "nome de pessoa física (parte ré)"
+        substituto: "[PARTE RÉ]"
+      - original: "nome de pessoa jurídica (parte)"
+        substituto: "[EMPRESA/ENTIDADE]"
+      - original: "CPF ou CNPJ (qualquer formato)"
+        substituto: "[CPF/CNPJ]"
+      - original: "NUP / número do processo (formato CNJ)"
+        substituto: "[NUP]"
+      - original: "datas específicas de atos processuais"
+        substituto: "[DATA DO ATO]"
+      - original: "endereços das partes"
+        substituto: "[ENDEREÇO DA PARTE]"
+      - original: "valores monetários específicos do caso"
+        substituto: "[VALOR]"
+    veto: "IF qualquer dado real de parte identificado após generalização → BLOQUEAR salvamento e reprocessar"
+
+  # Estrutura das 15 áreas da biblioteca
+  areas_biblioteca:
+    - id: "01"
+      nome: "Jurisprudência_Selecionada"
+    - id: "02"
+      nome: "Doutrinas_e_Artigos"
+    - id: "03"
+      nome: "Legislação_Atualizada"
+    - id: "04"
+      nome: "Pareceres_e_Notas_Técnicas"
+    - id: "05"
+      nome: "Teses_Jurídicas"
+    - id: "06"
+      nome: "Precedentes_Vinculantes"
+    - id: "07"
+      nome: "Súmulas"
+    - id: "08"
+      nome: "Informes_Tributários"
+    - id: "09"
+      nome: "Contratos_e_Acordos"
+    - id: "10"
+      nome: "Regulação_Setorial"
+    - id: "11"
+      nome: "Direito_Internacional"
+    - id: "12"
+      nome: "Atos_Administrativos"
+    - id: "13"
+      nome: "Documentos_Internos"
+    - id: "14"
+      nome: "Modelos_e_Minutas"
+    - id: "15"
+      nome: "Pesquisas_e_Memorandos"
+
+  modes:
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # MODO FULL: ESCANEAMENTO COMPLETO DA BIBLIOTECA
+    # ═══════════════════════════════════════════════════════════════════════════
+    modo_full:
+      name: "Indexação Completa"
+      trigger_command: "*indexar-biblioteca"
+      executor: gestor-biblioteca
+      estimated_duration: "5-10 minutos"
+
+      phases:
+        phase_1:
+          name: "Escaneamento das 15 Áreas"
+          checkpoint: "QG-IB-001"
+
+          steps:
+            - id: "F.1.1"
+              name: "Iniciar escaneamento"
+              action: "Listar todas as 15 áreas da biblioteca e verificar existência de cada diretório"
+              output: "estrutura_biblioteca"
+
+            - id: "F.1.2"
+              name: "Escanear cada área"
+              action: |
+                Para cada uma das 15 áreas:
+                1. Listar todos os arquivos (.md, .yaml, .pdf, .txt)
+                2. Capturar: nome do arquivo, data de criação/modificação, versão (_vN)
+                3. Identificar arquivos sem versão definida
+                4. Contar total de documentos por área
+              output: "inventario_completo"
+
+            - id: "F.1.3"
+              name: "Verificar consistência do índice atual"
+              action: "Comparar _indice.yaml atual com inventario_completo — identificar divergências"
+              input: "inventario_completo"
+              output: "divergencias_indice"
+
+          checkpoint_criteria:
+            - "Todas as 15 áreas escaneadas"
+            - "inventario_completo com contagem por área"
+            - "divergencias_indice identificadas"
+
+        phase_2:
+          name: "Geração do Relatório de Indexação"
+          depends_on: phase_1
+
+          steps:
+            - id: "F.2.1"
+              name: "Calcular estatísticas da biblioteca"
+              action: |
+                Calcular:
+                - Total de documentos por área
+                - Total geral da biblioteca
+                - Áreas com maior e menor volume
+                - Documentos sem versão definida
+                - Documentos mais recentes (últimos 30 dias)
+              input: "inventario_completo"
+              output: "estatisticas_biblioteca"
+
+            - id: "F.2.2"
+              name: "Identificar lacunas e oportunidades"
+              action: "Mapear áreas com poucos documentos e tipos de conteúdo ausentes"
+              input: "inventario_completo + estatisticas_biblioteca"
+              output: "lacunas_biblioteca"
+
+            - id: "F.2.3"
+              name: "Gerar relatório de indexação"
+              action: |
+                Estruturar relatório com:
+                1. Sumário executivo (total de documentos, áreas, data da indexação)
+                2. Inventário por área (tabela com contagem e documentos mais recentes)
+                3. Divergências encontradas vs. _indice.yaml anterior
+                4. Lacunas identificadas
+                5. Recomendações de curadoria
+              input: "estatisticas_biblioteca + divergencias_indice + lacunas_biblioteca"
+              output: "relatorio_indexacao"
+
+        phase_3:
+          name: "Atualização do _indice.yaml"
+          depends_on: phase_2
+
+          steps:
+            - id: "F.3.1"
+              name: "Construir novo _indice.yaml"
+              action: |
+                Gerar _indice.yaml com estrutura:
+                - metadata: data_indexacao, total_documentos, versao_indice
+                - areas: lista das 15 áreas com seus documentos
+                - Para cada documento: nome, area, versao, data_criacao, tipo, tags
+              input: "inventario_completo + estatisticas_biblioteca"
+              output: "_indice_novo"
+
+            - id: "F.3.2"
+              name: "Salvar _indice.yaml atualizado"
+              action: "Substituir _indice.yaml na raiz da biblioteca pelo _indice_novo"
+              input: "_indice_novo"
+              output: "_indice.yaml atualizado"
+
+            - id: "F.3.3"
+              name: "Exibir relatório ao usuário"
+              action: "Apresentar relatorio_indexacao com sumário e destaques"
+              input: "relatorio_indexacao"
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # MODO INCREMENTAL: INDEXAÇÃO DE CONTEÚDO NOVO
+    # ═══════════════════════════════════════════════════════════════════════════
+    modo_incremental:
+      name: "Indexação Incremental"
+      trigger_command: "*salvar-conhecimento"
+      executor: gestor-biblioteca
+      estimated_duration: "1-3 minutos"
+
+      phases:
+        phase_1:
+          name: "Recebimento e Classificação do Conteúdo"
+          checkpoint: "QG-IB-002"
+
+          steps:
+            - id: "I.1.1"
+              name: "Receber conteúdo novo"
+              action: "Capturar conteúdo fornecido pelo usuário (texto, arquivo ou referência)"
+              output: "conteudo_recebido"
+
+            - id: "I.1.2"
+              name: "Classificar tipo e área"
+              action: |
+                Determinar:
+                - Tipo de documento (jurisprudência, doutrina, modelo, tese, etc.)
+                - Área da biblioteca (1 das 15 áreas) mais adequada
+                - Tags temáticas relevantes
+              input: "conteudo_recebido"
+              output: "classificacao_conteudo"
+
+            - id: "I.1.3"
+              name: "Verificar duplicidade"
+              action: "Consultar _indice.yaml para verificar se conteúdo similar já existe na biblioteca"
+              input: "classificacao_conteudo"
+              output: "status_duplicidade"
+
+          checkpoint_criteria:
+            - "conteudo_recebido capturado"
+            - "classificacao_conteudo definida com área e tipo"
+            - "status_duplicidade verificado"
+          veto_conditions:
+            - "IF conteúdo idêntico já existente → ALERTAR usuário e aguardar confirmação para prosseguir"
+
+        phase_2:
+          name: "Aplicação do Protocolo de Generalização"
+          depends_on: phase_1
+          checkpoint: "QG-IB-003"
+
+          steps:
+            - id: "I.2.1"
+              name: "Aplicar substituições obrigatórias"
+              action: |
+                Aplicar todas as substituições do protocolo_generalizacao:
+                - nome→[PARTE AUTORA/RÉ]
+                - CPF/CNPJ→[CPF/CNPJ]
+                - NUP→[NUP]
+                - datas específicas→[DATA DO ATO]
+                - endereços→[ENDEREÇO DA PARTE]
+                - valores específicos→[VALOR]
+              input: "conteudo_recebido"
+              output: "conteudo_generalizado"
+
+            - id: "I.2.2"
+              name: "Verificar completude da generalização"
+              action: |
+                Escanear conteudo_generalizado em busca de:
+                - Padrões de CPF (NNN.NNN.NNN-NN)
+                - Padrões de CNPJ (NN.NNN.NNN/NNNN-NN)
+                - Padrões de NUP CNJ (NNNNNNN-NN.NNNN.N.NN.NNNN)
+                - Nomes próprios em contexto de partes
+              input: "conteudo_generalizado"
+              output: "verificacao_generalizacao"
+
+          checkpoint_criteria:
+            - "Todas as substituições aplicadas"
+            - "Verificação de dados residuais concluída"
+          veto_conditions:
+            - "IF dados pessoais residuais encontrados → REPROCESSAR generalização antes de prosseguir"
+
+        phase_3:
+          name: "Versionamento e Nomenclatura"
+          depends_on: phase_2
+
+          steps:
+            - id: "I.3.1"
+              name: "Determinar versão do arquivo"
+              action: |
+                Consultar _indice.yaml:
+                IF documento similar existente na mesma área:
+                  → Incrementar versão (_v1 → _v2 → _v3 ...)
+                ELSE:
+                  → Atribuir _v1
+              input: "conteudo_generalizado + classificacao_conteudo"
+              output: "versao_arquivo"
+
+            - id: "I.3.2"
+              name: "Gerar nome do arquivo"
+              action: "Gerar nome seguindo padrão: {tipo}_{descricao_curta}_{versao_arquivo}_{YYYY-MM-DD}.md"
+              input: "classificacao_conteudo + versao_arquivo"
+              output: "nome_arquivo"
+
+        phase_4:
+          name: "Salvamento e Atualização do Índice"
+          depends_on: phase_3
+
+          steps:
+            - id: "I.4.1"
+              name: "Salvar conteúdo na área correta"
+              action: "Salvar conteudo_generalizado na subpasta correspondente dentro das 15 áreas"
+              input: "conteudo_generalizado + nome_arquivo + classificacao_conteudo"
+              output: "arquivo_salvo"
+
+            - id: "I.4.2"
+              name: "Atualizar _indice.yaml"
+              action: |
+                Adicionar ao _indice.yaml a nova entrada:
+                - nome: nome_arquivo
+                - area: area classificada
+                - versao: versao_arquivo
+                - data_indexacao: data de hoje
+                - tipo: tipo do documento
+                - tags: tags temáticas identificadas
+              input: "arquivo_salvo + classificacao_conteudo + versao_arquivo"
+              output: "_indice.yaml atualizado"
+
+            - id: "I.4.3"
+              name: "Confirmar ao usuário"
+              action: "Exibir confirmação com nome do arquivo salvo, área e versão"
+              input: "arquivo_salvo + nome_arquivo"
+
+          checkpoint_criteria:
+            - "Arquivo salvo na área correta com nome padronizado"
+            - "_indice.yaml atualizado com nova entrada"
+            - "Confirmação exibida ao usuário"
+          veto_conditions:
+            - "IF área de destino não existe → CRIAR diretório e alertar usuário"
+
+  # Output
+  output:
+    primary: "_indice.yaml"
+    secondary: "relatorio_indexacao.md (apenas modo_full)"
+    format: "YAML (índice) + Markdown (relatório)"
+    distribution:
+      - "Exibir confirmação ao usuário"
+      - "Salvar _indice.yaml atualizado na raiz da biblioteca"
+      - "Salvar relatorio_indexacao.md no diretório de trabalho (modo_full)"
+
+  # Error Handling
+  error_handling:
+    agent_timeout:
+      threshold: "5 minutos"
+      action: "Sinalizar fase incompleta e aguardar instrução"
+    indice_corrompido:
+      action: "Fazer backup do _indice.yaml atual antes de qualquer escrita, restaurar se falha"
+    area_inexistente:
+      action: "Criar diretório da área ausente e alertar usuário"
+    generalizacao_falha:
+      action: "BLOQUEAR salvamento, reprocessar generalização, exibir diff ao usuário para revisão"

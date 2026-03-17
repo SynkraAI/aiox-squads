@@ -1,0 +1,338 @@
+# Tribunais Brasileiros — Códigos CNJ e Informações
+# Analista Processual Squad v1.2.0
+# Base: Resolução CNJ 65/2008 (Numeração Única CNJ)
+
+schema_version: "1.0.0"
+updated: "2026-03-17"
+base_normativa: "Resolução CNJ 65/2008"
+
+# ─────────────────────────────────────────────
+# ESTRUTURA DO NÚMERO CNJ
+# Formato: NNNNNNN-DD.AAAA.J.TT.OOOO
+# N = número sequencial (7 dígitos)
+# D = dígitos verificadores (2)
+# A = ano (4 dígitos)
+# J = segmento de justiça (1 dígito)
+# T = tribunal (2 dígitos)
+# O = origem / vara (4 dígitos)
+# ─────────────────────────────────────────────
+estrutura_cnj:
+  formato: "NNNNNNN-DD.AAAA.J.TT.OOOO"
+  segmentos_J:
+    1: "STF"
+    2: "CNJ"
+    3: "STJ"
+    4: "Justiça Federal"
+    5: "Trabalho"
+    6: "Eleitoral"
+    7: "Militar da União"
+    8: "Estadual"
+    9: "Militar Estadual"
+
+# ─────────────────────────────────────────────
+# SUPERIOR TRIBUNAL DE JUSTIÇA
+# ─────────────────────────────────────────────
+STJ:
+  nome: "Superior Tribunal de Justiça"
+  sigla: "STJ"
+  codigo_cnj_J: "3"
+  codigo_cnj_TT: "00"
+  sede: "Brasília/DF"
+  site: "https://www.stj.jus.br"
+  competencia: "Uniformização da interpretação da lei federal (Art. 105, CF/1988)"
+  recursos_cabíveis: ["Recurso Especial", "Agravo em REsp", "Habeas Corpus", "Mandado de Segurança"]
+
+# ─────────────────────────────────────────────
+# SUPREMO TRIBUNAL FEDERAL
+# ─────────────────────────────────────────────
+STF:
+  nome: "Supremo Tribunal Federal"
+  sigla: "STF"
+  codigo_cnj_J: "1"
+  codigo_cnj_TT: "00"
+  sede: "Brasília/DF"
+  site: "https://www.stf.jus.br"
+  competencia: "Guarda da Constituição (Art. 102, CF/1988)"
+  recursos_cabíveis: ["Recurso Extraordinário", "Agravo em RE", "Habeas Corpus", "ADPF", "ADI"]
+
+# ─────────────────────────────────────────────
+# TRIBUNAIS REGIONAIS FEDERAIS (TRFs)
+# ─────────────────────────────────────────────
+TRFs:
+  - sigla: "TRF1"
+    nome: "Tribunal Regional Federal da 1ª Região"
+    codigo_cnj_J: "4"
+    codigo_cnj_TT: "01"
+    sede: "Brasília/DF"
+    estados: ["AC", "AM", "AP", "BA", "DF", "GO", "MA", "MG", "MT", "PA", "PI", "RO", "RR", "TO"]
+    site: "https://www.trf1.jus.br"
+
+  - sigla: "TRF2"
+    nome: "Tribunal Regional Federal da 2ª Região"
+    codigo_cnj_J: "4"
+    codigo_cnj_TT: "02"
+    sede: "Rio de Janeiro/RJ"
+    estados: ["ES", "RJ"]
+    site: "https://www.trf2.jus.br"
+
+  - sigla: "TRF3"
+    nome: "Tribunal Regional Federal da 3ª Região"
+    codigo_cnj_J: "4"
+    codigo_cnj_TT: "03"
+    sede: "São Paulo/SP"
+    estados: ["MS", "SP"]
+    site: "https://www.trf3.jus.br"
+
+  - sigla: "TRF4"
+    nome: "Tribunal Regional Federal da 4ª Região"
+    codigo_cnj_J: "4"
+    codigo_cnj_TT: "04"
+    sede: "Porto Alegre/RS"
+    estados: ["PR", "RS", "SC"]
+    site: "https://www.trf4.jus.br"
+
+  - sigla: "TRF5"
+    nome: "Tribunal Regional Federal da 5ª Região"
+    codigo_cnj_J: "4"
+    codigo_cnj_TT: "05"
+    sede: "Recife/PE"
+    estados: ["AL", "CE", "PB", "PE", "RN", "SE"]
+    site: "https://www.trf5.jus.br"
+
+  - sigla: "TRF6"
+    nome: "Tribunal Regional Federal da 6ª Região"
+    codigo_cnj_J: "4"
+    codigo_cnj_TT: "06"
+    sede: "Belo Horizonte/MG"
+    estados: ["MG"]
+    site: "https://www.trf6.jus.br"
+    observacao: "Criado pela Lei 14.253/2021, desmembrado do TRF1"
+
+# ─────────────────────────────────────────────
+# TRIBUNAIS DE JUSTIÇA ESTADUAIS (TJs)
+# ─────────────────────────────────────────────
+TJs:
+  - sigla: "TJAC"
+    nome: "Tribunal de Justiça do Acre"
+    codigo_cnj_J: "8"
+    codigo_cnj_TT: "01"
+    estado: "AC"
+    site: "https://www.tjac.jus.br"
+
+  - sigla: "TJAL"
+    nome: "Tribunal de Justiça de Alagoas"
+    codigo_cnj_J: "8"
+    codigo_cnj_TT: "02"
+    estado: "AL"
+    site: "https://www.tjal.jus.br"
+
+  - sigla: "TJAM"
+    nome: "Tribunal de Justiça do Amazonas"
+    codigo_cnj_J: "8"
+    codigo_cnj_TT: "04"
+    estado: "AM"
+    site: "https://www.tjam.jus.br"
+
+  - sigla: "TJAP"
+    nome: "Tribunal de Justiça do Amapá"
+    codigo_cnj_J: "8"
+    codigo_cnj_TT: "03"
+    estado: "AP"
+    site: "https://www.tjap.jus.br"
+
+  - sigla: "TJBA"
+    nome: "Tribunal de Justiça da Bahia"
+    codigo_cnj_J: "8"
+    codigo_cnj_TT: "05"
+    estado: "BA"
+    site: "https://www.tjba.jus.br"
+
+  - sigla: "TJCE"
+    nome: "Tribunal de Justiça do Ceará"
+    codigo_cnj_J: "8"
+    codigo_cnj_TT: "06"
+    estado: "CE"
+    site: "https://www.tjce.jus.br"
+
+  - sigla: "TJDFT"
+    nome: "Tribunal de Justiça do Distrito Federal e Territórios"
+    codigo_cnj_J: "8"
+    codigo_cnj_TT: "07"
+    estado: "DF"
+    site: "https://www.tjdft.jus.br"
+    observacao: "Competência federal estadual por força do Art. 21, XIII, CF/1988"
+
+  - sigla: "TJES"
+    nome: "Tribunal de Justiça do Espírito Santo"
+    codigo_cnj_J: "8"
+    codigo_cnj_TT: "08"
+    estado: "ES"
+    site: "https://www.tjes.jus.br"
+
+  - sigla: "TJGO"
+    nome: "Tribunal de Justiça de Goiás"
+    codigo_cnj_J: "8"
+    codigo_cnj_TT: "09"
+    estado: "GO"
+    site: "https://www.tjgo.jus.br"
+
+  - sigla: "TJMA"
+    nome: "Tribunal de Justiça do Maranhão"
+    codigo_cnj_J: "8"
+    codigo_cnj_TT: "10"
+    estado: "MA"
+    site: "https://www.tjma.jus.br"
+
+  - sigla: "TJMG"
+    nome: "Tribunal de Justiça de Minas Gerais"
+    codigo_cnj_J: "8"
+    codigo_cnj_TT: "13"
+    estado: "MG"
+    site: "https://www.tjmg.jus.br"
+
+  - sigla: "TJMS"
+    nome: "Tribunal de Justiça do Mato Grosso do Sul"
+    codigo_cnj_J: "8"
+    codigo_cnj_TT: "12"
+    estado: "MS"
+    site: "https://www.tjms.jus.br"
+
+  - sigla: "TJMT"
+    nome: "Tribunal de Justiça do Mato Grosso"
+    codigo_cnj_J: "8"
+    codigo_cnj_TT: "11"
+    estado: "MT"
+    site: "https://www.tjmt.jus.br"
+
+  - sigla: "TJPA"
+    nome: "Tribunal de Justiça do Pará"
+    codigo_cnj_J: "8"
+    codigo_cnj_TT: "14"
+    estado: "PA"
+    site: "https://www.tjpa.jus.br"
+
+  - sigla: "TJPB"
+    nome: "Tribunal de Justiça da Paraíba"
+    codigo_cnj_J: "8"
+    codigo_cnj_TT: "15"
+    estado: "PB"
+    site: "https://www.tjpb.jus.br"
+
+  - sigla: "TJPE"
+    nome: "Tribunal de Justiça de Pernambuco"
+    codigo_cnj_J: "8"
+    codigo_cnj_TT: "17"
+    estado: "PE"
+    site: "https://www.tjpe.jus.br"
+
+  - sigla: "TJPI"
+    nome: "Tribunal de Justiça do Piauí"
+    codigo_cnj_J: "8"
+    codigo_cnj_TT: "18"
+    estado: "PI"
+    site: "https://www.tjpi.jus.br"
+
+  - sigla: "TJPR"
+    nome: "Tribunal de Justiça do Paraná"
+    codigo_cnj_J: "8"
+    codigo_cnj_TT: "16"
+    estado: "PR"
+    site: "https://www.tjpr.jus.br"
+
+  - sigla: "TJRJ"
+    nome: "Tribunal de Justiça do Rio de Janeiro"
+    codigo_cnj_J: "8"
+    codigo_cnj_TT: "19"
+    estado: "RJ"
+    site: "https://www.tjrj.jus.br"
+
+  - sigla: "TJRN"
+    nome: "Tribunal de Justiça do Rio Grande do Norte"
+    codigo_cnj_J: "8"
+    codigo_cnj_TT: "20"
+    estado: "RN"
+    site: "https://www.tjrn.jus.br"
+
+  - sigla: "TJRO"
+    nome: "Tribunal de Justiça de Rondônia"
+    codigo_cnj_J: "8"
+    codigo_cnj_TT: "22"
+    estado: "RO"
+    site: "https://www.tjro.jus.br"
+
+  - sigla: "TJRR"
+    nome: "Tribunal de Justiça de Roraima"
+    codigo_cnj_J: "8"
+    codigo_cnj_TT: "23"
+    estado: "RR"
+    site: "https://www.tjrr.jus.br"
+
+  - sigla: "TJRS"
+    nome: "Tribunal de Justiça do Rio Grande do Sul"
+    codigo_cnj_J: "8"
+    codigo_cnj_TT: "21"
+    estado: "RS"
+    site: "https://www.tjrs.jus.br"
+
+  - sigla: "TJSC"
+    nome: "Tribunal de Justiça de Santa Catarina"
+    codigo_cnj_J: "8"
+    codigo_cnj_TT: "24"
+    estado: "SC"
+    site: "https://www.tjsc.jus.br"
+
+  - sigla: "TJSE"
+    nome: "Tribunal de Justiça de Sergipe"
+    codigo_cnj_J: "8"
+    codigo_cnj_TT: "25"
+    estado: "SE"
+    site: "https://www.tjse.jus.br"
+
+  - sigla: "TJSP"
+    nome: "Tribunal de Justiça de São Paulo"
+    codigo_cnj_J: "8"
+    codigo_cnj_TT: "26"
+    estado: "SP"
+    site: "https://www.tjsp.jus.br"
+
+  - sigla: "TJTO"
+    nome: "Tribunal de Justiça do Tocantins"
+    codigo_cnj_J: "8"
+    codigo_cnj_TT: "27"
+    estado: "TO"
+    site: "https://www.tjto.jus.br"
+
+# ─────────────────────────────────────────────
+# TRIBUNAIS DO TRABALHO (TRTs)
+# ─────────────────────────────────────────────
+TRTs_principais:
+  - sigla: "TST"
+    nome: "Tribunal Superior do Trabalho"
+    codigo_cnj_J: "5"
+    codigo_cnj_TT: "00"
+    sede: "Brasília/DF"
+    site: "https://www.tst.jus.br"
+
+  - sigla: "TRT1"
+    nome: "Tribunal Regional do Trabalho da 1ª Região (RJ)"
+    codigo_cnj_J: "5"
+    codigo_cnj_TT: "01"
+    estado: "RJ"
+
+  - sigla: "TRT2"
+    nome: "Tribunal Regional do Trabalho da 2ª Região (SP)"
+    codigo_cnj_J: "5"
+    codigo_cnj_TT: "02"
+    estado: "SP (Capital e Grande SP)"
+
+  - sigla: "TRT4"
+    nome: "Tribunal Regional do Trabalho da 4ª Região (RS)"
+    codigo_cnj_J: "5"
+    codigo_cnj_TT: "04"
+    estado: "RS"
+
+  - sigla: "TRT15"
+    nome: "Tribunal Regional do Trabalho da 15ª Região (Campinas)"
+    codigo_cnj_J: "5"
+    codigo_cnj_TT: "15"
+    estado: "SP (interior)"
