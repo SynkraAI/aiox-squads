@@ -1,0 +1,110 @@
+# =============================================================================
+# AIOX Squads — Docker Compose (Produção)
+# Hostinger KVM2 · Ubuntu 22.04 · 2 vCPU / 8 GB RAM
+#
+# Serviços:
+#   chatbot   → Node.js / Express / SSE streaming
+#   postgres  → PostgreSQL 16 + pgvector (memória semântica)
+#   redis     → Cache de sessão e contexto ativo
+# =============================================================================
+version: "3.9"
+
+services:
+
+  # ── Chatbot ────────────────────────────────────────────────────────────────
+  chatbot:
+    build:
+      context: ..
+      dockerfile: chatbot/Dockerfile
+    image: aiox-chatbot:latest
+    container_name: aiox-chatbot
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"       # Exposto apenas localmente (nginx faz o proxy)
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      DATABASE_URL: postgres://aiox:${POSTGRES_PASSWORD}@postgres:5432/aiox
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      SESSION_SECRET: ${SESSION_SECRET}
+      APP_DOMAIN: ${APP_DOMAIN}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: "1.0"
+
+  # ── PostgreSQL 16 + pgvector ───────────────────────────────────────────────
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: aiox-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: aiox
+      POSTGRES_USER: aiox
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aiox -d aiox"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+          cpus: "0.5"
+    # Porta não exposta externamente por segurança
+    # Para acessar localmente: docker exec -it aiox-postgres psql -U aiox -d aiox
+
+  # ── Redis 7 ────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: aiox-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD}
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 384m
+          cpus: "0.25"
+
+# ── Volumes persistentes ──────────────────────────────────────────────────────
+volumes:
+  pgdata:
+    driver: local
+  redisdata:
+    driver: local
+
+# ── Rede interna ──────────────────────────────────────────────────────────────
+networks:
+  default:
+    name: aiox-network
+    driver: bridge
