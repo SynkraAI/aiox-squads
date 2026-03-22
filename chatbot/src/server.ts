@@ -192,6 +192,10 @@ app.delete("/api/session/:id", async (req: Request, res: Response) => {
 });
 
 // ── Frontend HTML ──────────────────────────────────────────────────────────────
+app.get("/health", (_req: Request, res: Response) => {
+  res.json({ status: "ok", uptime: process.uptime() });
+});
+
 app.get("/", (_req: Request, res: Response) => {
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.send(HTML_UI);

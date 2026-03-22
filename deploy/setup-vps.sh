@@ -5,13 +5,13 @@
 #
 # USO (one-liner — copie e cole no terminal da VPS):
 #
-#   bash <(curl -fsSL https://raw.githubusercontent.com/SEU_ORG/SEU_REPO/main/deploy/setup-vps.sh)
+#   bash <(curl -fsSL https://raw.githubusercontent.com/SynkraAI/aiox-squads/main/deploy/setup-vps.sh)
 #
 # Ou com parâmetros diretos (sem interação):
 #
 #   bash setup-vps.sh \
 #     --domain aiox.seuescritorio.com.br \
-#     --repo   https://github.com/SEU_ORG/aiox-squads.git \
+#     --repo   https://github.com/SynkraAI/aiox-squads.git \
 #     --email  seuemail@dominio.com \
 #     --user   aiox
 # =============================================================================

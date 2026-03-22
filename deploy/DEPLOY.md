@@ -107,10 +107,8 @@ ssh root@185.200.100.50
 Já conectado na VPS como `root`, execute **um único comando**:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/SEU_ORG/aiox-squads/main/deploy/setup-vps.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/SynkraAI/aiox-squads/main/deploy/setup-vps.sh)
 ```
-
-> Substitua `SEU_ORG` pelo seu usuário/organização do GitHub.
 
 O script vai **perguntar interativamente**:
 
