@@ -1,0 +1,36 @@
+name: aiox-master
+display_name: "AIOX Master"
+version: "1.0.0"
+domain: meta-orquestracao
+description: "Meta-orquestrador do ecossistema de squads AIOX FelippePestana. Coordena validação, análise de saúde, roteamento de pedidos e orquestração cross-squad."
+
+status: OPERATIONAL
+maturity_score: 9.0
+maturity_badge: "🟢"
+
+tier_structure:
+  tier_0:
+    role: "Meta-Orquestrador do Ecossistema"
+    agents: ["aiox-master"]
+
+squads_integrados:
+  - squad-creator  # validação de squads
+  - kaizen         # análise de ecossistema
+  - dispatch       # execução paralela
+
+commands_summary:
+  - "*validate {squad} — Validar integridade de um squad"
+  - "*validate-all — Validar todos os squads"
+  - "*ecosystem-status — Status rápido do ecossistema"
+  - "*analyze-all — Análise completa via kaizen"
+  - "*route {pedido} — Rotear para o squad correto"
+  - "*list-squads — Listar todos os squads"
+  - "*gaps — Identificar gaps de cobertura"
+
+compatibility:
+  aiox_version: ">=1.0.0"
+  ides:
+    - "Claude Code (suporte completo)"
+    - "Cursor"
+    - "Codex CLI"
+    - "Gemini CLI"

@@ -1,0 +1,319 @@
+# Workflow: Elaboração de Minutas Processuais
+# ID: wf-elaborar-minuta
+# Version: 1.0.0
+# Purpose: Orquestrar elaboração de minutas processuais com busca de modelo, elicitação e sinalização de revisão
+# Orchestrator: analista-processual
+# Mode: Autonomous (YOLO)
+
+workflow_name: elaborar_minuta
+description: >-
+  Orquestra a elaboração de minutas processuais (contestação, recursos, manifestações
+  e petição inicial) em 6 fases: pre-check de prazo (para recursos), busca de modelo
+  na biblioteca, elicitação de informações, elaboração conforme CPC/2015, sinalização
+  de pontos de revisão e salvamento da versão genérica na biblioteca.
+  Gate: NUNCA elaborar minuta sem demanda ativa confirmada.
+agent_sequence:
+  - calculador-prazos     # Fase 1: pre-check de prazo (apenas para recursos)
+  - gestor-biblioteca     # Fase 2: busca modelo em 14_Modelos_e_Minutas
+  - analista-processual   # Fase 3: elicitação de informações faltantes (chief)
+  - analista-processual   # Fase 4: elaboração da minuta (chief)
+  - analista-processual   # Fase 5: sinalização de pontos de revisão (chief)
+  - gestor-biblioteca     # Fase 6: salvamento de versão genérica na biblioteca
+success_indicators:
+  - "Prazo verificado antes de elaborar recurso (se aplicável)"
+  - "Modelo localizado em 14_Modelos_e_Minutas ou ausência registrada"
+  - "Informações faltantes elicitadas do usuário"
+  - "Minuta elaborada conforme estrutura CPC/2015"
+  - "Pontos de revisão sinalizados com marcadores padronizados"
+  - "Versão genérica salva na biblioteca com nome {tipo_minuta}_v1_{YYYY-MM-DD}.md"
+
+workflow:
+  id: wf-elaborar-minuta
+  name: "Elaboração de Minutas Processuais"
+  version: "1.0.0"
+  orchestrator: analista-processual
+  mode: autonomous
+  estimated_duration: "6-12 minutos"
+
+  triggers:
+    reactive:
+      - command: "*contestacao"
+      - command: "*recurso {tipo}"
+      - command: "*manifestacao"
+      - command: "*peticao-inicial"
+
+  # Gate global: NUNCA elaborar minuta sem demanda ativa confirmada
+  global_gate:
+    id: "QG-EM-000"
+    name: "Verificação de Demanda Ativa"
+    type: blocking
+    criteria:
+      - "Demanda ativa identificada e confirmada pelo usuário"
+      - "Tipo de minuta solicitada está claro"
+      - "Contexto processual mínimo fornecido"
+    veto_conditions:
+      - "IF nenhuma demanda identificada → SOLICITAR contexto antes de qualquer fase"
+      - "IF usuário não confirmou demanda → AGUARDAR confirmação explícita"
+
+  phases:
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # FASE 1: PRE-CHECK DE PRAZO (apenas para recursos)
+    # ═══════════════════════════════════════════════════════════════════════════
+    phase_1:
+      name: "Pre-Check de Prazo"
+      executor: calculador-prazos
+      duration: "1-2 minutos"
+      condition: "Apenas quando trigger for *recurso {tipo}"
+      checkpoint: "QG-EM-001"
+
+      steps:
+        - id: "1.1"
+          name: "Verificar existência de prazo recursal ativo"
+          action: "Consultar prazos vigentes para o processo em questão — verificar se prazo recursal está aberto"
+          output: "status_prazo_recursal"
+
+        - id: "1.2"
+          name: "Calcular prazo remanescente"
+          action: "Calcular dias úteis restantes até o vencimento do prazo recursal"
+          input: "status_prazo_recursal"
+          output: "dias_uteis_restantes + data_fatal_recurso"
+
+        - id: "1.3"
+          name: "Decisão de prosseguimento"
+          action: |
+            IF prazo_recursal ativo e dias_uteis_restantes > 0:
+              → Informar prazo ao usuário e prosseguir para fase 2
+            IF prazo_recursal vencido:
+              → ALERTAR usuário, consultar se deseja prosseguir (prazo perdido)
+              → Aguardar confirmação explícita antes de elaborar
+            IF prazo_recursal não localizado:
+              → SOLICITAR confirmação do prazo ao usuário antes de prosseguir
+          input: "status_prazo_recursal + dias_uteis_restantes"
+          output: "decisao_prosseguimento"
+
+      checkpoint_criteria:
+        - "status_prazo_recursal verificado"
+        - "decisao_prosseguimento definida"
+      veto_conditions:
+        - "IF prazo vencido e usuário não confirmou prosseguimento → BLOQUEAR fase 2"
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # FASE 2: BUSCA DE MODELO NA BIBLIOTECA
+    # ═══════════════════════════════════════════════════════════════════════════
+    phase_2:
+      name: "Busca de Modelo na Biblioteca"
+      executor: gestor-biblioteca
+      duration: "1-2 minutos"
+      depends_on: phase_1
+      checkpoint: "QG-EM-002"
+
+      steps:
+        - id: "2.1"
+          name: "Identificar área e tipo de modelo"
+          action: "Determinar área do direito e tipo documental para busca em 14_Modelos_e_Minutas"
+          input: "tipo_minuta + contexto_processual"
+          output: "parametros_busca"
+
+        - id: "2.2"
+          name: "Buscar modelo compatível"
+          action: "Localizar modelo em 14_Modelos_e_Minutas correspondente ao tipo de minuta solicitado"
+          input: "parametros_busca"
+          output: "modelo_encontrado"
+
+        - id: "2.3"
+          name: "Avaliar adequação do modelo"
+          action: |
+            IF modelo encontrado:
+              → Verificar versão, data e adequação ao CPC/2015
+              → Sinalizar pontos desatualizados se houver
+            IF modelo não encontrado:
+              → Registrar ausência e informar ao analista-processual para elaboração do zero
+          input: "modelo_encontrado"
+          output: "modelo_selecionado + lacunas_modelo"
+
+      checkpoint_criteria:
+        - "Busca em 14_Modelos_e_Minutas realizada"
+        - "Resultado registrado (modelo encontrado ou ausência documentada)"
+      veto_conditions:
+        - "IF biblioteca inacessível → ALERTAR usuário e prosseguir sem modelo"
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # FASE 3: ELICITAÇÃO DE INFORMAÇÕES
+    # ═══════════════════════════════════════════════════════════════════════════
+    phase_3:
+      name: "Elicitação de Informações"
+      executor: analista-processual
+      duration: "1-3 minutos"
+      depends_on: phase_2
+      checkpoint: "QG-EM-003"
+
+      steps:
+        - id: "3.1"
+          name: "Mapear informações necessárias"
+          action: "Listar todas as informações obrigatórias para a minuta com base no tipo e no modelo"
+          input: "tipo_minuta + modelo_selecionado + lacunas_modelo"
+          output: "informacoes_necessarias"
+
+        - id: "3.2"
+          name: "Identificar informações já disponíveis"
+          action: "Verificar quais informações já foram fornecidas no contexto da demanda"
+          input: "informacoes_necessarias + contexto_processual"
+          output: "informacoes_disponiveis + informacoes_faltantes"
+
+        - id: "3.3"
+          name: "Elicitar informações faltantes"
+          action: "Solicitar ao usuário as informações faltantes de forma objetiva e organizada"
+          input: "informacoes_faltantes"
+          output: "informacoes_completas"
+
+      checkpoint_criteria:
+        - "Todas as informações obrigatórias identificadas"
+        - "Informações faltantes elicitadas do usuário"
+        - "informacoes_completas disponíveis para elaboração"
+      veto_conditions:
+        - "IF informações essenciais não fornecidas → AGUARDAR antes de prosseguir para fase 4"
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # FASE 4: ELABORAÇÃO DA MINUTA
+    # ═══════════════════════════════════════════════════════════════════════════
+    phase_4:
+      name: "Elaboração da Minuta"
+      executor: analista-processual
+      duration: "2-4 minutos"
+      depends_on: phase_3
+      checkpoint: "QG-EM-004"
+
+      steps:
+        - id: "4.1"
+          name: "Definir estrutura da minuta"
+          action: |
+            Selecionar estrutura conforme tipo de minuta e CPC/2015:
+            - Petição Inicial: endereçamento, qualificação, fatos, direito, pedidos, valor da causa
+            - Contestação: preliminares, impugnação específica, mérito, pedido de improcedência
+            - Recurso: tempestividade, cabimento, fatos, direito, pedido de provimento
+            - Manifestação: referência ao ato, desenvolvimento, pedido específico
+          input: "tipo_minuta + informacoes_completas"
+          output: "estrutura_minuta"
+
+        - id: "4.2"
+          name: "Elaborar minuta completa"
+          action: |
+            Redigir minuta seguindo:
+            1. Estrutura definida na etapa 4.1
+            2. Modelo selecionado como referência (se disponível)
+            3. CPC/2015 e legislação aplicável
+            4. Linguagem técnico-jurídica formal
+            5. Fundamentação legal e doutrinária pertinente
+          input: "estrutura_minuta + modelo_selecionado + informacoes_completas"
+          output: "minuta_elaborada"
+
+      checkpoint_criteria:
+        - "Minuta elaborada com estrutura completa conforme CPC/2015"
+        - "Todos os campos preenchidos com as informações disponíveis"
+        - "Linguagem técnico-jurídica formal mantida"
+      veto_conditions:
+        - "IF estrutura da minuta incompleta → REVISAR fase 4.1 antes de finalizar"
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # FASE 5: SINALIZAÇÃO DE PONTOS DE REVISÃO
+    # ═══════════════════════════════════════════════════════════════════════════
+    phase_5:
+      name: "Sinalização de Pontos de Revisão"
+      executor: analista-processual
+      duration: "1-2 minutos"
+      depends_on: phase_4
+
+      steps:
+        - id: "5.1"
+          name: "Identificar pontos que requerem revisão"
+          action: "Percorrer minuta e identificar todos os pontos que requerem atenção do advogado"
+          input: "minuta_elaborada"
+          output: "pontos_revisao"
+
+        - id: "5.2"
+          name: "Aplicar marcadores padronizados"
+          action: |
+            Inserir marcadores conforme classificação:
+            - "REVISAR"    → conteúdo que precisa ser verificado ou ajustado pelo advogado
+            - "COMPLETAR"  → campo a ser preenchido com informação específica do caso
+            - "ESTRATÉGIA" → decisão de estratégia processual a definir com o cliente
+            - "DOCUMENTO"  → documento que deve ser juntado ou referenciado
+          input: "pontos_revisao + minuta_elaborada"
+          output: "minuta_sinalizada"
+
+        - id: "5.3"
+          name: "Gerar sumário de pontos de atenção"
+          action: "Listar ao final da minuta todos os pontos sinalizados para facilitação da revisão"
+          input: "minuta_sinalizada"
+          output: "sumario_pontos_atencao"
+
+      checkpoint_criteria:
+        - "Todos os pontos de revisão sinalizados com marcadores padronizados"
+        - "Sumário de pontos de atenção gerado"
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # FASE 6: SALVAMENTO NA BIBLIOTECA
+    # ═══════════════════════════════════════════════════════════════════════════
+    phase_6:
+      name: "Salvamento na Biblioteca"
+      executor: gestor-biblioteca
+      duration: "1 minuto"
+      depends_on: phase_5
+
+      steps:
+        - id: "6.1"
+          name: "Generalizar minuta para biblioteca"
+          action: |
+            Criar versão genérica da minuta removendo dados específicos do caso:
+            - Substituir nomes das partes por [PARTE AUTORA] / [PARTE RÉ]
+            - Substituir números de processo por [NUP]
+            - Substituir valores específicos por [VALOR]
+            - Substituir datas específicas por [DATA DO ATO]
+            - Manter estrutura, fundamentação genérica e marcadores de revisão
+          input: "minuta_sinalizada"
+          output: "minuta_generica"
+
+        - id: "6.2"
+          name: "Nomear e versionar arquivo"
+          action: "Gerar nome de arquivo no formato {tipo_minuta}_v1_{YYYY-MM-DD}.md com data de hoje"
+          input: "tipo_minuta"
+          output: "nome_arquivo"
+
+        - id: "6.3"
+          name: "Salvar na área correta da biblioteca"
+          action: "Salvar minuta_generica em 14_Modelos_e_Minutas na subpasta correspondente ao tipo"
+          input: "minuta_generica + nome_arquivo"
+          output: "arquivo_salvo"
+
+        - id: "6.4"
+          name: "Atualizar índice da biblioteca"
+          action: "Adicionar entrada do novo modelo ao _indice.yaml da biblioteca"
+          input: "arquivo_salvo + nome_arquivo + tipo_minuta"
+
+      checkpoint_criteria:
+        - "Versão genérica criada sem dados pessoais ou identificadores de partes"
+        - "Arquivo salvo com nomenclatura correta {tipo_minuta}_v1_{YYYY-MM-DD}.md"
+        - "_indice.yaml atualizado"
+      veto_conditions:
+        - "IF minuta_generica contém dados de partes reais → REPROCESSAR generalização antes de salvar"
+
+  # Output
+  output:
+    primary: "{tipo_minuta}_v1_{YYYY-MM-DD}.md"
+    format: "Minuta Processual (Markdown)"
+    distribution:
+      - "Exibir minuta completa (com dados do caso) ao usuário"
+      - "Salvar versão genérica em 14_Modelos_e_Minutas"
+
+  # Error Handling
+  error_handling:
+    agent_timeout:
+      threshold: "5 minutos por agente"
+      action: "Sinalizar etapa incompleta e aguardar instrução do usuário"
+    agent_failure:
+      action: "Tentar uma vez, depois sinalizar e aguardar"
+    biblioteca_inacessivel:
+      action: "Prosseguir elaboração sem modelo, registrar ausência no cabeçalho da minuta"
+    informacoes_insuficientes:
+      action: "BLOQUEAR fase 4 até elicitação completa das informações essenciais"

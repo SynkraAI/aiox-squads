@@ -1,0 +1,684 @@
+---
+# ==============================================================================
+# APEX SQUAD — WORKFLOW: Polish Cycle
+# wf-polish-cycle.yaml
+# ==============================================================================
+# Purpose:  Final quality polish pass covering motion, accessibility, and
+#           performance. Runs sequential audits, fixes identified issues,
+#           re-audits if needed, and gates approval through apex-lead.
+#
+# Trigger:  Feature implementation is functionally complete and ready for
+#           quality polish before shipping.
+# Owner:    apex-lead
+# Squad:    Apex (Frontend Ultra-Premium)
+# Version:  1.0.0
+# ==============================================================================
+
+id: wf-polish-cycle
+name: Polish Cycle
+description: >
+  Four-phase iterative workflow that applies final polish to a completed feature.
+  Covers three audit domains — motion/animation, accessibility, and performance
+  — then routes identified issues to the responsible engineers for fixes. If
+  fixes are needed, re-audits run to verify corrections. The cycle concludes
+  with a polish gate approval from apex-lead. All phases are gated and require
+  explicit approval before the next phase begins. Maximum 3 iterations before
+  escalation.
+
+metadata:
+  version: "1.0.0"
+  owner: apex-lead
+  squad: apex
+  created: "2026-03-01"
+  tags:
+    - polish
+    - motion
+    - accessibility
+    - performance
+    - quality
+    - cwv
+
+# ------------------------------------------------------------------------------
+# INPUTS
+# ------------------------------------------------------------------------------
+inputs:
+  required:
+    - story_id:
+        type: string
+        description: Associated story ID (e.g. "4.1")
+    - feature_name:
+        type: string
+        description: Name of the feature being polished
+    - target_platforms:
+        type: array
+        description: Platforms to audit (web, mobile, spatial)
+  optional:
+    - skip_motion_audit:
+        type: boolean
+        default: false
+        description: Skip motion audit if feature has no animations
+    - skip_spatial_perf:
+        type: boolean
+        default: true
+        description: Skip spatial performance audit if not applicable
+    - performance_budget_override:
+        type: object
+        default: null
+        description: >
+          Override default performance budgets for this feature.
+          Uses data/performance-budgets.yaml defaults if null.
+    - max_iterations:
+        type: number
+        default: 3
+        description: Maximum audit-fix-reaudit iterations before escalation
+
+# ------------------------------------------------------------------------------
+# OUTPUTS
+# ------------------------------------------------------------------------------
+outputs:
+  - motion_audit_report:
+      description: Motion and animation audit findings
+      path: docs/qa/polish/{story_id}-motion-audit.md
+      type: file
+  - a11y_audit_report:
+      description: Accessibility audit findings
+      path: docs/qa/polish/{story_id}-a11y-audit.md
+      type: file
+  - perf_audit_report:
+      description: Performance audit findings
+      path: docs/qa/polish/{story_id}-perf-audit.md
+      type: file
+  - polish_verdict:
+      description: Final polish gate verdict (APPROVED / NEEDS_WORK / REJECTED)
+      type: string
+
+# ------------------------------------------------------------------------------
+# ENFORCEMENT
+# ------------------------------------------------------------------------------
+enforcement:
+  veto_registry: data/veto-conditions.yaml
+  performance_budgets: data/performance-budgets.yaml
+  pre_execution_validation:
+    validate_agents: true
+    action: "BLOCK workflow if any referenced agent not in data/agent-registry.yaml"
+
+# ------------------------------------------------------------------------------
+# QUALITY GATES (with veto conditions)
+# ------------------------------------------------------------------------------
+gates:
+  - id: QG-AX-PL-001
+    name: Audits Complete
+    description: >
+      All three audit domains (motion, accessibility, performance) have been
+      executed and reports generated. Any issues are documented with severity.
+    blocking: true
+    owner: apex-lead
+    veto_conditions:
+      - ref: VC-PL-001-A  # Motion audit report generated (or skipped with justification)
+      - ref: VC-PL-001-B  # Accessibility audit report generated
+      - ref: VC-PL-001-C  # Performance audit report generated
+
+  - id: QG-AX-PL-002
+    name: Accessibility WCAG 2.2 AA Compliant
+    description: >
+      All WCAG 2.2 AA criteria pass. Zero critical or high severity
+      accessibility violations remain unresolved.
+    blocking: true
+    owner: a11y-eng
+    veto_conditions:
+      - ref: VC-PL-002-A  # axe-core zero violations
+      - ref: VC-PL-002-B  # Keyboard navigation fully functional
+      - ref: VC-PL-002-C  # Screen reader announces correctly
+
+  - id: QG-AX-PL-003
+    name: Performance Budget Met
+    description: >
+      All performance metrics within budget — LCP < 1.2s, INP < 200ms,
+      CLS < 0.1, bundle size within defined budget per
+      data/performance-budgets.yaml.
+    blocking: true
+    owner: perf-eng
+    veto_conditions:
+      - ref: VC-PL-003-A  # LCP < 1.2s
+      - ref: VC-PL-003-B  # INP < 200ms
+      - ref: VC-PL-003-C  # CLS < 0.1
+      - ref: VC-PL-003-D  # Bundle size within budget
+
+  - id: QG-AX-PL-004
+    name: Polish Gate Approved
+    description: >
+      apex-lead final approval after reviewing all audit reports, performing
+      hands-on review, and confirming premium quality bar is met. NON-WAIVABLE.
+    blocking: true
+    owner: apex-lead
+    waivable: false
+    veto_conditions:
+      - ref: VC-PL-004-A  # apex-lead sign-off recorded
+      - ref: VC-PL-004-B  # All critical/high audit issues resolved
+      - ref: VC-PL-004-C  # Hands-on review passed (keyboard, screen reader, reduced motion)
+
+# ------------------------------------------------------------------------------
+# PHASES
+# ------------------------------------------------------------------------------
+phases:
+
+  # ============================================================================
+  # PHASE 1: AUDIT
+  # ============================================================================
+  - id: phase-1-audit
+    name: Audit
+    sequence: 1
+    agents:
+      - motion-eng
+      - a11y-eng
+      - perf-eng
+    gate: QG-AX-PL-001
+    description: >
+      Run all three audit domains — motion/animation, accessibility, and
+      performance — to identify quality issues requiring fixes. Each audit
+      produces a detailed report with categorized findings.
+
+    steps:
+      - id: step-1-1
+        name: Motion Audit
+        agent: motion-eng
+        skip_if: "inputs.skip_motion_audit == true"
+        checklists:
+          - ref: checklists/motion-review-checklist.md
+            reviewer: motion-eng
+        action: >
+          Audit all animations and transitions in the feature for quality,
+          consistency, and accessibility compliance.
+          Review all motion in the feature:
+          - Spring physics: verify stiffness, damping, mass values are consistent
+            with the motion scale defined in the design system
+          - Duration: no animation exceeds 500ms unless justified
+          - Easing: spring-based preferred, cubic-bezier acceptable for simple transitions
+          - Enter/exit: components have both enter and exit animations
+          - Chained animations: proper sequencing with staggerDelay
+          Verify reduced motion compliance:
+          - All animations respect `prefers-reduced-motion: reduce`
+          - Reduced motion fallback uses opacity-only transitions (no transforms)
+          - No essential information conveyed solely through animation
+          - Vestibular-safe: no large-scale movement, parallax, or zoom effects
+          Check motion performance:
+          - Animations use GPU-compositable properties (transform, opacity)
+          - No layout-triggering animations (width, height, top, left)
+          - Frame rate stays at 60fps during all animations
+          - No jank in transition start/end frames
+          Generate motion audit report:
+          - Issues found (categorized: critical, high, medium, low)
+          - Spring config recommendations
+          - Reduced motion compliance status
+          - Performance observations
+        output: docs/qa/polish/{story_id}-motion-audit.md
+        verdicts:
+          PASS: No motion issues found. All animations meet quality bar.
+          ISSUES_FOUND: >
+            Issues documented in report. Route to motion-eng or css-eng
+            for fixes in phase 2.
+
+      - id: step-1-2
+        name: Accessibility Audit
+        agent: a11y-eng
+        checklists:
+          - ref: checklists/a11y-review-checklist.md
+            reviewer: a11y-eng
+          - ref: checklists/wcag-22-checklist.md
+            reviewer: a11y-eng
+          - ref: checklists/interaction-a11y.md
+            reviewer: interaction-dsgn
+        action: >
+          Comprehensive accessibility audit against WCAG 2.2 AA (minimum)
+          covering keyboard navigation, screen reader compatibility, and
+          visual accessibility.
+          WCAG AA compliance check:
+          - 1.1.1 Non-text Content: all images have alt text or are decorative
+          - 1.3.1 Info and Relationships: semantic HTML, proper heading hierarchy
+          - 1.4.3 Contrast Minimum: text >= 4.5:1, large text >= 3:1
+          - 1.4.11 Non-text Contrast: UI components and graphics >= 3:1
+          - 2.1.1 Keyboard: all functionality operable via keyboard
+          - 2.4.3 Focus Order: logical and intuitive tab sequence
+          - 2.4.7 Focus Visible: visible focus indicators on all interactive elements
+          - 4.1.2 Name, Role, Value: ARIA attributes correct and complete
+          Keyboard navigation audit:
+          - Tab through all interactive elements — verify order is logical
+          - Enter/Space activates buttons and links
+          - Escape closes modals, dropdowns, and popovers
+          - Arrow keys navigate within composite widgets (tabs, menus, etc.)
+          - No keyboard traps (focus can always escape)
+          - Skip links present for repetitive navigation
+          Screen reader testing:
+          - VoiceOver (macOS/iOS): all content announced correctly
+          - Component roles announced (button, link, dialog, etc.)
+          - State changes announced (expanded/collapsed, selected, checked)
+          - Live regions update correctly (aria-live for dynamic content)
+          - Form validation errors associated with inputs (aria-describedby)
+          Run automated accessibility tools:
+          - axe-core scan on all pages/components
+          - Storybook accessibility addon results
+          - Lighthouse accessibility score
+          Generate accessibility audit report:
+          - WCAG violations (with criterion reference, severity, location)
+          - Keyboard issues
+          - Screen reader issues
+          - Automated tool results summary
+          - Recommendations for each issue
+        commands:
+          - npm run test:a11y -- --story-id={story_id}
+        output: docs/qa/polish/{story_id}-a11y-audit.md
+        verdicts:
+          PASS: No accessibility violations. WCAG AA fully compliant.
+          ISSUES_FOUND: >
+            Violations documented in report. Route critical/high issues
+            to respective engineers in phase 2.
+
+      - id: step-1-3
+        name: Performance Audit
+        agent: perf-eng
+        checklists:
+          - ref: checklists/perf-review-checklist.md
+            reviewer: perf-eng
+          - ref: checklists/cwv-checklist.md
+            reviewer: perf-eng
+        action: >
+          Performance audit covering Core Web Vitals, bundle size, image
+          optimization, and runtime performance.
+          Core Web Vitals measurement:
+          - LCP (Largest Contentful Paint): target < 1.2s
+          - INP (Interaction to Next Paint): target < 200ms
+          - CLS (Cumulative Layout Shift): target < 0.1
+          Measure on mobile (throttled 4G, 4x CPU slowdown) and desktop.
+          Use Lighthouse CI or WebPageTest for consistent measurement.
+          Bundle analysis:
+          - Total JS bundle size (gzipped) vs budget in data/performance-budgets.yaml
+          - Per-route bundle size (code splitting effectiveness)
+          - Tree-shaking verification (no unused exports in client bundle)
+          - Duplicate dependency check
+          Image and asset optimization:
+          - All images use next/image or equivalent (lazy loading, responsive)
+          - Images served in WebP/AVIF format
+          - No images larger than necessary for display size
+          - Fonts preloaded, display:swap configured
+          - No render-blocking resources
+          Runtime performance:
+          - No unnecessary re-renders (React Profiler check)
+          - Expensive computations memoized (useMemo, useCallback where justified)
+          - Lists use virtualization if > 50 items
+          - No memory leaks in component mount/unmount cycles
+          Generate performance audit report:
+          - CWV scores (pass/fail vs targets)
+          - Bundle size breakdown
+          - Image optimization findings
+          - Runtime performance observations
+          - Recommendations with estimated impact
+        commands:
+          - npm run build -- --analyze
+          - npm run bundle-check
+        output: docs/qa/polish/{story_id}-perf-audit.md
+        verdicts:
+          PASS: All performance metrics within budget. No optimizations needed.
+          ISSUES_FOUND: >
+            Performance issues documented in report. Route to respective
+            engineers in phase 2.
+
+    checkpoint:
+      id: checkpoint-1
+      name: CP-01 Audit to Fix
+      gate: QG-AX-PL-001
+      artifacts_required:
+        - docs/qa/polish/{story_id}-motion-audit.md (or skip justification)
+        - docs/qa/polish/{story_id}-a11y-audit.md
+        - docs/qa/polish/{story_id}-perf-audit.md
+      validation:
+        - All applicable audit reports generated
+        - Issues categorized by severity (critical, high, medium, low)
+        - WCAG 2.2 AA criteria evaluated
+        - Performance metrics measured against data/performance-budgets.yaml
+      on_fail: Block phase-2-fix, return to phase-1-audit with missing reports
+      revision_policy:
+        max_iterations: 3
+        on_max_reached:
+          action: ESCALATE
+          to: apex-lead
+          message: "Audit phase failing after 3 attempts. Audit tooling may need investigation."
+      on_pass:
+        notify:
+          targets: [motion-eng, a11y-eng, perf-eng, css-eng, react-eng]
+          message: "CP-01 passed. All audits complete. Fix phase ready (if issues found)."
+          deadline_hours: 2
+          escalate_on_timeout: apex-lead
+
+  # ============================================================================
+  # PHASE 2: FIX
+  # ============================================================================
+  - id: phase-2-fix
+    name: Fix
+    sequence: 2
+    agents:
+      - motion-eng
+      - a11y-eng
+      - perf-eng
+      - css-eng
+      - react-eng
+    depends_on:
+      - phase-1-audit
+    skip_if: >
+      All audits in phase 1 returned PASS verdict
+    description: >
+      Route identified issues to the responsible engineers for fixes.
+      Each engineer addresses issues from their domain. Critical and
+      high severity issues must be fixed; medium/low are recommended.
+
+    steps:
+      - id: step-2-1
+        name: Motion Fixes
+        agent: motion-eng
+        skip_if: "step-1-1 verdict == PASS or inputs.skip_motion_audit == true"
+        action: >
+          Motion fixes (motion-eng / css-eng):
+          - Fix spring configurations that do not match design system scale
+          - Add missing reduced motion fallbacks
+          - Replace layout-triggering animations with transform/opacity
+          - Add missing enter/exit transitions
+        on_error: Log fix issues, attempt alternative approach
+
+      - id: step-2-2
+        name: Accessibility Fixes
+        agent: a11y-eng
+        skip_if: "step-1-2 verdict == PASS"
+        action: >
+          Accessibility fixes (a11y-eng / react-eng):
+          - Fix WCAG violations by severity (critical first)
+          - Add missing ARIA attributes
+          - Fix keyboard navigation issues
+          - Add missing alt text and screen reader announcements
+          - Fix focus management in modals and dynamic content
+        agents:
+          - a11y-eng
+          - react-eng
+        on_error: BLOCK on unresolved critical a11y issues
+
+      - id: step-2-3
+        name: Performance Fixes
+        agent: perf-eng
+        skip_if: "step-1-3 verdict == PASS"
+        action: >
+          Performance fixes (perf-eng / react-eng):
+          - Reduce bundle size if over budget (code splitting, lazy loading)
+          - Optimize images (format, size, lazy loading)
+          - Fix unnecessary re-renders
+          - Add virtualization for long lists
+          - Resolve CLS issues (explicit dimensions, font loading)
+        agents:
+          - perf-eng
+          - react-eng
+        on_error: Log fix failures, attempt alternative optimization approach
+
+      - id: step-2-4
+        name: Verify Fixes
+        agent: perf-eng
+        action: >
+          Run affected tests after fixes to verify no regressions.
+        commands:
+          - npm run test -- --testPathPattern={story_id}
+          - npm run typecheck
+          - npm run lint
+        on_error: >
+          If fix introduces new failures, revert the specific fix and
+          attempt alternative approach. Escalate to frontend-arch if blocked.
+
+    checkpoint:
+      id: checkpoint-2
+      name: CP-02 Fix to Re-Audit
+      artifacts_required:
+        - All critical and high severity issues addressed
+        - Test suite passes after fixes
+        - Zero TypeScript errors
+        - Zero lint errors
+      validation:
+        - All critical issues from audit reports have been addressed
+        - npm run typecheck passes
+        - npm run lint passes
+        - npm run test passes (no regressions from fixes)
+      on_fail: Return to phase-2-fix with remaining issues listed
+      revision_policy:
+        max_iterations: 3
+        on_max_reached:
+          action: ESCALATE
+          to: apex-lead
+          message: "Fix phase failing after 3 attempts. Issues may require architectural changes."
+      on_pass:
+        notify:
+          targets: [motion-eng, a11y-eng, perf-eng]
+          message: "CP-02 passed. Fixes applied and verified. Re-audit phase ready."
+          deadline_hours: 2
+          escalate_on_timeout: apex-lead
+
+  # ============================================================================
+  # PHASE 3: RE-AUDIT
+  # ============================================================================
+  - id: phase-3-reaudit
+    name: Re-Audit
+    sequence: 3
+    agents:
+      - motion-eng
+      - a11y-eng
+      - perf-eng
+    gates:
+      - QG-AX-PL-002
+      - QG-AX-PL-003
+    depends_on:
+      - phase-2-fix
+    skip_if: >
+      All audits in phase 1 returned PASS verdict (no fixes were needed)
+    description: >
+      Re-run the audits that found issues to verify fixes are effective.
+      Only re-audit domains that had issues (skip domains that passed).
+
+    steps:
+      - id: step-3-1
+        name: Motion Re-Audit
+        agent: motion-eng
+        skip_if: "step-1-1 verdict == PASS or inputs.skip_motion_audit == true"
+        action: >
+          Re-run motion audit if phase 1 found issues.
+          Verify all previously flagged issues are resolved.
+          Update motion audit report with re-audit results.
+        output: docs/qa/polish/{story_id}-motion-audit.md (updated)
+        on_error: Log re-audit failures, proceed with remaining re-audits
+
+      - id: step-3-2
+        name: Accessibility Re-Audit
+        agent: a11y-eng
+        skip_if: "step-1-2 verdict == PASS"
+        action: >
+          Re-run accessibility audit if phase 1 found issues.
+          Verify all previously flagged WCAG violations are resolved.
+          Update accessibility audit report with re-audit results.
+        gate: QG-AX-PL-002
+        output: docs/qa/polish/{story_id}-a11y-audit.md (updated)
+        on_error: BLOCK on unresolved critical a11y violations
+
+      - id: step-3-3
+        name: Performance Re-Audit
+        agent: perf-eng
+        skip_if: "step-1-3 verdict == PASS"
+        action: >
+          Re-run performance audit if phase 1 found issues.
+          Verify all previously flagged metrics are now within budget.
+          Update performance audit report with re-audit results.
+        gate: QG-AX-PL-003
+        output: docs/qa/polish/{story_id}-perf-audit.md (updated)
+        on_error: BLOCK if performance budget still exceeded
+
+    iteration_control:
+      current_iteration: 1
+      max_iterations: "{inputs.max_iterations}"
+      on_issues_remaining: >
+        If issues still remain after re-audit, return to phase-2-fix.
+        Increment iteration counter. If max_iterations reached, escalate.
+      on_max_reached:
+        action: ESCALATE
+        to: apex-lead
+        message: >
+          Polish cycle has reached maximum iterations ({max_iterations}).
+          Remaining issues documented in audit reports. Apex-lead must
+          decide: waive remaining issues, extend iterations, or reject.
+
+    checkpoint:
+      id: checkpoint-3
+      name: CP-03 Re-Audit to Polish Gate
+      gates:
+        - QG-AX-PL-002
+        - QG-AX-PL-003
+      artifacts_required:
+        - Updated audit reports for all re-audited domains
+        - All critical/high issues resolved
+        - WCAG 2.2 AA compliance verified
+        - Performance metrics within budget (LCP < 1.2s, INP < 200ms, CLS < 0.1)
+      validation:
+        - All previously flagged critical issues now resolved
+        - WCAG 2.2 AA fully compliant (QG-AX-PL-002)
+        - Performance budget met per data/performance-budgets.yaml (QG-AX-PL-003)
+        - No new issues introduced by fixes
+      on_fail: >
+        If iteration budget remains, return to phase-2-fix.
+        If iteration budget exhausted, escalate to apex-lead.
+      revision_policy:
+        max_iterations: 3
+        on_max_reached:
+          action: ESCALATE
+          to: apex-lead
+          message: "Re-audit checkpoint failing after 3 attempts."
+      on_pass:
+        notify:
+          target: apex-lead
+          message: "CP-03 passed. All re-audits clear. Ready for polish gate approval."
+          deadline_hours: 2
+          escalate_on_timeout: aios-master
+
+  # ============================================================================
+  # PHASE 4: POLISH GATE
+  # ============================================================================
+  - id: phase-4-polish-gate
+    name: Polish Gate
+    sequence: 4
+    agent: apex-lead
+    gate: QG-AX-PL-004
+    depends_on:
+      - phase-3-reaudit
+    description: >
+      Apex lead reviews all audit reports and fix results. Makes final
+      determination on whether the feature meets the premium quality bar
+      for shipping.
+
+    steps:
+      - id: step-4-1
+        name: Review Audit Reports
+        agent: apex-lead
+        action: >
+          Review all audit reports:
+          - Motion audit: animations feel premium and accessible
+          - Accessibility audit: WCAG AA compliant, keyboard and screen reader tested
+          - Performance audit: CWV within budget, bundle size acceptable
+        on_error: Request clarification from audit engineers
+
+      - id: step-4-2
+        name: Hands-On Review
+        agent: apex-lead
+        checklists:
+          - ref: checklists/visual-review-checklist.md
+            reviewer: apex-lead
+          - ref: checklists/interaction-a11y.md
+            reviewer: interaction-dsgn
+        action: >
+          Perform hands-on review:
+          - Navigate the feature using keyboard only
+          - Test with screen reader (VoiceOver)
+          - Test with reduced motion enabled
+          - Test in dark mode and high contrast mode
+          - Test on mobile device or simulator
+          - Verify animations feel polished and intentional
+        on_error: Document hands-on review issues for fix routing
+
+      - id: step-4-3
+        name: Polish Gate Verdict
+        agent: apex-lead
+        action: >
+          Issue polish gate verdict:
+          - APPROVED: Feature meets premium quality bar. Ready to ship.
+          - NEEDS_POLISH: Specific items need additional work. Return to phase 2
+            with detailed notes. (Only if iteration budget remains.)
+          - REJECTED: Feature does not meet quality bar. Requires significant
+            rework. Return to implementation workflow.
+        gate: QG-AX-PL-004
+        decision:
+          APPROVED: >
+            Polish cycle complete. Feature approved for shipping.
+            All audit reports archived. Story status updated.
+          NEEDS_POLISH: >
+            Return to phase-2-fix with apex-lead's specific notes.
+            Re-run polish cycle for identified items only.
+          REJECTED: >
+            Feature rejected from polish cycle. Requires implementation
+            rework before re-entering polish. Escalate to frontend-arch.
+        revision_policy:
+          max_iterations: 3
+          on_max_reached:
+            action: ESCALATE
+            to: aios-master
+            message: "Polish gate verdict stuck after 3 review cycles."
+
+    checkpoint:
+      id: checkpoint-4
+      name: CP-04 Polish Gate Complete
+      gate: QG-AX-PL-004
+      artifacts_required:
+        - docs/qa/polish/{story_id}-motion-audit.md (final)
+        - docs/qa/polish/{story_id}-a11y-audit.md (final)
+        - docs/qa/polish/{story_id}-perf-audit.md (final)
+        - apex-lead sign-off recorded
+      validation:
+        - Polish gate verdict is APPROVED
+        - All critical/high audit issues resolved
+        - WCAG 2.2 AA compliance confirmed
+        - Performance budget met (LCP < 1.2s per data/performance-budgets.yaml)
+        - Hands-on review passed (keyboard, screen reader, reduced motion)
+      on_fail: >
+        If verdict is NEEDS_POLISH and iteration budget remains, return to
+        phase-2-fix. If verdict is REJECTED, exit workflow and escalate
+        to frontend-arch for architectural review.
+      revision_policy:
+        max_iterations: 3
+        on_max_reached:
+          action: ESCALATE
+          to: aios-master
+          message: "Polish gate checkpoint failing after 3 attempts."
+      on_pass:
+        notify:
+          targets: [apex-lead, motion-eng, a11y-eng, perf-eng]
+          message: "CP-04 passed. Polish cycle complete. Feature approved for shipping."
+
+# ------------------------------------------------------------------------------
+# ERROR HANDLING
+# ------------------------------------------------------------------------------
+error_handling:
+  global_retry_limit: 3
+  on_unrecoverable_error:
+    action: ESCALATE
+    escalate_to: apex-lead
+    then: frontend-arch
+    then_last: aios-master
+  on_audit_tool_failure:
+    action: WARN
+    notify: perf-eng
+    message: >
+      Automated audit tool failed. Proceed with manual audit for the
+      affected domain. Document tool failure for follow-up.
+  on_iteration_budget_exhausted:
+    action: ESCALATE
+    notify: apex-lead
+    message: >
+      Polish cycle iteration budget exhausted. Remaining issues must be
+      triaged: fix, waive, or defer to next release.

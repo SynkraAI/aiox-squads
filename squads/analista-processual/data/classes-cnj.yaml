@@ -1,0 +1,227 @@
+# Classes Processuais CNJ — Tabelas Processuais Unificadas
+# Analista Processual Squad v1.2.0
+# Base: Resolução CNJ 46/2007 + Tabelas Processuais Unificadas (TPU)
+
+schema_version: "1.0.0"
+updated: "2026-03-17"
+base_normativa: "Resolução CNJ 46/2007 — Tabelas Processuais Unificadas"
+fonte_oficial: "https://www.cnj.jus.br/sgt/consulta_publica_classes.php"
+
+# ─────────────────────────────────────────────
+# PROCESSO DE CONHECIMENTO — JUSTIÇA COMUM
+# ─────────────────────────────────────────────
+conhecimento_comum:
+  - codigo: 7
+    classe: "Procedimento Comum"
+    fundamento: "Art. 318, CPC/2015"
+    descricao: "Procedimento padrão para causas que não tenham rito especial"
+
+  - codigo: 40
+    classe: "Procedimento do Juizado Especial Cível"
+    fundamento: "Lei 9.099/1995"
+    descricao: "Causas de até 40 salários mínimos; mais simples e rápidas"
+
+  - codigo: 436
+    classe: "Ação de Alimentos"
+    fundamento: "Lei 5.478/1968 + Arts. 531-533 CPC/2015"
+
+  - codigo: 199
+    classe: "Ação de Dissolução Parcial de Sociedade"
+    fundamento: "Arts. 599-609, CPC/2015"
+
+  - codigo: 198
+    classe: "Ação de Divórcio"
+    fundamento: "Art. 731, CPC/2015"
+
+  - codigo: 31
+    classe: "Ação de Exigir Contas (Prestação de Contas)"
+    fundamento: "Arts. 550-553, CPC/2015"
+
+  - codigo: 10728
+    classe: "Ação de Família"
+    fundamento: "Arts. 693-699, CPC/2015"
+    descricao: "Inclui divórcio, alimentos, guarda, filiação"
+
+  - codigo: 1116
+    classe: "Ação de Interdição"
+    fundamento: "Arts. 747-758, CPC/2015"
+
+  - codigo: 198
+    classe: "Ação de Investigação de Paternidade"
+    fundamento: "Lei 8.560/1992"
+
+  - codigo: 10729
+    classe: "Ação de Reconhecimento e Dissolução de União Estável"
+    fundamento: "Art. 731, CPC/2015"
+
+  - codigo: 198
+    classe: "Ação Demarcatória"
+    fundamento: "Arts. 569-598, CPC/2015"
+
+  - codigo: 198
+    classe: "Ação Divisória"
+    fundamento: "Arts. 569-598, CPC/2015"
+
+  - codigo: 10
+    classe: "Ação Popular"
+    fundamento: "Lei 4.717/1965"
+
+  - codigo: 198
+    classe: "Ação Possessória (Reintegração/Manutenção de Posse)"
+    fundamento: "Arts. 554-568, CPC/2015"
+
+  - codigo: 198
+    classe: "Ação Reivindicatória"
+    fundamento: "Art. 1.228, CC/2002"
+
+  - codigo: 198
+    classe: "Consignação em Pagamento"
+    fundamento: "Arts. 539-549, CPC/2015"
+
+  - codigo: 198
+    classe: "Embargos de Terceiro"
+    fundamento: "Arts. 674-681, CPC/2015"
+
+  - codigo: 198
+    classe: "Inventário"
+    fundamento: "Arts. 610-673, CPC/2015"
+
+  - codigo: 198
+    classe: "Monitória"
+    fundamento: "Arts. 700-702, CPC/2015"
+
+  - codigo: 198
+    classe: "Oposição"
+    fundamento: "Arts. 682-686, CPC/2015"
+
+  - codigo: 198
+    classe: "Usucapião"
+    fundamento: "Arts. 246, §3º, 1.071, CPC/2015"
+
+# ─────────────────────────────────────────────
+# PROCESSO DE EXECUÇÃO
+# ─────────────────────────────────────────────
+execucao:
+  - codigo: 1116
+    classe: "Cumprimento de Sentença"
+    fundamento: "Arts. 513-538, CPC/2015"
+    descricao: "Execução de título judicial"
+
+  - codigo: 1118
+    classe: "Cumprimento de Sentença que Reconhece a Exigibilidade de Obrigação de Fazer ou de Não Fazer"
+    fundamento: "Arts. 536-538, CPC/2015"
+
+  - codigo: 198
+    classe: "Execução de Título Extrajudicial"
+    fundamento: "Arts. 771-925, CPC/2015"
+    descricao: "Fundada em título previsto no Art. 784 CPC/2015"
+
+  - codigo: 198
+    classe: "Execução Fiscal"
+    fundamento: "Lei 6.830/1980 (LEF)"
+    descricao: "Cobranças da Fazenda Pública"
+
+  - codigo: 198
+    classe: "Execução de Alimentos"
+    fundamento: "Arts. 528-533, CPC/2015"
+
+# ─────────────────────────────────────────────
+# PROCEDIMENTOS ESPECIAIS
+# ─────────────────────────────────────────────
+especiais:
+  - codigo: 5551
+    classe: "Mandado de Segurança Cível"
+    fundamento: "Lei 12.016/2009"
+    prazo_impetração: "120 dias do ato coator"
+
+  - codigo: 406
+    classe: "Mandado de Injunção"
+    fundamento: "Art. 5º, LXXI, CF/1988 + Lei 13.300/2016"
+
+  - codigo: 198
+    classe: "Habeas Data"
+    fundamento: "Art. 5º, LXXII, CF/1988 + Lei 9.507/1997"
+
+  - codigo: 9593
+    classe: "Ação Civil Pública"
+    fundamento: "Lei 7.347/1985"
+
+  - codigo: 9593
+    classe: "Ação de Improbidade Administrativa"
+    fundamento: "Lei 8.429/1992 (com alterações da Lei 14.230/2021)"
+
+  - codigo: 198
+    classe: "Cautelar"
+    fundamento: "Arts. 305-310, CPC/2015"
+    descricao: "Procedimento cautelar antecedente"
+
+  - codigo: 198
+    classe: "Tutela Antecipada Antecedente"
+    fundamento: "Arts. 303-304, CPC/2015"
+
+# ─────────────────────────────────────────────
+# RECURSOS
+# ─────────────────────────────────────────────
+recursos_classes:
+  - codigo: 1028
+    classe: "Apelação"
+    fundamento: "Arts. 1.009-1.014, CPC/2015"
+
+  - codigo: 202
+    classe: "Agravo de Instrumento"
+    fundamento: "Arts. 1.015-1.020, CPC/2015"
+
+  - codigo: 203
+    classe: "Agravo Interno"
+    fundamento: "Art. 1.021, CPC/2015"
+
+  - codigo: 1021
+    classe: "Embargos de Declaração"
+    fundamento: "Arts. 1.022-1.026, CPC/2015"
+
+  - codigo: 672
+    classe: "Recurso Especial"
+    fundamento: "Art. 105, III, CF/1988 + Arts. 1.029-1.041, CPC/2015"
+
+  - codigo: 360
+    classe: "Recurso Extraordinário"
+    fundamento: "Art. 102, III, CF/1988 + Arts. 1.029-1.041, CPC/2015"
+
+  - codigo: 198
+    classe: "Embargos de Divergência"
+    fundamento: "Arts. 1.043-1.044, CPC/2015"
+
+# ─────────────────────────────────────────────
+# ASSUNTOS — PRINCIPAIS CATEGORIAS TPU
+# ─────────────────────────────────────────────
+assuntos_principais:
+  direito_civil:
+    codigo_pai: 10596
+    descricao: "Direito Civil"
+    subcategorias:
+      - "Contratos e Obrigações"
+      - "Responsabilidade Civil"
+      - "Família"
+      - "Sucessões"
+      - "Coisas e Propriedade"
+      - "Pessoas"
+
+  direito_processual_civil:
+    codigo_pai: 10697
+    descricao: "Direito Processual Civil e do Trabalho"
+
+  direito_administrativo:
+    codigo_pai: 10706
+    descricao: "Direito Administrativo e Outras Matérias de Direito Público"
+
+  direito_tributario:
+    codigo_pai: 10709
+    descricao: "Direito Tributário"
+
+  direito_consumidor:
+    codigo_pai: 10721
+    descricao: "Direito do Consumidor"
+
+  direito_trabalhista:
+    codigo_pai: 10721
+    descricao: "Direito e Processo do Trabalho"

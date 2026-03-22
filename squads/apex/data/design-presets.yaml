@@ -1,0 +1,1560 @@
+# ==============================================================================
+# APEX SQUAD — Design Presets Catalog
+# data/design-presets.yaml
+# ==============================================================================
+# Purpose:  Comprehensive catalog of design styles. Each preset defines a
+#           complete design language — colors, typography, spacing, motion,
+#           effects, and component patterns. Used by *apex-transform and
+#           *apex-inspire to apply styles with a single command.
+#
+# Usage:    *apex-transform --style {preset_id}
+#           *apex-inspire --category {category}
+#
+# Owner:    apex-lead + design-sys-eng
+# Version:  1.0.0
+# ==============================================================================
+
+version: "1.0.0"
+total_presets: 31
+
+# ==============================================================================
+# CATALOG STRUCTURE
+# ==============================================================================
+# Each preset contains:
+#   - id: unique identifier (used in --style flag)
+#   - name: human-readable name
+#   - category: grouping for *apex-inspire
+#   - description: what makes this style unique
+#   - reference: real-world examples of this style
+#   - tokens: complete design token specification
+#     - colors: full palette (light + dark)
+#     - typography: font stack, scale, weights
+#     - spacing: base unit + scale
+#     - radius: border-radius scale
+#     - shadows: elevation system
+#     - motion: spring configs + animation patterns
+#     - effects: blur, gradients, glows, textures
+#   - component_patterns: how common components should look
+#   - css_variables_prefix: CSS custom property prefix
+#   - tailwind_extend: Tailwind config extensions (if applicable)
+
+# ==============================================================================
+# 1. APPLE ECOSYSTEM
+# ==============================================================================
+apple_ecosystem:
+
+  - id: apple-liquid-glass
+    name: "Apple Liquid Glass"
+    category: apple
+    description: >
+      Apple's 2025 design language. Ultra-transparent glass layers with
+      dynamic tinting, depth-aware blur, and fluid spring animations.
+      Surfaces react to content behind them. Minimal chrome, maximum content.
+    reference: ["iOS 26", "macOS Tahoe", "Apple Design Resources 2025"]
+    tokens:
+      colors:
+        light:
+          background: "oklch(0.98 0.005 250)"
+          surface: "oklch(0.99 0.003 250 / 0.72)"
+          surface-elevated: "oklch(1.0 0 0 / 0.82)"
+          primary: "oklch(0.55 0.25 260)"
+          secondary: "oklch(0.65 0.15 260)"
+          accent: "oklch(0.60 0.20 145)"
+          text-primary: "oklch(0.15 0.02 250)"
+          text-secondary: "oklch(0.40 0.02 250)"
+          text-tertiary: "oklch(0.55 0.01 250)"
+          border: "oklch(0.80 0.01 250 / 0.30)"
+          glass-tint: "oklch(0.95 0.01 250 / 0.50)"
+          destructive: "oklch(0.55 0.22 25)"
+          success: "oklch(0.60 0.18 145)"
+          warning: "oklch(0.70 0.15 85)"
+        dark:
+          background: "oklch(0.12 0.01 250)"
+          surface: "oklch(0.18 0.01 250 / 0.65)"
+          surface-elevated: "oklch(0.22 0.01 250 / 0.75)"
+          primary: "oklch(0.70 0.20 260)"
+          secondary: "oklch(0.60 0.12 260)"
+          accent: "oklch(0.70 0.18 145)"
+          text-primary: "oklch(0.95 0.005 250)"
+          text-secondary: "oklch(0.70 0.01 250)"
+          text-tertiary: "oklch(0.50 0.01 250)"
+          border: "oklch(0.30 0.01 250 / 0.40)"
+          glass-tint: "oklch(0.20 0.01 250 / 0.45)"
+          destructive: "oklch(0.65 0.20 25)"
+          success: "oklch(0.65 0.16 145)"
+          warning: "oklch(0.75 0.14 85)"
+      typography:
+        font_family: "-apple-system, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif"
+        font_mono: "'SF Mono', 'Menlo', monospace"
+        scale: [11, 13, 15, 17, 20, 22, 28, 34, 40, 48, 56]
+        weights: [400, 500, 600, 700]
+        line_height: 1.4
+        letter_spacing: "-0.01em"
+        title_tracking: "-0.025em"
+      spacing:
+        base: 4
+        scale: [0, 2, 4, 6, 8, 10, 12, 16, 20, 24, 32, 40, 48, 64, 80]
+      radius:
+        sm: 8
+        md: 12
+        lg: 16
+        xl: 22
+        2xl: 28
+        full: 9999
+        dynamic: "clamp(12px, 2vw, 22px)"
+      shadows:
+        sm: "0 1px 3px oklch(0 0 0 / 0.06)"
+        md: "0 4px 12px oklch(0 0 0 / 0.08)"
+        lg: "0 8px 30px oklch(0 0 0 / 0.12)"
+        glass: "0 2px 20px oklch(0 0 0 / 0.05), inset 0 1px 0 oklch(1 0 0 / 0.15)"
+        elevated: "0 12px 40px oklch(0 0 0 / 0.15), 0 4px 12px oklch(0 0 0 / 0.05)"
+      motion:
+        spring_default: { stiffness: 300, damping: 25, mass: 1 }
+        spring_gentle: { stiffness: 150, damping: 20, mass: 1 }
+        spring_bouncy: { stiffness: 400, damping: 15, mass: 0.8 }
+        spring_slow: { stiffness: 100, damping: 20, mass: 1.2 }
+        reduced_motion: "crossfade 0.2s ease"
+      effects:
+        backdrop_blur: "blur(40px) saturate(1.8)"
+        glass_border: "1px solid oklch(1 0 0 / 0.18)"
+        glass_gradient: "linear-gradient(135deg, oklch(1 0 0 / 0.12), oklch(1 0 0 / 0.05))"
+        content_tint: true
+        vibrancy: true
+    component_patterns:
+      card: "glass surface, no hard border, elevated shadow, rounded-xl"
+      button_primary: "solid primary, rounded-lg, spring tap scale(0.97)"
+      button_secondary: "glass surface, rounded-lg, subtle border"
+      input: "glass surface, rounded-lg, focus ring primary"
+      modal: "glass surface-elevated, rounded-2xl, backdrop blur, spring enter"
+      nav: "glass surface, border-bottom subtle, sticky blur"
+    css_variables_prefix: "--glass"
+    tailwind_extend:
+      backdropBlur: { glass: "40px" }
+      backdropSaturate: { glass: "1.8" }
+
+  - id: apple-hig-classic
+    name: "Apple HIG Classic"
+    category: apple
+    description: >
+      Apple's pre-liquid-glass design. Clean whites, system blues,
+      crisp borders, SF Pro typography. The timeless iOS look.
+    reference: ["iOS 17", "Apple HIG 2024", "SF Symbols"]
+    tokens:
+      colors:
+        light:
+          background: "#FFFFFF"
+          surface: "#F2F2F7"
+          primary: "#007AFF"
+          secondary: "#5856D6"
+          accent: "#34C759"
+          text-primary: "#000000"
+          text-secondary: "#3C3C43"
+          text-tertiary: "#8E8E93"
+          separator: "#C6C6C8"
+          destructive: "#FF3B30"
+        dark:
+          background: "#000000"
+          surface: "#1C1C1E"
+          primary: "#0A84FF"
+          secondary: "#5E5CE6"
+          accent: "#30D158"
+          text-primary: "#FFFFFF"
+          text-secondary: "#EBEBF5"
+          text-tertiary: "#636366"
+          separator: "#38383A"
+          destructive: "#FF453A"
+      typography:
+        font_family: "-apple-system, 'SF Pro Display', system-ui, sans-serif"
+        scale: [11, 13, 15, 17, 20, 22, 28, 34]
+        weights: [400, 500, 600, 700]
+      spacing:
+        base: 4
+        scale: [0, 4, 8, 12, 16, 20, 24, 32, 40]
+      radius: { sm: 6, md: 10, lg: 14, xl: 20, full: 9999 }
+      shadows:
+        sm: "0 1px 2px rgba(0,0,0,0.05)"
+        md: "0 2px 8px rgba(0,0,0,0.08)"
+        lg: "0 8px 24px rgba(0,0,0,0.12)"
+      motion:
+        spring_default: { stiffness: 250, damping: 22, mass: 1 }
+        spring_gentle: { stiffness: 120, damping: 18, mass: 1 }
+      effects:
+        backdrop_blur: "blur(20px) saturate(1.5)"
+    component_patterns:
+      card: "white surface, thin separator border, rounded-xl"
+      button_primary: "solid blue, rounded-lg, bold text"
+      input: "grouped inset style, rounded-lg, gray background"
+      nav: "translucent bar, thin separator, sticky"
+
+  - id: apple-visionos
+    name: "Apple visionOS Spatial"
+    category: apple
+    description: >
+      Spatial computing design. Ultra-deep glass, specular highlights,
+      3D depth layers, gaze-responsive hover states. Designed for
+      immersive environments.
+    reference: ["visionOS HIG", "Apple Spatial Design", "RealityKit UI"]
+    tokens:
+      colors:
+        light:
+          background: "transparent"
+          surface: "oklch(0.95 0.005 250 / 0.35)"
+          surface-elevated: "oklch(0.98 0.003 250 / 0.55)"
+          primary: "oklch(0.60 0.22 260)"
+          text-primary: "oklch(1.0 0 0)"
+          text-secondary: "oklch(0.85 0.005 250)"
+          glass-tint: "oklch(0.90 0.01 250 / 0.25)"
+        dark:
+          background: "transparent"
+          surface: "oklch(0.15 0.01 250 / 0.40)"
+          surface-elevated: "oklch(0.20 0.01 250 / 0.55)"
+          primary: "oklch(0.70 0.20 260)"
+          text-primary: "oklch(1.0 0 0)"
+          text-secondary: "oklch(0.70 0.005 250)"
+      typography:
+        font_family: "-apple-system, system-ui, sans-serif"
+        scale: [15, 17, 20, 24, 28, 34, 40]
+        weights: [400, 500, 600]
+      radius: { sm: 12, md: 16, lg: 24, xl: 32, window: 40 }
+      shadows:
+        ambient: "0 0 40px oklch(0 0 0 / 0.15)"
+        specular: "inset 0 1px 0 oklch(1 0 0 / 0.20)"
+        depth: "0 20px 60px oklch(0 0 0 / 0.25)"
+      motion:
+        spring_default: { stiffness: 200, damping: 22, mass: 1 }
+        hover_scale: 1.02
+        press_scale: 0.98
+        depth_shift: "translateZ(8px)"
+      effects:
+        backdrop_blur: "blur(60px) saturate(2.0)"
+        specular_highlight: "linear-gradient(180deg, oklch(1 0 0 / 0.15) 0%, transparent 50%)"
+        window_material: "glass with depth-aware blur"
+        gaze_response: true
+    component_patterns:
+      card: "deep glass, specular top edge, large radius, depth shadow"
+      button: "glass, rounded-xl, hover lifts with spring"
+      window: "full glass panel, radius-40, ambient shadow"
+
+# ==============================================================================
+# 2. GOOGLE / MATERIAL ECOSYSTEM
+# ==============================================================================
+google_ecosystem:
+
+  - id: material-3
+    name: "Material Design 3"
+    category: google
+    description: >
+      Google's current design system. Dynamic color from content,
+      rounded shapes, tonal surfaces, emphasis on accessibility.
+    reference: ["Material 3 Guidelines", "m3.material.io", "Android 14+"]
+    tokens:
+      colors:
+        light:
+          background: "#FEF7FF"
+          surface: "#FEF7FF"
+          surface-variant: "#E7E0EC"
+          primary: "#6750A4"
+          secondary: "#625B71"
+          tertiary: "#7D5260"
+          on-primary: "#FFFFFF"
+          on-surface: "#1D1B20"
+          on-surface-variant: "#49454F"
+          outline: "#79747E"
+          outline-variant: "#CAC4D0"
+          error: "#B3261E"
+        dark:
+          background: "#141218"
+          surface: "#141218"
+          surface-variant: "#49454F"
+          primary: "#D0BCFF"
+          secondary: "#CCC2DC"
+          tertiary: "#EFB8C8"
+          on-primary: "#381E72"
+          on-surface: "#E6E0E9"
+          on-surface-variant: "#CAC4D0"
+          outline: "#938F99"
+          outline-variant: "#49454F"
+          error: "#F2B8B5"
+      typography:
+        font_family: "'Roboto Flex', 'Roboto', system-ui, sans-serif"
+        scale_names: [display-lg, display-md, display-sm, headline-lg, headline-md, headline-sm, title-lg, title-md, title-sm, body-lg, body-md, body-sm, label-lg, label-md, label-sm]
+        scale: [57, 45, 36, 32, 28, 24, 22, 16, 14, 16, 14, 12, 14, 12, 11]
+        weights: [400, 500, 700]
+      spacing:
+        base: 4
+        scale: [0, 4, 8, 12, 16, 24, 32, 48, 64]
+      radius: { none: 0, xs: 4, sm: 8, md: 12, lg: 16, xl: 28, full: 9999 }
+      shadows:
+        elevation_1: "0 1px 2px rgba(0,0,0,0.3), 0 1px 3px 1px rgba(0,0,0,0.15)"
+        elevation_2: "0 1px 2px rgba(0,0,0,0.3), 0 2px 6px 2px rgba(0,0,0,0.15)"
+        elevation_3: "0 4px 8px 3px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.3)"
+      motion:
+        easing_standard: "cubic-bezier(0.2, 0, 0, 1)"
+        easing_emphasized: "cubic-bezier(0.2, 0, 0, 1)"
+        duration_short: "200ms"
+        duration_medium: "400ms"
+        duration_long: "600ms"
+      effects:
+        state_layer: "ripple effect on press"
+        tonal_elevation: "surface tint color at each elevation"
+    component_patterns:
+      card: "filled or outlined, rounded-xl, tonal surface"
+      button_filled: "solid primary, rounded-full, uppercase label"
+      button_tonal: "tonal primary, rounded-full"
+      input: "outlined border, rounded-xs, floating label"
+      fab: "tertiary container, rounded-lg, shadow elevation_3"
+      nav: "surface with elevation, active indicator pill"
+
+  - id: material-you
+    name: "Material You (Dynamic Color)"
+    category: google
+    description: >
+      Material 3 with dynamic color extraction from wallpaper/content.
+      Personalized palettes, playful shapes, expressive motion.
+    reference: ["Android 12+", "Pixel devices", "Dynamic Color API"]
+    tokens:
+      colors:
+        note: "Colors are generated dynamically from source image/wallpaper"
+        generation: "HCT color space, tonal palettes from source hue"
+        tonal_palettes: [primary, secondary, tertiary, neutral, neutral-variant, error]
+        tones: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 99, 100]
+      typography:
+        font_family: "'Google Sans', 'Product Sans', system-ui, sans-serif"
+        scale: [57, 45, 36, 32, 28, 24, 22, 16, 14, 12, 11]
+        weights: [400, 500, 700]
+      radius: { sm: 8, md: 16, lg: 28, xl: 32, full: 9999 }
+      motion:
+        spring_default: { stiffness: 380, damping: 28, mass: 1 }
+        shared_element: "container transform with spring"
+    component_patterns:
+      card: "dynamic tonal surface based on content color"
+      chip: "rounded-full, tonal or outlined"
+      bottom_sheet: "rounded-top-xl, drag handle"
+
+# ==============================================================================
+# 3. TECH COMPANY STYLES
+# ==============================================================================
+tech_companies:
+
+  - id: linear-style
+    name: "Linear"
+    category: tech
+    description: >
+      Ultra-clean dark interface. Subtle gradients, precise spacing,
+      keyboard-first interactions, aurora-like accent glows.
+    reference: ["linear.app", "Linear Design System"]
+    tokens:
+      colors:
+        dark:
+          background: "#0A0A0B"
+          surface: "#141415"
+          surface-elevated: "#1B1B1E"
+          primary: "#5E6AD2"
+          accent: "#8B5CF6"
+          text-primary: "#F1F1F2"
+          text-secondary: "#8B8B8E"
+          text-tertiary: "#5C5C60"
+          border: "#26262A"
+          focus-ring: "#5E6AD2"
+        light:
+          background: "#FFFFFF"
+          surface: "#F9F9FB"
+          surface-elevated: "#FFFFFF"
+          primary: "#5E6AD2"
+          text-primary: "#171719"
+          text-secondary: "#6B6B73"
+          border: "#E8E8EC"
+      typography:
+        font_family: "'Inter', system-ui, sans-serif"
+        scale: [11, 12, 13, 14, 16, 20, 24, 32]
+        weights: [400, 500, 600]
+        letter_spacing: "-0.01em"
+        feature_settings: "'cv01' 1, 'cv02' 1, 'ss01' 1"
+      spacing:
+        base: 4
+        scale: [0, 2, 4, 6, 8, 12, 16, 20, 24, 32, 40, 48]
+      radius: { sm: 4, md: 6, lg: 8, xl: 12, full: 9999 }
+      shadows:
+        sm: "0 1px 2px rgba(0,0,0,0.4)"
+        md: "0 4px 12px rgba(0,0,0,0.4)"
+        glow: "0 0 20px oklch(0.55 0.15 270 / 0.15)"
+      motion:
+        spring_default: { stiffness: 400, damping: 30, mass: 0.8 }
+        transition: "150ms ease"
+      effects:
+        aurora_glow: "radial-gradient(ellipse at top, oklch(0.55 0.15 270 / 0.08), transparent 60%)"
+        command_palette: true
+        keyboard_first: true
+    component_patterns:
+      card: "dark surface, thin border, tight padding, rounded-md"
+      button: "solid or ghost, rounded-md, compact, keyboard shortcut badge"
+      input: "dark surface, thin border, rounded-md, compact"
+      sidebar: "dark background, tree navigation, compact items"
+
+  - id: vercel-style
+    name: "Vercel"
+    category: tech
+    description: >
+      Black and white with precision. Geist font, sharp corners mixed
+      with full-round badges, code-centric, terminal aesthetic.
+    reference: ["vercel.com", "Geist Design System", "v0.dev"]
+    tokens:
+      colors:
+        dark:
+          background: "#000000"
+          surface: "#0A0A0A"
+          surface-elevated: "#111111"
+          primary: "#FFFFFF"
+          accent: "#0070F3"
+          text-primary: "#EDEDED"
+          text-secondary: "#888888"
+          text-tertiary: "#666666"
+          border: "#333333"
+          success: "#0070F3"
+          error: "#EE0000"
+          warning: "#F5A623"
+        light:
+          background: "#FFFFFF"
+          surface: "#FAFAFA"
+          primary: "#000000"
+          accent: "#0070F3"
+          text-primary: "#171717"
+          text-secondary: "#666666"
+          border: "#EAEAEA"
+      typography:
+        font_family: "'Geist', 'Inter', system-ui, sans-serif"
+        font_mono: "'Geist Mono', 'Fira Code', monospace"
+        scale: [12, 13, 14, 16, 20, 24, 32, 40, 48]
+        weights: [400, 500, 600, 700]
+      spacing:
+        base: 4
+        scale: [0, 4, 8, 12, 16, 24, 32, 48, 64]
+      radius: { none: 0, sm: 4, md: 6, lg: 8, xl: 12, full: 9999 }
+      shadows:
+        sm: "0 2px 4px rgba(0,0,0,0.1)"
+        md: "0 4px 8px rgba(0,0,0,0.12)"
+        lg: "0 8px 30px rgba(0,0,0,0.12)"
+      motion:
+        spring_default: { stiffness: 350, damping: 26, mass: 1 }
+        transition: "150ms ease"
+      effects:
+        gradient_border: "linear-gradient(to bottom right, #333, #111)"
+        dot_pattern: "radial-gradient(#333 1px, transparent 1px)"
+    component_patterns:
+      card: "black surface, border, sharp or rounded-lg"
+      button: "white on black, rounded-md, medium weight"
+      badge: "rounded-full, small, accent background"
+      code_block: "mono font, dark surface, rounded-lg, line numbers"
+
+  - id: stripe-style
+    name: "Stripe"
+    category: tech
+    description: >
+      Elegant gradients, rich purples and blues, generous whitespace,
+      smooth animations, professional yet approachable.
+    reference: ["stripe.com", "Stripe Docs", "Stripe Dashboard"]
+    tokens:
+      colors:
+        light:
+          background: "#FFFFFF"
+          surface: "#F6F9FC"
+          surface-elevated: "#FFFFFF"
+          primary: "#635BFF"
+          secondary: "#0A2540"
+          accent: "#00D4AA"
+          text-primary: "#0A2540"
+          text-secondary: "#425466"
+          text-tertiary: "#8898AA"
+          border: "#E3E8EE"
+          success: "#00D4AA"
+          error: "#DF1B41"
+          warning: "#F7B955"
+        dark:
+          background: "#0A2540"
+          surface: "#132F4C"
+          primary: "#7B73FF"
+          accent: "#00D4AA"
+          text-primary: "#FFFFFF"
+          text-secondary: "#ADBDCC"
+          border: "#1E4976"
+      typography:
+        font_family: "'Stripe Sans', '-apple-system', 'Segoe UI', sans-serif"
+        scale: [12, 13, 14, 16, 18, 20, 24, 32, 40, 48, 56]
+        weights: [400, 500, 600, 700]
+        line_height: 1.6
+      spacing:
+        base: 4
+        scale: [0, 4, 8, 12, 16, 24, 32, 48, 64, 80, 120]
+      radius: { sm: 4, md: 8, lg: 12, xl: 16, full: 9999 }
+      shadows:
+        sm: "0 2px 5px rgba(50,50,93,0.1), 0 1px 3px rgba(0,0,0,0.07)"
+        md: "0 6px 12px rgba(50,50,93,0.1), 0 3px 7px rgba(0,0,0,0.08)"
+        lg: "0 15px 35px rgba(50,50,93,0.1), 0 5px 15px rgba(0,0,0,0.07)"
+      motion:
+        spring_default: { stiffness: 250, damping: 24, mass: 1 }
+        hover_lift: "translateY(-2px)"
+      effects:
+        mesh_gradient: "radial-gradient(at 40% 20%, #635BFF 0%, transparent 50%), radial-gradient(at 80% 80%, #00D4AA 0%, transparent 50%)"
+        hero_gradient: "linear-gradient(135deg, #635BFF 0%, #0A2540 100%)"
+    component_patterns:
+      card: "white, subtle shadow, rounded-lg, generous padding"
+      button: "solid purple, rounded-md, shadow on hover, lift animation"
+      input: "white, gray border, rounded-md, focus border purple"
+      pricing_card: "white, shadow-lg, rounded-xl, highlighted tier has gradient border"
+
+  - id: notion-style
+    name: "Notion"
+    category: tech
+    description: >
+      Content-first minimalism. Warm off-whites, understated UI chrome,
+      block-based layout, serif headings mixed with sans-serif body.
+    reference: ["notion.so", "Notion Design"]
+    tokens:
+      colors:
+        light:
+          background: "#FFFFFF"
+          surface: "#F7F6F3"
+          surface-elevated: "#FFFFFF"
+          primary: "#2F3437"
+          accent: "#2EAADC"
+          text-primary: "#37352F"
+          text-secondary: "#787774"
+          text-tertiary: "#9B9A97"
+          border: "#E9E9E7"
+          highlight-yellow: "#FBF3DB"
+          highlight-blue: "#DDEBF1"
+          highlight-pink: "#F4DFEB"
+          highlight-green: "#DDEDEA"
+        dark:
+          background: "#191919"
+          surface: "#202020"
+          primary: "#FFFFFF"
+          accent: "#529CCA"
+          text-primary: "#E6E3DD"
+          text-secondary: "#9B9A97"
+          border: "#373737"
+      typography:
+        font_family: "'Notion Sans', '-apple-system', 'Segoe UI', sans-serif"
+        font_serif: "'Noto Serif', 'Georgia', serif"
+        scale: [12, 14, 16, 18, 24, 30, 40]
+        weights: [400, 500, 600, 700]
+        line_height: 1.7
+      spacing:
+        base: 4
+        scale: [0, 2, 4, 8, 12, 16, 24, 32, 48, 64, 96]
+      radius: { sm: 3, md: 4, lg: 6, xl: 8, full: 9999 }
+      shadows:
+        sm: "0 1px 2px rgba(0,0,0,0.04)"
+        md: "0 4px 12px rgba(0,0,0,0.05)"
+        popup: "0 4px 24px rgba(0,0,0,0.12)"
+      motion:
+        transition: "120ms ease"
+        spring_default: { stiffness: 300, damping: 28, mass: 1 }
+      effects:
+        content_focus: true
+        block_highlight: "background color change on hover"
+    component_patterns:
+      card: "white, no border, minimal shadow, content-dense"
+      button: "ghost or subtle fill, rounded-sm, compact"
+      input: "inline editing, no visible border until focus"
+      page: "centered content column, max-width 720px"
+
+  - id: github-style
+    name: "GitHub"
+    category: tech
+    description: >
+      Developer-focused pragmatism. Primer design system, high information
+      density, monospace code, clear hierarchy with color-coded states.
+    reference: ["github.com", "Primer Design System", "primer.style"]
+    tokens:
+      colors:
+        light:
+          background: "#FFFFFF"
+          surface: "#F6F8FA"
+          surface-elevated: "#FFFFFF"
+          primary: "#0969DA"
+          accent: "#1F883D"
+          text-primary: "#1F2328"
+          text-secondary: "#656D76"
+          text-link: "#0969DA"
+          border: "#D0D7DE"
+          border-muted: "#D8DEE4"
+          success: "#1A7F37"
+          danger: "#CF222E"
+          warning: "#9A6700"
+          done: "#8250DF"
+        dark:
+          background: "#0D1117"
+          surface: "#161B22"
+          primary: "#58A6FF"
+          accent: "#3FB950"
+          text-primary: "#E6EDF3"
+          text-secondary: "#8B949E"
+          border: "#30363D"
+          success: "#3FB950"
+          danger: "#F85149"
+      typography:
+        font_family: "'-apple-system', 'Segoe UI', 'Noto Sans', sans-serif"
+        font_mono: "'SFMono-Regular', 'Consolas', monospace"
+        scale: [12, 14, 16, 20, 24, 32, 40]
+        weights: [400, 500, 600, 700]
+        line_height: 1.5
+      radius: { sm: 3, md: 6, lg: 8, xl: 12, full: 9999 }
+      shadows:
+        sm: "0 1px 0 rgba(27,31,36,0.04)"
+        md: "0 3px 6px rgba(140,149,159,0.15)"
+        lg: "0 8px 24px rgba(140,149,159,0.2)"
+      motion:
+        transition: "80ms ease"
+    component_patterns:
+      card: "white, border, rounded-md, compact padding"
+      button: "rounded-md, border, background on hover"
+      label: "rounded-full, small, colored background"
+      code: "mono font, surface background, rounded-md"
+
+  - id: spotify-style
+    name: "Spotify"
+    category: tech
+    description: >
+      Dark immersive interface. Green accents, dynamic gradients from
+      album art, card-based discovery, bold typography.
+    reference: ["spotify.com", "Spotify Design"]
+    tokens:
+      colors:
+        dark:
+          background: "#121212"
+          surface: "#181818"
+          surface-elevated: "#282828"
+          surface-highlight: "#333333"
+          primary: "#1DB954"
+          text-primary: "#FFFFFF"
+          text-secondary: "#B3B3B3"
+          text-tertiary: "#6A6A6A"
+          border: "#333333"
+        light:
+          background: "#FFFFFF"
+          surface: "#F0F0F0"
+          primary: "#1DB954"
+          text-primary: "#191414"
+          text-secondary: "#535353"
+      typography:
+        font_family: "'Circular', 'Helvetica Neue', sans-serif"
+        scale: [11, 12, 14, 16, 24, 32, 48, 64, 96]
+        weights: [400, 700, 900]
+        letter_spacing: "-0.01em"
+      radius: { sm: 4, md: 6, lg: 8, xl: 12, full: 9999 }
+      shadows:
+        card_hover: "0 8px 24px rgba(0,0,0,0.5)"
+      motion:
+        spring_default: { stiffness: 300, damping: 25, mass: 1 }
+        hover_scale: 1.04
+      effects:
+        dynamic_gradient: "Background gradient extracted from content color"
+        album_blur: "blur(100px) opacity(0.5) behind hero section"
+    component_patterns:
+      card: "dark surface, rounded-md, hover scale + shadow, image-first"
+      button: "green pill, rounded-full, bold white text"
+      chip: "rounded-full, border, small"
+      player_bar: "dark elevated, fixed bottom, blur backdrop"
+
+  - id: discord-style
+    name: "Discord"
+    category: tech
+    description: >
+      Playful dark interface. Blurple accents, rounded friendly shapes,
+      chat-centric layout, emoji-rich, community-focused.
+    reference: ["discord.com", "Discord Brand"]
+    tokens:
+      colors:
+        dark:
+          background: "#313338"
+          surface: "#2B2D31"
+          surface-elevated: "#383A40"
+          primary: "#5865F2"
+          accent: "#5865F2"
+          text-primary: "#F2F3F5"
+          text-secondary: "#B5BAC1"
+          text-muted: "#6D6F78"
+          border: "#3F4147"
+          online: "#23A559"
+          idle: "#F0B232"
+          dnd: "#F23F43"
+          offline: "#80848E"
+      typography:
+        font_family: "'gg sans', 'Noto Sans', sans-serif"
+        scale: [12, 14, 16, 20, 24, 32]
+        weights: [400, 500, 600, 700, 800]
+        line_height: 1.4
+      radius: { sm: 4, md: 8, lg: 12, xl: 16, full: 9999 }
+      motion:
+        spring_default: { stiffness: 350, damping: 25, mass: 0.9 }
+        hover_brightness: 1.1
+    component_patterns:
+      card: "dark surface, rounded-lg, no border"
+      button: "blurple fill, rounded-sm, medium weight"
+      avatar: "rounded-full, status indicator"
+      message: "no card, hover highlight, timestamp on hover"
+
+# ==============================================================================
+# 4. DESIGN MOVEMENTS
+# ==============================================================================
+design_movements:
+
+  - id: glassmorphism
+    name: "Glassmorphism"
+    category: movement
+    description: >
+      Frosted glass effect. Semi-transparent surfaces, backdrop blur,
+      subtle borders, depth layering. The foundation of liquid glass.
+    reference: ["glassmorphism.com", "CSS backdrop-filter era"]
+    tokens:
+      colors:
+        light:
+          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+          surface: "rgba(255, 255, 255, 0.25)"
+          surface-elevated: "rgba(255, 255, 255, 0.40)"
+          text-primary: "#1a1a2e"
+          text-secondary: "#4a4a6a"
+          border: "rgba(255, 255, 255, 0.30)"
+        dark:
+          background: "linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)"
+          surface: "rgba(255, 255, 255, 0.08)"
+          surface-elevated: "rgba(255, 255, 255, 0.15)"
+          text-primary: "#FFFFFF"
+          text-secondary: "rgba(255, 255, 255, 0.70)"
+          border: "rgba(255, 255, 255, 0.18)"
+      radius: { sm: 10, md: 16, lg: 24, xl: 32 }
+      effects:
+        backdrop_blur: "blur(16px) saturate(1.5)"
+        glass_border: "1px solid rgba(255, 255, 255, 0.18)"
+        inner_glow: "inset 0 1px 0 rgba(255, 255, 255, 0.15)"
+      motion:
+        spring_default: { stiffness: 200, damping: 20, mass: 1 }
+
+  - id: neumorphism
+    name: "Neumorphism (Soft UI)"
+    category: movement
+    description: >
+      Soft extruded surfaces. Dual shadows (light + dark) creating a
+      clay-like 3D effect. Subtle, tactile, monochromatic.
+    reference: ["neumorphism.io", "Soft UI trend 2020-2021"]
+    tokens:
+      colors:
+        light:
+          background: "#E0E5EC"
+          surface: "#E0E5EC"
+          primary: "#6D5DFC"
+          text-primary: "#2D3436"
+          text-secondary: "#636E72"
+          shadow-light: "#FFFFFF"
+          shadow-dark: "#A3B1C6"
+        dark:
+          background: "#2D3436"
+          surface: "#2D3436"
+          primary: "#6D5DFC"
+          text-primary: "#DFE6E9"
+          shadow-light: "#3D4749"
+          shadow-dark: "#1D2324"
+      radius: { sm: 12, md: 16, lg: 24, xl: 32 }
+      shadows:
+        raised: "8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light)"
+        inset: "inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light)"
+        flat: "none"
+      effects:
+        no_borders: true
+        monochromatic: true
+    component_patterns:
+      card: "same bg as page, dual shadow (raised), large radius"
+      button: "raised shadow, pressed = inset shadow"
+      input: "inset shadow, same background as surface"
+
+  - id: brutalist
+    name: "Brutalist"
+    category: movement
+    description: >
+      Raw, unpolished, intentionally rough. Heavy borders, monospace
+      type, stark contrasts, exposed structure. Anti-design as design.
+    reference: ["brutalistwebsites.com", "Bloomberg", "Balenciaga"]
+    tokens:
+      colors:
+        light:
+          background: "#FFFFFF"
+          surface: "#FFFFFF"
+          primary: "#000000"
+          accent: "#FF0000"
+          text-primary: "#000000"
+          border: "#000000"
+        dark:
+          background: "#000000"
+          surface: "#111111"
+          primary: "#FFFFFF"
+          accent: "#FF0000"
+          text-primary: "#FFFFFF"
+          border: "#FFFFFF"
+      typography:
+        font_family: "'Courier New', 'IBM Plex Mono', monospace"
+        font_display: "'Helvetica Neue', 'Arial Black', sans-serif"
+        scale: [12, 14, 16, 24, 36, 48, 72, 96, 128]
+        weights: [400, 700, 900]
+        text_transform: "uppercase"
+      radius: { all: 0 }
+      shadows:
+        hard: "4px 4px 0 #000000"
+        hard_lg: "8px 8px 0 #000000"
+      effects:
+        no_gradients: true
+        hard_borders: "2px solid #000000"
+        cursor: "crosshair or custom"
+      motion:
+        transition: "none or instant"
+        spring_default: { stiffness: 600, damping: 40, mass: 0.5 }
+    component_patterns:
+      card: "thick border, no radius, hard shadow, stark"
+      button: "border, uppercase, hard shadow, no radius"
+      input: "thick bottom border only, no radius, monospace"
+      heading: "oversized, bold, uppercase, breaking grid"
+
+  - id: minimalist
+    name: "Ultra Minimalist"
+    category: movement
+    description: >
+      Maximum reduction. Remove everything until it breaks, then add
+      one thing back. Whitespace as primary design element.
+    reference: ["Dieter Rams", "muji.com", "apple.com/store"]
+    tokens:
+      colors:
+        light:
+          background: "#FFFFFF"
+          surface: "#FAFAFA"
+          primary: "#1A1A1A"
+          accent: "#0066CC"
+          text-primary: "#1A1A1A"
+          text-secondary: "#8C8C8C"
+          border: "#E5E5E5"
+        dark:
+          background: "#0A0A0A"
+          surface: "#141414"
+          primary: "#FFFFFF"
+          accent: "#4D9FFF"
+          text-primary: "#E5E5E5"
+          text-secondary: "#666666"
+          border: "#2A2A2A"
+      typography:
+        font_family: "'Helvetica Neue', 'Arial', system-ui, sans-serif"
+        scale: [12, 14, 16, 20, 28, 40, 56]
+        weights: [300, 400, 500]
+        line_height: 1.6
+        letter_spacing: "0.02em"
+      spacing:
+        base: 8
+        scale: [0, 8, 16, 24, 32, 48, 64, 96, 128, 192]
+        generous: true
+      radius: { sm: 0, md: 2, lg: 4, xl: 8 }
+      shadows:
+        subtle: "0 1px 3px rgba(0,0,0,0.04)"
+      effects:
+        no_decorations: true
+        whitespace_generous: true
+      motion:
+        spring_default: { stiffness: 200, damping: 25, mass: 1 }
+        subtle: true
+    component_patterns:
+      card: "no border, no shadow, whitespace separates"
+      button: "text only or thin border, minimal"
+      input: "bottom border only, clean"
+      layout: "extreme whitespace, single column, breathing room"
+
+  - id: retro-y2k
+    name: "Retro Y2K"
+    category: movement
+    description: >
+      Year 2000 nostalgia. Chrome effects, pixel fonts, gradients,
+      neon colors, 3D bevels, star decorations. Playful maximalism.
+    reference: ["Y2K aesthetic", "early 2000s web", "Geocities revival"]
+    tokens:
+      colors:
+        light:
+          background: "#F0E6FF"
+          surface: "#FFFFFF"
+          primary: "#7B2FBE"
+          secondary: "#FF6B9D"
+          accent: "#00FFAA"
+          text-primary: "#2D1B69"
+          gradient_hero: "linear-gradient(135deg, #667eea, #764ba2, #FF6B9D)"
+        dark:
+          background: "#0D0221"
+          surface: "#1A0A3E"
+          primary: "#B266FF"
+          secondary: "#FF6B9D"
+          accent: "#00FFAA"
+          text-primary: "#F0E6FF"
+          gradient_hero: "linear-gradient(135deg, #B266FF, #FF6B9D, #00FFAA)"
+      typography:
+        font_family: "'Space Grotesk', 'Outfit', system-ui, sans-serif"
+        font_display: "'Clash Display', 'Syne', sans-serif"
+        scale: [12, 14, 16, 24, 36, 48, 72]
+        weights: [400, 500, 700, 800]
+      radius: { sm: 8, md: 16, lg: 24, xl: 32, blob: "30% 70% 70% 30% / 30% 30% 70% 70%" }
+      shadows:
+        neon: "0 0 20px rgba(123, 47, 190, 0.5)"
+        glow: "0 0 40px rgba(0, 255, 170, 0.3)"
+      effects:
+        chrome_gradient: "linear-gradient(135deg, #C0C0C0, #FFFFFF, #C0C0C0)"
+        star_decorations: true
+        blob_shapes: true
+      motion:
+        spring_bouncy: { stiffness: 500, damping: 12, mass: 0.7 }
+    component_patterns:
+      card: "gradient border, rounded-xl, neon glow on hover"
+      button: "gradient fill, rounded-full, glow shadow"
+      heading: "gradient text, extra bold, large"
+
+  - id: claymorphism
+    name: "Claymorphism"
+    category: movement
+    description: >
+      3D clay-like inflated elements. Pastel colors, inner shadows,
+      rounded blobs, playful and tactile. Like UI made of Play-Doh.
+    reference: ["claymorphism trend 2022", "3D illustration UI"]
+    tokens:
+      colors:
+        light:
+          background: "#F0EDFF"
+          surface: "#FFFFFF"
+          primary: "#7C5CFC"
+          secondary: "#FF6B8A"
+          accent: "#36D6B5"
+          text-primary: "#2D2B55"
+          text-secondary: "#6B6B8D"
+          clay-shadow: "rgba(0, 0, 0, 0.08)"
+          clay-highlight: "rgba(255, 255, 255, 0.80)"
+      radius: { sm: 16, md: 24, lg: 32, xl: 40 }
+      shadows:
+        clay: "8px 8px 16px rgba(0,0,0,0.08), inset -4px -4px 8px rgba(0,0,0,0.05), inset 4px 4px 8px rgba(255,255,255,0.80)"
+      effects:
+        inflated: true
+        pastel_palette: true
+        inner_highlight: "inset 2px 2px 4px rgba(255,255,255,0.8)"
+      motion:
+        spring_bouncy: { stiffness: 300, damping: 12, mass: 1 }
+    component_patterns:
+      card: "white, clay shadow + inner highlight, very rounded"
+      button: "pastel fill, clay shadow, bouncy press animation"
+      icon: "3D-style rendered, pastel colors"
+
+  - id: aurora-gradient
+    name: "Aurora / Mesh Gradient"
+    category: movement
+    description: >
+      Dynamic flowing gradients inspired by Northern Lights. Multiple
+      color stops, animated mesh gradients, vibrant yet elegant.
+    reference: ["stripe.com hero", "Apple keynote backgrounds", "mesh-gradient.com"]
+    tokens:
+      colors:
+        light:
+          background: "#FFFFFF"
+          surface: "rgba(255,255,255,0.85)"
+          primary: "#6366F1"
+          secondary: "#EC4899"
+          tertiary: "#06B6D4"
+          text-primary: "#111827"
+          aurora_gradient: >
+            radial-gradient(at 40% 20%, #6366F1 0%, transparent 50%),
+            radial-gradient(at 80% 0%, #EC4899 0%, transparent 50%),
+            radial-gradient(at 0% 50%, #06B6D4 0%, transparent 50%),
+            radial-gradient(at 80% 50%, #F59E0B 0%, transparent 50%)
+        dark:
+          background: "#030712"
+          surface: "rgba(15,23,42,0.85)"
+          primary: "#818CF8"
+          secondary: "#F472B6"
+          tertiary: "#22D3EE"
+          aurora_gradient: >
+            radial-gradient(at 40% 20%, #4F46E5 0%, transparent 50%),
+            radial-gradient(at 80% 0%, #DB2777 0%, transparent 50%),
+            radial-gradient(at 0% 50%, #0891B2 0%, transparent 50%)
+      radius: { sm: 8, md: 12, lg: 20, xl: 28 }
+      effects:
+        mesh_gradient: "animated background with 3-4 color blobs"
+        glass_over_aurora: "backdrop-blur over gradient"
+        animate_gradient: true
+      motion:
+        gradient_animation: "60s linear infinite, subtle position shift"
+        spring_default: { stiffness: 250, damping: 22, mass: 1 }
+    component_patterns:
+      hero: "full-bleed aurora gradient, glass card overlay"
+      card: "glass over aurora, backdrop-blur"
+      button: "gradient fill or glass"
+
+# ==============================================================================
+# 5. INDUSTRY-SPECIFIC
+# ==============================================================================
+industry:
+
+  - id: healthcare-clean
+    name: "Healthcare Clean"
+    category: industry
+    description: >
+      Trust-inspiring clinical design. Calming blues and greens,
+      high readability, WCAG AAA contrast, clear information hierarchy.
+      Professional, accessible, reassuring.
+    reference: ["Epic MyChart", "One Medical", "Oscar Health"]
+    tokens:
+      colors:
+        light:
+          background: "#FFFFFF"
+          surface: "#F0F4F8"
+          surface-elevated: "#FFFFFF"
+          primary: "#0077B6"
+          secondary: "#00B4D8"
+          accent: "#2D9F83"
+          text-primary: "#1B2631"
+          text-secondary: "#4A5568"
+          text-tertiary: "#718096"
+          border: "#CBD5E0"
+          success: "#2D9F83"
+          warning: "#D69E2E"
+          error: "#C53030"
+          info: "#3182CE"
+        dark:
+          background: "#1A202C"
+          surface: "#2D3748"
+          primary: "#63B3ED"
+          accent: "#48BB78"
+          text-primary: "#F7FAFC"
+          text-secondary: "#CBD5E0"
+      typography:
+        font_family: "'Inter', 'Segoe UI', system-ui, sans-serif"
+        scale: [12, 14, 16, 18, 20, 24, 30, 36]
+        weights: [400, 500, 600, 700]
+        line_height: 1.6
+      spacing:
+        base: 4
+        scale: [0, 4, 8, 12, 16, 20, 24, 32, 40, 48, 64]
+      radius: { sm: 4, md: 8, lg: 12, xl: 16 }
+      shadows:
+        sm: "0 1px 3px rgba(0,0,0,0.08)"
+        md: "0 4px 12px rgba(0,0,0,0.06)"
+        lg: "0 10px 30px rgba(0,0,0,0.08)"
+      motion:
+        spring_default: { stiffness: 200, damping: 24, mass: 1 }
+        subtle: true
+        no_distracting_animations: true
+      effects:
+        high_contrast: true
+        focus_visible: "3px solid var(--primary)"
+        reduced_motion_first: true
+    component_patterns:
+      card: "white, subtle shadow, clean border, high-readability text"
+      button: "solid, high contrast, clear label, large touch target"
+      input: "clear label above, helper text below, error state obvious"
+      status_badge: "color-coded with icon, not color-only (a11y)"
+    a11y_requirements:
+      min_contrast: "7:1 (AAA for body text)"
+      touch_target: "48px minimum"
+      focus_visible: "always"
+
+  - id: fintech-pro
+    name: "Fintech Professional"
+    category: industry
+    description: >
+      Data-dense dashboard design. Dark themes for trading, precise
+      typography, green/red for gain/loss, chart-friendly palettes.
+    reference: ["Robinhood", "Coinbase Pro", "Bloomberg Terminal"]
+    tokens:
+      colors:
+        dark:
+          background: "#0B0E11"
+          surface: "#1E2329"
+          surface-elevated: "#2B3139"
+          primary: "#FCD535"
+          accent: "#F0B90B"
+          text-primary: "#EAECEF"
+          text-secondary: "#848E9C"
+          text-tertiary: "#5E6673"
+          border: "#2B3139"
+          gain: "#0ECB81"
+          loss: "#F6465D"
+          neutral: "#848E9C"
+        light:
+          background: "#FAFAFA"
+          surface: "#FFFFFF"
+          primary: "#C99400"
+          text-primary: "#1E2329"
+          gain: "#0ECB81"
+          loss: "#F6465D"
+      typography:
+        font_family: "'Inter', 'Roboto', system-ui, sans-serif"
+        font_mono: "'Roboto Mono', 'SF Mono', monospace"
+        scale: [10, 11, 12, 13, 14, 16, 20, 24, 32]
+        weights: [400, 500, 600, 700]
+        tabular_nums: true
+      spacing:
+        base: 4
+        scale: [0, 2, 4, 6, 8, 12, 16, 20, 24, 32]
+        compact: true
+      radius: { sm: 2, md: 4, lg: 8, xl: 12 }
+      shadows:
+        sm: "0 1px 2px rgba(0,0,0,0.3)"
+        popup: "0 4px 16px rgba(0,0,0,0.5)"
+      motion:
+        transition: "100ms ease"
+        chart_animation: "800ms ease-out"
+    component_patterns:
+      card: "dark surface, thin border, compact padding"
+      table: "striped rows, mono numbers, color-coded values"
+      chart: "dark background, grid lines, tooltips"
+      ticker: "mono font, gain/loss color, compact"
+
+  - id: saas-dashboard
+    name: "SaaS Dashboard"
+    category: industry
+    description: >
+      Modern B2B application design. Clean sidebar navigation,
+      card-based metrics, data tables, action-oriented layout.
+    reference: ["Vercel Dashboard", "Linear", "Stripe Dashboard"]
+    tokens:
+      colors:
+        light:
+          background: "#F9FAFB"
+          surface: "#FFFFFF"
+          surface-elevated: "#FFFFFF"
+          primary: "#4F46E5"
+          secondary: "#7C3AED"
+          text-primary: "#111827"
+          text-secondary: "#6B7280"
+          text-tertiary: "#9CA3AF"
+          border: "#E5E7EB"
+          success: "#059669"
+          warning: "#D97706"
+          error: "#DC2626"
+        dark:
+          background: "#111827"
+          surface: "#1F2937"
+          primary: "#818CF8"
+          text-primary: "#F9FAFB"
+          text-secondary: "#9CA3AF"
+          border: "#374151"
+      typography:
+        font_family: "'Inter', system-ui, sans-serif"
+        scale: [12, 13, 14, 16, 18, 20, 24, 30, 36]
+        weights: [400, 500, 600, 700]
+      spacing:
+        base: 4
+        scale: [0, 4, 8, 12, 16, 20, 24, 32, 40, 48, 64]
+      radius: { sm: 4, md: 6, lg: 8, xl: 12, full: 9999 }
+      shadows:
+        sm: "0 1px 2px rgba(0,0,0,0.05)"
+        md: "0 4px 6px rgba(0,0,0,0.05)"
+        lg: "0 10px 15px rgba(0,0,0,0.05)"
+      motion:
+        spring_default: { stiffness: 300, damping: 26, mass: 1 }
+    component_patterns:
+      card: "white, subtle shadow, rounded-lg, metric + trend"
+      sidebar: "dark or white, icon + label, collapsible"
+      table: "striped, sortable headers, pagination"
+      button: "primary solid, secondary outlined"
+
+  - id: ecommerce-modern
+    name: "E-commerce Modern"
+    category: industry
+    description: >
+      Product-focused shopping experience. Image-first cards,
+      clear CTAs, trust badges, quick-add interactions.
+    reference: ["shopify.com themes", "Nike", "Apple Store"]
+    tokens:
+      colors:
+        light:
+          background: "#FFFFFF"
+          surface: "#F5F5F5"
+          primary: "#111111"
+          accent: "#FF5A1F"
+          cta: "#111111"
+          text-primary: "#111111"
+          text-secondary: "#555555"
+          text-price: "#111111"
+          text-sale: "#E53E3E"
+          border: "#E5E5E5"
+          badge-new: "#111111"
+          badge-sale: "#E53E3E"
+      typography:
+        font_family: "'Plus Jakarta Sans', system-ui, sans-serif"
+        font_display: "'Sora', sans-serif"
+        scale: [11, 12, 13, 14, 16, 20, 24, 32, 40, 48]
+        weights: [400, 500, 600, 700, 800]
+      radius: { sm: 4, md: 8, lg: 12, xl: 16, full: 9999 }
+      shadows:
+        product: "0 2px 8px rgba(0,0,0,0.06)"
+        product_hover: "0 8px 24px rgba(0,0,0,0.12)"
+      motion:
+        spring_default: { stiffness: 300, damping: 24, mass: 1 }
+        image_zoom: "scale(1.05) on hover"
+        quick_add: "slide up from bottom of card"
+    component_patterns:
+      product_card: "image top, title + price below, hover reveals quick-add"
+      cta_button: "full-width, dark fill, uppercase, medium weight"
+      price: "bold, old price strikethrough + sale red"
+      gallery: "thumbnails below, zoom on hover"
+
+  - id: education-friendly
+    name: "Education Friendly"
+    category: industry
+    description: >
+      Approachable learning interface. Warm colors, progress indicators,
+      gamification elements, encouraging tone, high readability.
+    reference: ["Duolingo", "Khan Academy", "Coursera"]
+    tokens:
+      colors:
+        light:
+          background: "#FFFFFF"
+          surface: "#F7F7F7"
+          primary: "#58CC02"
+          secondary: "#1CB0F6"
+          tertiary: "#FF9600"
+          text-primary: "#3C3C3C"
+          text-secondary: "#777777"
+          border: "#E5E5E5"
+          success: "#58CC02"
+          streak: "#FF9600"
+          xp: "#1CB0F6"
+          error: "#FF4B4B"
+      typography:
+        font_family: "'Nunito', 'Rounded Mplus 1c', system-ui, sans-serif"
+        scale: [12, 14, 16, 18, 20, 24, 32, 40]
+        weights: [400, 600, 700, 800]
+        line_height: 1.6
+      radius: { sm: 8, md: 12, lg: 16, xl: 20, full: 9999 }
+      shadows:
+        sm: "0 2px 4px rgba(0,0,0,0.06)"
+        button: "0 4px 0 rgba(0,0,0,0.12)"
+      motion:
+        spring_bouncy: { stiffness: 400, damping: 12, mass: 0.8 }
+        celebration: "confetti + scale bounce"
+    component_patterns:
+      card: "rounded-xl, friendly shadow, progress bar"
+      button: "rounded-xl, solid fill, bottom shadow (3D feel)"
+      progress: "rounded-full, animated fill, color-coded"
+      badge: "rounded-full, icon + count, bouncy entrance"
+
+# ==============================================================================
+# 6. DARK THEMES
+# ==============================================================================
+dark_themes:
+
+  - id: dark-elegant
+    name: "Dark Elegant"
+    category: dark
+    description: >
+      Sophisticated dark interface. Warm grays, gold/amber accents,
+      serif typography for headings, luxurious feel.
+    reference: ["Luxury brands", "Squarespace templates", "Wine/spirits sites"]
+    tokens:
+      colors:
+        dark:
+          background: "#0C0C0C"
+          surface: "#161616"
+          surface-elevated: "#1F1F1F"
+          primary: "#C9A96E"
+          accent: "#D4AF37"
+          text-primary: "#F5F0EB"
+          text-secondary: "#A09B93"
+          text-tertiary: "#6B6660"
+          border: "#2A2725"
+      typography:
+        font_family: "'Cormorant Garamond', 'Playfair Display', serif"
+        font_body: "'Inter', sans-serif"
+        scale: [12, 14, 16, 20, 24, 32, 40, 56, 72]
+        weights: [300, 400, 500, 600, 700]
+        letter_spacing: "0.05em"
+        title_tracking: "0.08em"
+      radius: { sm: 0, md: 2, lg: 4, xl: 8 }
+      shadows:
+        glow: "0 0 30px rgba(201, 169, 110, 0.1)"
+      effects:
+        gold_gradient: "linear-gradient(135deg, #C9A96E, #D4AF37, #C9A96E)"
+        subtle_texture: "noise grain overlay"
+      motion:
+        spring_default: { stiffness: 150, damping: 22, mass: 1.2 }
+        elegant: true
+    component_patterns:
+      card: "dark surface, thin gold border accent, minimal"
+      button: "outlined gold, uppercase, tracked letters"
+      heading: "serif, large, tracked, gold accent underline"
+
+  - id: oled-dark
+    name: "OLED True Black"
+    category: dark
+    description: >
+      Pure black for OLED displays. Maximum battery savings on mobile,
+      high contrast, vivid accent colors pop against void.
+    reference: ["Twitter/X dark mode", "iOS dark mode", "OLED-optimized apps"]
+    tokens:
+      colors:
+        dark:
+          background: "#000000"
+          surface: "#0A0A0A"
+          surface-elevated: "#141414"
+          primary: "#1D9BF0"
+          text-primary: "#E7E9EA"
+          text-secondary: "#71767B"
+          border: "#1E1E1E"
+          accent-blue: "#1D9BF0"
+          accent-purple: "#7856FF"
+          accent-pink: "#F91880"
+          accent-orange: "#FF7A00"
+          accent-green: "#00BA7C"
+      typography:
+        font_family: "'Inter', system-ui, sans-serif"
+        scale: [12, 13, 14, 15, 17, 20, 24, 34]
+        weights: [400, 500, 700]
+      radius: { sm: 4, md: 8, lg: 16, xl: 24, full: 9999 }
+      effects:
+        true_black: "#000000"
+        accent_glow: "0 0 12px var(--accent)"
+      motion:
+        spring_default: { stiffness: 350, damping: 28, mass: 0.9 }
+    component_patterns:
+      card: "true black, thin border, accent color per type"
+      button: "accent fill on black, high contrast"
+      separator: "very thin, #1E1E1E"
+
+  - id: nord-theme
+    name: "Nord"
+    category: dark
+    description: >
+      Arctic-inspired color palette. Cool blues and grays, comfortable
+      for long reading sessions, calm and focused aesthetic.
+    reference: ["nordtheme.com", "Arctic Ice Studio"]
+    tokens:
+      colors:
+        dark:
+          background: "#2E3440"
+          surface: "#3B4252"
+          surface-elevated: "#434C5E"
+          primary: "#88C0D0"
+          secondary: "#81A1C1"
+          accent: "#A3BE8C"
+          text-primary: "#ECEFF4"
+          text-secondary: "#D8DEE9"
+          text-tertiary: "#7B88A1"
+          border: "#4C566A"
+          red: "#BF616A"
+          orange: "#D08770"
+          yellow: "#EBCB8B"
+          green: "#A3BE8C"
+          purple: "#B48EAD"
+        light:
+          background: "#ECEFF4"
+          surface: "#E5E9F0"
+          primary: "#5E81AC"
+          text-primary: "#2E3440"
+          text-secondary: "#4C566A"
+      typography:
+        font_family: "'Inter', 'Fira Sans', system-ui, sans-serif"
+        font_mono: "'Fira Code', 'JetBrains Mono', monospace"
+        scale: [12, 14, 16, 18, 20, 24, 32]
+        weights: [400, 500, 600]
+      radius: { sm: 4, md: 6, lg: 8, xl: 12 }
+      motion:
+        spring_default: { stiffness: 250, damping: 24, mass: 1 }
+    component_patterns:
+      card: "polar night surface, subtle border, rounded-md"
+      button: "frost color fill, rounded-md"
+      code: "mono font, nord syntax highlighting"
+
+# ==============================================================================
+# 7. EXPERIMENTAL / CUTTING-EDGE
+# ==============================================================================
+experimental:
+
+  - id: neubrutalism
+    name: "Neubrutalism"
+    category: experimental
+    description: >
+      Modern brutalism with color. Bold outlines, offset shadows,
+      bright backgrounds, playful yet structured. Gumroad-style.
+    reference: ["Gumroad", "Figma community", "neubrutalism trend 2023-2025"]
+    tokens:
+      colors:
+        light:
+          background: "#E8E5DE"
+          surface: "#FFFFFF"
+          primary: "#FF6B6B"
+          secondary: "#4ECDC4"
+          accent: "#FFE66D"
+          text-primary: "#2D2D2D"
+          border: "#2D2D2D"
+      typography:
+        font_family: "'Space Grotesk', 'Syne', system-ui, sans-serif"
+        scale: [12, 14, 16, 20, 24, 32, 48, 64]
+        weights: [400, 500, 700, 800]
+      radius: { sm: 0, md: 4, lg: 8, xl: 12 }
+      shadows:
+        hard: "4px 4px 0 #2D2D2D"
+        hard_lg: "8px 8px 0 #2D2D2D"
+        hard_color: "4px 4px 0 var(--primary)"
+      effects:
+        thick_borders: "2px solid #2D2D2D"
+        bright_backgrounds: true
+        no_gradients: true
+      motion:
+        spring_bouncy: { stiffness: 400, damping: 15, mass: 0.8 }
+    component_patterns:
+      card: "white, thick border, hard shadow, colored accent"
+      button: "colored fill, thick border, hard shadow, bouncy press"
+      input: "thick border, no radius, hard shadow on focus"
+
+  - id: cyberpunk
+    name: "Cyberpunk / Neon"
+    category: experimental
+    description: >
+      High-tech dystopian aesthetic. Neon glows, dark backgrounds,
+      scanlines, glitch effects, terminal-inspired. Night city vibes.
+    reference: ["Cyberpunk 2077 UI", "synthwave aesthetic", "tron-style"]
+    tokens:
+      colors:
+        dark:
+          background: "#0A0A0F"
+          surface: "#12121A"
+          surface-elevated: "#1A1A25"
+          primary: "#00FFE0"
+          secondary: "#FF00FF"
+          accent: "#FFFF00"
+          text-primary: "#E0E0FF"
+          text-secondary: "#8080A0"
+          border: "#2A2A3A"
+          neon-cyan: "#00FFE0"
+          neon-magenta: "#FF00FF"
+          neon-yellow: "#FFFF00"
+      typography:
+        font_family: "'Rajdhani', 'Orbitron', 'Share Tech Mono', monospace"
+        scale: [11, 12, 14, 16, 20, 28, 36, 48]
+        weights: [400, 500, 600, 700]
+        text_transform: "uppercase"
+      radius: { sm: 0, md: 2, lg: 4, xl: 8, clip: "polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))" }
+      shadows:
+        neon: "0 0 10px var(--primary), 0 0 30px var(--primary), 0 0 60px var(--primary)"
+        neon_subtle: "0 0 8px var(--primary)"
+      effects:
+        scanlines: "repeating-linear-gradient(0deg, rgba(0,0,0,0.1) 0px, transparent 1px, transparent 2px)"
+        glitch: "text-shadow with RGB split"
+        crt_curve: "slight border-radius on full-screen elements"
+      motion:
+        spring_default: { stiffness: 500, damping: 20, mass: 0.7 }
+        glitch_on_hover: true
+    component_patterns:
+      card: "dark, clipped corner, neon border glow"
+      button: "outlined neon, clipped corner, glow on hover"
+      heading: "uppercase, tracked, neon glow, glitch effect"
+      terminal: "mono font, green-on-black, typing animation"
+
+  - id: organic-nature
+    name: "Organic / Nature"
+    category: experimental
+    description: >
+      Earth-toned, organic shapes. Warm greens and browns, hand-drawn
+      illustrations feel, rounded organic blobs, sustainable aesthetic.
+    reference: ["Patagonia", "Aesop", "organic product brands"]
+    tokens:
+      colors:
+        light:
+          background: "#FAF8F5"
+          surface: "#F5F0EB"
+          surface-elevated: "#FFFFFF"
+          primary: "#4A7C59"
+          secondary: "#8B6914"
+          accent: "#C17817"
+          text-primary: "#2C2416"
+          text-secondary: "#6B5E4E"
+          text-tertiary: "#9B8E7E"
+          border: "#DDD5C8"
+        dark:
+          background: "#1A1A14"
+          surface: "#252518"
+          primary: "#6AAB7A"
+          text-primary: "#E5DDD0"
+      typography:
+        font_family: "'DM Sans', 'Source Sans Pro', system-ui, sans-serif"
+        font_display: "'Fraunces', 'Libre Baskerville', serif"
+        scale: [12, 14, 16, 18, 20, 24, 32, 40, 48]
+        weights: [400, 500, 600, 700]
+        line_height: 1.7
+      radius: { sm: 8, md: 16, lg: 24, xl: 32, blob: "40% 60% 55% 45% / 50% 40% 60% 50%" }
+      shadows:
+        sm: "0 2px 8px rgba(44, 36, 22, 0.06)"
+        md: "0 4px 16px rgba(44, 36, 22, 0.08)"
+      effects:
+        paper_texture: "subtle noise overlay"
+        organic_shapes: "blob border-radius"
+        warm_filter: true
+      motion:
+        spring_gentle: { stiffness: 120, damping: 18, mass: 1.2 }
+    component_patterns:
+      card: "warm surface, organic radius, subtle texture"
+      button: "earth-tone fill, organic radius"
+      heading: "serif display font, large, earthy color"
+
+  - id: swiss-grid
+    name: "Swiss / International Typographic"
+    category: experimental
+    description: >
+      Grid-perfect layout. Mathematical precision, Helvetica/Akzidenz,
+      asymmetric balance, red accents, information-first design.
+    reference: ["Swiss Style", "Josef Muller-Brockmann", "Massimo Vignelli"]
+    tokens:
+      colors:
+        light:
+          background: "#FFFFFF"
+          surface: "#F5F5F5"
+          primary: "#E60012"
+          text-primary: "#000000"
+          text-secondary: "#555555"
+          border: "#CCCCCC"
+          grid-line: "#E0E0E0"
+      typography:
+        font_family: "'Helvetica Neue', 'Akzidenz Grotesk', 'Arial', sans-serif"
+        scale: [9, 10, 12, 14, 18, 24, 36, 48, 72, 96]
+        weights: [300, 400, 500, 700]
+        grid_baseline: 4
+        line_height: 1.5
+      spacing:
+        base: 4
+        grid: "12-column, 4px baseline"
+      radius: { all: 0 }
+      shadows: { none: "none" }
+      effects:
+        strict_grid: true
+        asymmetric_layout: true
+        red_accent: true
+      motion:
+        transition: "200ms ease"
+        no_bounce: true
+    component_patterns:
+      card: "no border, no shadow, grid-aligned, whitespace separates"
+      button: "no radius, uppercase, red accent, precise padding"
+      heading: "large, light weight, grid-aligned, red accent rule"
+      layout: "12-column grid, mathematical spacing, asymmetric"
+
+# ==============================================================================
+# META — PRESET MANAGEMENT
+# ==============================================================================
+meta:
+  how_to_add_preset: |
+    1. Add entry under the appropriate category section
+    2. Include all required fields: id, name, category, description, reference, tokens
+    3. Tokens must define at minimum: colors (light + dark), typography, spacing, radius
+    4. Add component_patterns for at least: card, button, input
+    5. Test with *apex-transform --style {new_id} on a sample project
+
+  categories:
+    - apple         # Apple ecosystem (iOS, macOS, visionOS)
+    - google        # Google Material ecosystem
+    - tech          # Major tech company styles
+    - movement      # Design movements and trends
+    - industry      # Industry-specific designs
+    - dark          # Dark theme variations
+    - experimental  # Cutting-edge and unconventional
+
+  versioning: |
+    Presets follow the squad version. New presets = minor version bump.
+    Breaking changes to existing preset tokens = major version bump.

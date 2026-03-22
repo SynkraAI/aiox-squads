@@ -1,0 +1,751 @@
+# ==============================================================================
+# APEX SQUAD — WORKFLOW: Apex Pipeline
+# wf-apex-pipeline.yaml
+# ==============================================================================
+# Purpose:  Automated pipeline orchestration for Squad Apex. Handles the full
+#           lifecycle from feature specification through ship, with 6 user
+#           checkpoints where creative decisions are NEVER automated.
+#
+# Modes:    autonomous (*apex-go) — runs all phases, pauses at checkpoints
+#           guided (*apex-step) — runs one phase at a time, waits for approval
+#
+# Trigger:  *apex-go {desc} or *apex-step {desc}
+# Owner:    apex-lead
+# Squad:    Apex (Frontend Ultra-Premium)
+# Version:  1.0.0
+# ==============================================================================
+
+id: wf-apex-pipeline
+name: Apex Pipeline
+description: >
+  Automated orchestration pipeline for Squad Apex. Routes feature requests
+  through 7 phases (specify, design, architect, implement, polish, QA, ship)
+  with automatic agent handoffs. Pauses at 6 user checkpoints where creative
+  decisions belong to the user, not the system. Supports autonomous and
+  guided execution modes.
+
+metadata:
+  version: "1.0.0"
+  owner: apex-lead
+  squad: apex
+  created: "2026-03-01"
+  tags:
+    - pipeline
+    - orchestration
+    - automation
+    - cross-platform
+    - full-cycle
+
+# ------------------------------------------------------------------------------
+# INPUTS
+# ------------------------------------------------------------------------------
+inputs:
+  required:
+    - feature:
+        type: string
+        description: "Short description of the feature to build"
+  optional:
+    - mode:
+        type: enum
+        values: [autonomous, guided]
+        default: autonomous
+        description: "autonomous = runs all, pauses at checkpoints. guided = phase by phase."
+    - target_platforms:
+        type: array
+        default: [web]
+        items: [web, mobile, spatial]
+        description: "Platforms to target in this pipeline run"
+    - story_id:
+        type: string
+        description: "Associated story ID if already created"
+
+# ------------------------------------------------------------------------------
+# OUTPUTS
+# ------------------------------------------------------------------------------
+outputs:
+  - pipeline_state:
+      description: "Final pipeline state YAML path"
+      type: string
+  - implemented_components:
+      description: "List of created or modified component paths"
+      type: array
+  - qa_verdict:
+      description: "Final QA verdict (PASS | FAIL)"
+      type: string
+  - pr_url:
+      description: "GitHub PR URL (if shipped)"
+      type: string
+
+# ------------------------------------------------------------------------------
+# ENFORCEMENT
+# ------------------------------------------------------------------------------
+enforcement:
+  veto_registry: data/veto-conditions.yaml
+  performance_budgets: data/performance-budgets.yaml
+  state_schema: data/pipeline-state-schema.yaml
+  state_persistence: ".aios/apex-pipeline/{pipeline-id}.yaml"
+  pre_execution_validation:
+    validate_agents: true
+    action: "BLOCK pipeline if any referenced agent not in data/agent-registry.yaml"
+
+# ------------------------------------------------------------------------------
+# EXECUTION MODES
+# ------------------------------------------------------------------------------
+execution_modes:
+  autonomous:
+    trigger: "*apex-go {desc}"
+    behavior: >
+      Pipeline runs all phases automatically. Pauses ONLY at the 6 user
+      checkpoints (CP-01 through CP-06) and when a quality gate fails.
+      Between checkpoints, agents are orchestrated without user intervention.
+    pause_conditions:
+      - checkpoint_reached
+      - gate_failure
+      - agent_failure_after_retry
+
+  guided:
+    trigger: "*apex-step {desc}"
+    behavior: >
+      Pipeline runs one phase at a time. After each phase completes, shows
+      the result and waits for user approval before advancing to the next
+      phase. All 6 checkpoints are still presented.
+    pause_conditions:
+      - phase_completed
+      - checkpoint_reached
+      - gate_failure
+      - agent_failure_after_retry
+
+# ------------------------------------------------------------------------------
+# CHECKPOINTS (NEVER automated)
+# ------------------------------------------------------------------------------
+checkpoints:
+  - id: CP-01
+    name: Feature Brief
+    phase: 1_specify
+    description: "User describes WHAT they want to build and target platforms"
+    template: templates/pipeline-checkpoint-tmpl.md#CP-01
+    required: true
+    timeout_hours: 48
+    on_timeout: pause_pipeline
+
+  - id: CP-02
+    name: Design Review
+    phase: 2_design
+    description: "User approves design spec or requests changes"
+    template: templates/pipeline-checkpoint-tmpl.md#CP-02
+    required: true
+    max_revisions: 3
+    decisions: [APPROVE, REVISE]
+    timeout_hours: 48
+    on_timeout: pause_pipeline
+
+  - id: CP-03
+    name: Architecture Decision
+    phase: 3_architect
+    description: "User confirms RSC strategy, packages, state management"
+    template: templates/pipeline-checkpoint-tmpl.md#CP-03
+    required: true
+    decisions: [APPROVE, REVISE]
+    timeout_hours: 48
+    on_timeout: pause_pipeline
+
+  - id: CP-04
+    name: Visual Review
+    phase: 7_ship
+    description: "User reviews implemented visual result before shipping"
+    template: templates/pipeline-checkpoint-tmpl.md#CP-04
+    required: true
+    decisions: [APPROVE, REVISE]
+    timeout_hours: 48
+    on_timeout: pause_pipeline
+
+  - id: CP-05
+    name: Motion Feel
+    phase: 5_polish
+    description: "User approves or adjusts spring configs and animation feel"
+    template: templates/pipeline-checkpoint-tmpl.md#CP-05
+    required: true
+    decisions: [APPROVE, ADJUST]
+    adjustments:
+      - "more snappy (higher stiffness)"
+      - "more bouncy (lower damping)"
+      - "more subtle (higher damping)"
+      - "custom spring values"
+    timeout_hours: 48
+    on_timeout: pause_pipeline
+
+  - id: CP-06
+    name: Final Ship Decision
+    phase: 7_ship
+    description: "User makes final SHIP or BLOCK decision"
+    template: templates/pipeline-checkpoint-tmpl.md#CP-06
+    required: true
+    decisions: [SHIP, BLOCK]
+    timeout_hours: 48
+    on_timeout: pause_pipeline
+
+# ------------------------------------------------------------------------------
+# QUALITY GATES
+# ------------------------------------------------------------------------------
+gates:
+  - id: QG-AX-001
+    name: Token Validation
+    phase: 2_design
+    owner: design-sys-eng
+    blocking: true
+    veto_refs: [VC-001-A, VC-001-B, VC-001-C]
+
+  - id: QG-AX-002
+    name: Spec Completeness
+    phase: 2_design
+    owner: interaction-dsgn
+    blocking: true
+    veto_refs: [VC-002-A, VC-002-B, VC-002-C]
+
+  - id: QG-AX-003
+    name: Design Approved
+    phase: 2_design
+    owner: apex-lead
+    blocking: true
+    veto_refs: [VC-003-A, VC-003-B]
+
+  - id: QG-AX-004
+    name: Architecture Review
+    phase: 3_architect
+    owner: frontend-arch
+    blocking: true
+    veto_refs: [VC-004-A, VC-004-B]
+
+  - id: QG-AX-005
+    name: Motion Review
+    phase: 5_polish
+    owner: motion-eng
+    blocking: true
+    veto_refs: [VC-006-A, VC-006-B]
+
+  - id: QG-AX-006
+    name: Accessibility
+    phase: 5_polish
+    owner: a11y-eng
+    blocking: true
+    veto_refs: [VC-005-A, VC-005-B, VC-005-C]
+
+  - id: QG-AX-007
+    name: Performance
+    phase: 5_polish
+    owner: perf-eng
+    blocking: true
+    veto_refs: [VC-007-A, VC-007-B, VC-007-C]
+
+  - id: QG-AX-008
+    name: Visual Regression
+    phase: 6_qa
+    owner: qa-visual
+    blocking: true
+
+  - id: QG-AX-009
+    name: Cross-Platform Tests
+    phase: 6_qa
+    owner: qa-xplatform
+    blocking: true
+
+  - id: QG-AX-010
+    name: Final Visual Review
+    phase: 7_ship
+    owner: apex-lead
+    blocking: true
+    waivable: false
+    veto_refs: [VC-010-A, VC-010-B, VC-010-C]
+
+# ------------------------------------------------------------------------------
+# PHASES
+# ------------------------------------------------------------------------------
+phases:
+
+  # ============================================================================
+  # PHASE 1: SPECIFY
+  # ============================================================================
+  - id: 1_specify
+    name: Specify
+    sequence: 1
+    execution: sequential
+    agent: apex-lead
+    checkpoint: CP-01
+    description: >
+      apex-lead receives the feature description, runs routing analysis to
+      classify scope, and presents CP-01 to gather the user's feature brief.
+      Short-circuits to *apex-fix if scope is single-agent.
+
+    steps:
+      - id: step-1-1
+        name: Routing Analysis
+        agent: apex-lead
+        action: >
+          Analyze feature description using routing logic from
+          apex-route-request.md. Classify scope as single-agent,
+          multi-agent, or full-pipeline.
+        output: scope_classification
+
+      - id: step-1-2
+        name: Short-Circuit Check
+        agent: apex-lead
+        action: >
+          If scope is single-agent, suggest *apex-fix instead of full
+          pipeline. Present the option to the user. If user confirms,
+          exit pipeline and route to specialist.
+        decision:
+          single_agent: "Suggest *apex-fix, exit pipeline if confirmed"
+          multi_agent: "Continue pipeline with reduced phases"
+          full_pipeline: "Continue full 7-phase pipeline"
+
+      - id: step-1-3
+        name: Feature Brief Checkpoint
+        agent: apex-lead
+        checkpoint: CP-01
+        action: >
+          Present CP-01 to user. Gather feature description, target
+          platforms, and any constraints. Record in pipeline state.
+        output: feature_brief
+
+    on_complete:
+      update_state: { phase: 1_specify, status: completed }
+      next: 2_design
+
+  # ============================================================================
+  # PHASE 2: DESIGN
+  # ============================================================================
+  - id: 2_design
+    name: Design
+    sequence: 2
+    execution: sequential_with_checkpoint
+    agents:
+      primary: interaction-dsgn
+      secondary: design-sys-eng
+    gates: [QG-AX-001, QG-AX-002, QG-AX-003]
+    checkpoint: CP-02
+    description: >
+      interaction-dsgn creates the design spec, design-sys-eng validates
+      tokens. CP-02 presents the design to the user for approval.
+      Max 3 revision cycles.
+
+    steps:
+      - id: step-2-1
+        name: Interaction Design
+        agent: interaction-dsgn
+        action: >
+          Create design spec based on feature brief from CP-01. Include
+          all states, responsive variants, and accessibility annotations.
+          Produce design-spec.md with interaction patterns.
+        output:
+          - design-spec.md
+          - responsive-variants.md
+
+      - id: step-2-2
+        name: Token Mapping
+        agent: design-sys-eng
+        action: >
+          Map design spec to design tokens. Validate token compliance.
+          Produce token-map.yaml and component-api.ts interfaces.
+        output:
+          - token-map.yaml
+          - component-api.ts
+        gate: QG-AX-001
+
+      - id: step-2-3
+        name: Spec Completeness Check
+        agent: interaction-dsgn
+        gate: QG-AX-002
+        action: >
+          Verify spec completeness against veto conditions VC-002-A,
+          VC-002-B, VC-002-C.
+
+      - id: step-2-4
+        name: Design Review Checkpoint
+        agent: apex-lead
+        checkpoint: CP-02
+        gate: QG-AX-003
+        action: >
+          Present design spec to user for review. User decides:
+          APPROVE (proceed to architecture) or REVISE (return to step-2-1).
+        revision_policy:
+          max_iterations: 3
+          on_max_reached:
+            action: ESCALATE
+            to: apex-lead
+            message: "Design review stuck after 3 revision cycles."
+
+    handoff:
+      to: frontend-arch
+      artifacts: [design-spec.md, token-map.yaml, component-api.ts, responsive-variants.md]
+
+    on_complete:
+      update_state: { phase: 2_design, status: completed }
+      next: 3_architect
+
+  # ============================================================================
+  # PHASE 3: ARCHITECT
+  # ============================================================================
+  - id: 3_architect
+    name: Architect
+    sequence: 3
+    execution: sequential_with_checkpoint
+    agent: frontend-arch
+    gate: QG-AX-004
+    checkpoint: CP-03
+    description: >
+      frontend-arch defines component hierarchy, state architecture,
+      and platform strategy. CP-03 presents architecture to user.
+
+    steps:
+      - id: step-3-1
+        name: Component Hierarchy
+        agent: frontend-arch
+        action: >
+          Analyze design spec, map to component tree. Identify existing
+          components in packages/ui/ and new components needed.
+          Produce component-hierarchy.yaml.
+        output: component-hierarchy.yaml
+
+      - id: step-3-2
+        name: State Architecture
+        agent: frontend-arch
+        action: >
+          Define state management strategy, data fetching patterns,
+          caching, and optimistic updates. Produce state-architecture.md.
+        output: state-architecture.md
+
+      - id: step-3-3
+        name: Platform Strategy
+        agent: frontend-arch
+        action: >
+          Define platform abstraction based on target_platforms.
+          Map components to platforms. Produce platform-strategy.md.
+        output: platform-strategy.md
+
+      - id: step-3-4
+        name: Architecture Decision Checkpoint
+        agent: apex-lead
+        checkpoint: CP-03
+        gate: QG-AX-004
+        action: >
+          Present architecture to user. User confirms RSC strategy,
+          package locations, and state management approach.
+          APPROVE or REVISE.
+
+    handoff:
+      to: [css-eng, react-eng, mobile-eng, cross-plat-eng, spatial-eng]
+      artifacts: [component-hierarchy.yaml, state-architecture.md, platform-strategy.md]
+
+    on_complete:
+      update_state: { phase: 3_architect, status: completed }
+      next: 4_implement
+
+  # ============================================================================
+  # PHASE 4: IMPLEMENT
+  # ============================================================================
+  - id: 4_implement
+    name: Implement
+    sequence: 4
+    execution: parallel_waves
+    description: >
+      Implementation in 3 waves. Wave 1: css-eng scaffolding (sequential).
+      Wave 2: all platform agents in parallel. Wave 3: react-eng integration
+      (sequential). No user checkpoint — fully automated.
+
+    waves:
+      - id: wave-1
+        name: Scaffolding
+        execution: sequential
+        steps:
+          - id: step-4-1
+            name: CSS Scaffolding
+            agent: css-eng
+            action: >
+              Create component scaffolds following component-hierarchy.yaml.
+              Generate base styles, TypeScript interfaces, Storybook stubs.
+            output:
+              - "packages/ui/src/components/{Component}/index.tsx"
+              - "packages/ui/src/components/{Component}/{Component}.css.ts"
+              - "packages/ui/src/components/{Component}/{Component}.stories.tsx"
+              - "packages/ui/src/components/{Component}/{Component}.test.tsx"
+
+      - id: wave-2
+        name: Platform Implementation
+        execution: parallel
+        agents:
+          always:
+            - agent: react-eng
+              action: "Implement React component logic, hooks, state management"
+            - agent: css-eng
+              action: "Implement responsive styles, design token application"
+          conditional:
+            - agent: mobile-eng
+              condition: "mobile in target_platforms"
+              action: "Implement React Native variants"
+            - agent: cross-plat-eng
+              condition: "target_platforms.length >= 2"
+              action: "Implement shared platform abstraction layer"
+            - agent: spatial-eng
+              condition: "spatial in target_platforms"
+              action: "Implement 3D/spatial variants"
+
+      - id: wave-3
+        name: Integration
+        execution: sequential
+        steps:
+          - id: step-4-3
+            name: Integration & Wiring
+            agent: react-eng
+            action: >
+              Wire components into feature pages. Connect data fetching,
+              state management, navigation. Run full test suite.
+            commands:
+              - "npm run typecheck"
+              - "npm run lint"
+              - "npm run test"
+
+    on_complete:
+      update_state: { phase: 4_implement, status: completed }
+      next: 5_polish
+
+  # ============================================================================
+  # PHASE 5: POLISH
+  # ============================================================================
+  - id: 5_polish
+    name: Polish
+    sequence: 5
+    execution: sequential_then_parallel
+    gates: [QG-AX-005, QG-AX-006, QG-AX-007]
+    checkpoint: CP-05
+    description: >
+      motion-eng applies animations first. CP-05 presents motion to user.
+      After motion approval, a11y-eng and perf-eng run in parallel.
+
+    steps:
+      - id: step-5-1
+        name: Motion & Animation
+        agent: motion-eng
+        execution: sequential
+        action: >
+          Apply motion design system tokens. Implement enter/exit
+          animations, state transitions, micro-interactions. Verify
+          reduced-motion variants. Document animation catalog.
+        gate: QG-AX-005
+        output:
+          - "Motion variants applied to all components"
+          - "packages/ui/src/motion/{feature}-animations.ts"
+
+      - id: step-5-2
+        name: Motion Feel Checkpoint
+        agent: apex-lead
+        checkpoint: CP-05
+        action: >
+          Present motion result to user. User approves feel or requests
+          adjustments (more snappy, bouncy, subtle, custom spring values).
+
+      - id: step-5-3
+        name: Accessibility Audit
+        agent: a11y-eng
+        execution: parallel
+        action: >
+          Run WCAG 2.2 AA audit on all new components. Test keyboard
+          navigation, screen readers, color contrast. Fix critical issues.
+        gate: QG-AX-006
+        output: "docs/a11y/{story_id}-audit.md"
+
+      - id: step-5-4
+        name: Performance Audit
+        agent: perf-eng
+        execution: parallel
+        action: >
+          Run Lighthouse CI, measure bundle size delta, validate CWV
+          metrics against budgets in data/performance-budgets.yaml.
+        gate: QG-AX-007
+        output: "Performance audit report"
+
+    on_complete:
+      update_state: { phase: 5_polish, status: completed }
+      next: 6_qa
+
+  # ============================================================================
+  # PHASE 6: QA
+  # ============================================================================
+  - id: 6_qa
+    name: QA
+    sequence: 6
+    execution: parallel
+    gates: [QG-AX-008, QG-AX-009]
+    description: >
+      qa-visual and qa-xplatform run in parallel. Fully automated —
+      no user checkpoint.
+
+    steps:
+      - id: step-6-1
+        name: Visual Regression
+        agent: qa-visual
+        execution: parallel
+        gate: QG-AX-008
+        action: >
+          Run visual regression tests against all new/modified components.
+          Compare against approved design spec. Generate diff report.
+        output: "Visual regression report"
+
+      - id: step-6-2
+        name: Cross-Platform Tests
+        agent: qa-xplatform
+        execution: parallel
+        gate: QG-AX-009
+        action: >
+          Test on all target_platforms. Verify feature parity, responsive
+          behavior, platform-specific interactions.
+        output: "Cross-platform compatibility matrix"
+
+    on_complete:
+      update_state: { phase: 6_qa, status: completed }
+      next: 7_ship
+
+  # ============================================================================
+  # PHASE 7: SHIP
+  # ============================================================================
+  - id: 7_ship
+    name: Ship
+    sequence: 7
+    execution: sequential_with_checkpoints
+    agent: apex-lead
+    delegates_to: [devops]
+    gate: QG-AX-010
+    checkpoints: [CP-04, CP-06]
+    description: >
+      apex-lead performs final visual review (CP-04), then presents
+      final ship decision (CP-06). If SHIP, delegates to @devops for
+      push and PR creation.
+
+    steps:
+      - id: step-7-1
+        name: Visual Review Checkpoint
+        agent: apex-lead
+        checkpoint: CP-04
+        action: >
+          Present implemented visual result to user. User reviews
+          final appearance. APPROVE or request targeted fixes.
+
+      - id: step-7-2
+        name: Final Code Review
+        agent: apex-lead
+        gate: QG-AX-010
+        action: >
+          Conduct final code review. Verify code quality, consistency,
+          completeness against story AC. Verify all checkboxes marked.
+        veto_conditions:
+          - ref: VC-010-A
+          - ref: VC-010-B
+          - ref: VC-010-C
+
+      - id: step-7-3
+        name: Ship Decision Checkpoint
+        agent: apex-lead
+        checkpoint: CP-06
+        action: >
+          Present final ship decision to user. SHIP or BLOCK.
+          If BLOCK, record reason and pause pipeline.
+
+      - id: step-7-3b
+        name: Generate AIOS Handoff Artifact
+        agent: apex-lead
+        condition: "CP-06.decision == SHIP"
+        action: >
+          Before delegating to @devops, generate a handoff artifact at
+          .aios/handoffs/handoff-apex-lead-to-devops-{timestamp}.yaml
+          following the AIOS agent-handoff protocol. Include:
+          - from_agent: apex-lead
+          - to_agent: devops
+          - story_context: { story_id, story_path, story_status, current_task, branch }
+          - decisions: key design/architecture decisions made during pipeline
+          - files_modified: all files created or modified during pipeline
+          - next_action: "*push"
+          This ensures @devops receives full context without needing the
+          entire pipeline history.
+        output: ".aios/handoffs/handoff-apex-lead-to-devops-{timestamp}.yaml"
+
+      - id: step-7-4
+        name: Push & PR
+        agent: devops
+        condition: "CP-06.decision == SHIP"
+        action: >
+          Push branch to remote. Create GitHub PR with feature description,
+          QA summary, and link to pipeline state. @devops reads the handoff
+          artifact for full context.
+        output: pr_url
+
+      - id: step-7-5
+        name: Story Done
+        agent: apex-lead
+        condition: "PR merged"
+        action: >
+          Set story status to Done. Archive artifacts. Update epic progress.
+
+    on_complete:
+      update_state: { phase: 7_ship, status: completed }
+      pipeline_status: completed
+
+# ------------------------------------------------------------------------------
+# ERROR HANDLING
+# ------------------------------------------------------------------------------
+error_handling:
+  gate_failure:
+    action: "Create FIX sub-task for responsible agent"
+    flow: "unidirectional — never rollback to previous phase"
+    max_fix_attempts: 3
+    on_max_reached:
+      escalation_chain: [responsible_agent, apex-lead, aios-master]
+
+  agent_failure:
+    max_retries: 1
+    on_max_reached:
+      escalation_chain: [apex-lead, aios-master]
+
+  checkpoint_timeout:
+    threshold_hours: 48
+    action: "Pause pipeline, preserve state"
+    resume_command: "*apex-resume"
+
+  pipeline_crash:
+    action: "State auto-persisted — restore via *apex-resume"
+
+# ------------------------------------------------------------------------------
+# STATE PERSISTENCE
+# ------------------------------------------------------------------------------
+state:
+  schema: data/pipeline-state-schema.yaml
+  storage: ".aios/apex-pipeline/{pipeline-id}.yaml"
+  auto_save: true
+  save_triggers:
+    - phase_transition
+    - checkpoint_decision
+    - gate_evaluation
+    - agent_handoff
+    - error_occurrence
+    - pivot
+
+# ------------------------------------------------------------------------------
+# AIOS HANDOFF INTEGRATION
+# ------------------------------------------------------------------------------
+handoff:
+  protocol: "agent-handoff"  # References .claude/rules/agent-handoff.md
+  on_ship:
+    generate_artifact: true
+    artifact_path: ".aios/handoffs/handoff-apex-lead-to-devops-{timestamp}.yaml"
+    template: |
+      handoff:
+        from_agent: apex-lead
+        to_agent: devops
+        story_context:
+          story_id: "{pipeline.story_id}"
+          story_path: "{story_path}"
+          story_status: "InReview"
+          current_task: "Push & PR"
+          branch: "{git_branch}"
+        decisions: "{collected from checkpoint decisions}"
+        files_modified: "{collected from all phases}"
+        blockers: []
+        next_action: "*push"

@@ -1,0 +1,147 @@
+platforms:
+  web:
+    framework: "Next.js 15+"
+    renderer: "React 19+ (RSC + Client)"
+    styling: "Tailwind CSS 4 + CSS Custom Properties"
+    animation: "Framer Motion + CSS animations"
+    state: "TanStack Query + Zustand"
+    routing: "App Router (file-system)"
+    testing:
+      unit: "Vitest + Testing Library"
+      visual: "Chromatic / Percy"
+      e2e: "Playwright"
+    quality_targets:
+      lcp: "< 1.2s"
+      inp: "< 200ms"
+      cls: "< 0.1"
+      first_load_js: "< 80KB gzipped"
+
+  mobile:
+    framework: "React Native 0.80+ (New Architecture)"
+    runtime: "Expo 52+"
+    animation: "Reanimated 4 + Gesture Handler"
+    navigation: "Expo Router"
+    styling: "Tamagui / NativeWind"
+    testing:
+      unit: "Jest + React Native Testing Library"
+      e2e: "Detox / Maestro"
+      device: "Expo Go + EAS Device Testing"
+    quality_targets:
+      startup: "< 1s"
+      fps: ">= 60"
+      anr: "0%"
+
+  spatial:
+    framework: "React Three Fiber + Drei"
+    rendering: "Three.js r171+ (WebGPURenderer)"
+    xr: "WebXR Device API + VisionOS SDK"
+    animation: "react-spring + GSAP"
+    testing:
+      unit: "Vitest"
+      visual: "Manual + screenshot comparison"
+    quality_targets:
+      fps: ">= 72"
+      latency: "< 20ms motion-to-photon"
+
+  shared:
+    tokens: "packages/tokens/ (Style Dictionary)"
+    ui: "packages/ui/ (shared components)"
+    hooks: "packages/hooks/"
+    utils: "packages/utils/"
+    icons: "packages/icons/"
+    a11y: "packages/a11y/"
+
+capabilities_matrix:
+  legend:
+    "yes": "Fully supported"
+    "partial": "Partially supported or experimental"
+    "no": "Not supported"
+
+  features:
+    server_components:
+      web: "yes"
+      mobile: "partial"
+      spatial: "no"
+      notes: "RSC is web-only. Mobile uses server functions via Expo Router."
+
+    css_container_queries:
+      web: "yes"
+      mobile: "no"
+      spatial: "no"
+      notes: "Web-only CSS feature. Use JS-based measurement on mobile."
+
+    spring_animations:
+      web: "yes"
+      mobile: "yes"
+      spatial: "yes"
+      notes: "Framer Motion (web), Reanimated 4 (mobile), react-spring (spatial)."
+
+    gesture_recognition:
+      web: "yes"
+      mobile: "yes"
+      spatial: "yes"
+      notes: "Pointer Events API (web), Gesture Handler (mobile), hand tracking via WebXR (spatial)."
+
+    3d_rendering:
+      web: "yes"
+      mobile: "partial"
+      spatial: "yes"
+      notes: "R3F/Three.js (web + spatial). RN 3D support via expo-three or Expo GL (experimental)."
+
+    offline_support:
+      web: "yes"
+      mobile: "yes"
+      spatial: "no"
+      notes: "Service Worker (web), Expo SQLite + NetInfo (mobile). Spatial requires active session."
+
+    dark_mode:
+      web: "yes"
+      mobile: "yes"
+      spatial: "yes"
+      notes: "CSS prefers-color-scheme (web), Appearance API (mobile), environment-based (spatial)."
+
+    screen_reader:
+      web: "yes"
+      mobile: "yes"
+      spatial: "partial"
+      notes: "WCAG 2.2 AA target. VoiceOver / TalkBack on mobile. VisionOS accessibility partial."
+
+    reduced_motion:
+      web: "yes"
+      mobile: "yes"
+      spatial: "yes"
+      notes: "prefers-reduced-motion (web), AccessibilityInfo.isReduceMotionEnabled (mobile)."
+
+    push_notifications:
+      web: "partial"
+      mobile: "yes"
+      spatial: "no"
+      notes: "Web Push API (web, limited browser support). Expo Notifications (mobile)."
+
+    biometric_auth:
+      web: "partial"
+      mobile: "yes"
+      spatial: "partial"
+      notes: "WebAuthn (web), expo-local-authentication (mobile)."
+
+    haptic_feedback:
+      web: "no"
+      mobile: "yes"
+      spatial: "yes"
+      notes: "Expo Haptics (mobile). VisionOS native haptics (spatial)."
+
+agent_platform_scope:
+  apex-lead: [web, mobile, spatial]
+  frontend-arch: [web, mobile, spatial]
+  interaction-dsgn: [web, mobile]
+  design-sys-eng: [web, mobile, spatial]
+  css-eng: [web]
+  react-eng: [web]
+  mobile-eng: [mobile]
+  cross-plat-eng: [web, mobile]
+  spatial-eng: [spatial, web]
+  motion-eng: [web, mobile, spatial]
+  a11y-eng: [web, mobile, spatial]
+  perf-eng: [web, mobile]
+  qa-visual: [web, mobile]
+  qa-xplatform: [web, mobile, spatial]

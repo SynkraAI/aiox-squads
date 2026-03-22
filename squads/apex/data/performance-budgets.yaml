@@ -1,0 +1,152 @@
+# ==============================================================================
+# APEX SQUAD — Performance Budgets (Single Source of Truth)
+# data/performance-budgets.yaml
+# ==============================================================================
+# Purpose:  ALL performance thresholds for Squad Apex. Every workflow, task,
+#           checklist, and gate MUST reference this file. No hardcoded thresholds
+#           elsewhere. If a threshold appears in another file, it is WRONG.
+#
+# Reference: This file is the CANONICAL source. Update only here.
+# Owner:    perf-eng (measurement), apex-lead (approval)
+# Version:  1.0.0
+# ==============================================================================
+
+version: "1.0.0"
+last_reviewed: "2026-03-01"
+approved_by: apex-lead
+
+# ==============================================================================
+# CORE WEB VITALS — Web Platform
+# ==============================================================================
+web:
+  core_web_vitals:
+    lcp:
+      target: 1200        # ms — Largest Contentful Paint
+      good_threshold: 1200 # ms — "Good" per Apex standards (stricter than Google's 2.5s)
+      unit: ms
+      measurement: "Lighthouse CI (median of 3 runs)"
+      notes: "Apex targets 1.2s, not Google's default 2.5s. Ultra-premium standard."
+
+    inp:
+      target: 200          # ms — Interaction to Next Paint
+      good_threshold: 200
+      unit: ms
+      measurement: "Chrome DevTools Performance panel"
+
+    cls:
+      target: 0.1          # unitless — Cumulative Layout Shift
+      good_threshold: 0.1
+      unit: score
+      measurement: "Lighthouse CI"
+
+    fcp:
+      target: 1000         # ms — First Contentful Paint
+      good_threshold: 1800
+      unit: ms
+      measurement: "Lighthouse CI"
+
+    ttfb:
+      target: 600          # ms — Time to First Byte
+      good_threshold: 800
+      unit: ms
+      measurement: "Lighthouse CI"
+
+  lighthouse:
+    performance_score: 90  # minimum score (0-100)
+    accessibility_score: 100
+    best_practices_score: 95
+    seo_score: 90
+
+  bundle:
+    first_load_js: 80      # KB gzipped — total first load JavaScript
+    per_route_delta: 50     # KB gzipped — max delta per new route/feature
+    tree_shaking: required  # no full-library imports
+    unit: KB_gzipped
+    measurement: "@next/bundle-analyzer or Turborepo build output"
+
+  images:
+    format: [avif, webp]   # preferred formats in order
+    lazy_loading: required  # loading="lazy" for below-fold
+    next_image: required    # use next/image, never raw <img>
+    max_lcp_image_size: 200 # KB — max size for LCP image
+
+  fonts:
+    format: variable        # variable fonts preferred
+    display: swap           # font-display: swap
+    subsetting: required    # subset to used characters
+
+# ==============================================================================
+# MOBILE PLATFORM
+# ==============================================================================
+mobile:
+  startup:
+    cold_start: 1000       # ms — app cold start to interactive
+    unit: ms
+    measurement: "Flipper Performance Monitor"
+
+  runtime:
+    target_fps: 60         # frames per second during animations
+    js_thread_occupation: 80 # % max — JS thread should not exceed 80%
+    anr_rate: 0            # % — Application Not Responding rate
+    unit: fps
+
+  memory:
+    leak_tolerance: 0      # Zero memory leaks in mount/unmount cycles
+    test_cycles: 10        # Number of mount/unmount cycles to test
+
+  touch:
+    min_target_size: 44    # px — WCAG 2.5.8 minimum touch target
+    min_target_spacing: 8  # px — between adjacent touch targets
+    unit: px
+
+# ==============================================================================
+# SPATIAL / XR PLATFORM
+# ==============================================================================
+spatial:
+  runtime:
+    target_fps: 90         # fps — VisionOS requires 90fps minimum
+    frame_budget: 11       # ms — per frame (1000ms / 90fps)
+    unit: fps
+
+  interaction:
+    min_gaze_target: 60    # px — minimum eye-tracking target size
+    unit: px
+
+# ==============================================================================
+# ANIMATION / MOTION
+# ==============================================================================
+motion:
+  target_fps: 60           # All animations must hit 60fps
+  max_frame_drops: 0       # Zero frame drops during any animation
+  exit_max_duration: 150   # ms — exit animations must be <= 150ms
+  stagger_range: [30, 50]  # ms — stagger timing for list/grid children
+  reduced_motion: mandatory # prefers-reduced-motion MUST be handled
+
+# ==============================================================================
+# ACCESSIBILITY
+# ==============================================================================
+accessibility:
+  wcag_level: AA           # WCAG 2.2 conformance level
+  axe_score: 100           # Zero violations (score = 100)
+  contrast:
+    normal_text: 4.5       # ratio — AA standard
+    large_text: 3.0        # ratio — 18px+ or 14px bold
+    ui_components: 3.0     # ratio — interactive element boundaries
+    focus_indicator: 3.0   # ratio — against adjacent colors
+
+# ==============================================================================
+# VISUAL REGRESSION
+# ==============================================================================
+visual:
+  regression_threshold: 0  # pixels — zero pixel tolerance
+  fidelity_strict: 98      # % — strict mode fidelity score
+  fidelity_relaxed: 95     # % — non-strict mode fidelity score
+  grid: 4                  # px — design grid unit
+
+# ==============================================================================
+# THRESHOLDS FOR AUTOMATIC ESCALATION
+# ==============================================================================
+escalation_triggers:
+  performance_regression_percent: 20  # Automatic block if regression > 20% above budget
+  fidelity_minimum: 90               # Escalate to apex-lead if fidelity < 90%
+  bundle_hard_limit: 120             # KB — absolute maximum, no waiver possible

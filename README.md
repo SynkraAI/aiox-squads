@@ -153,7 +153,7 @@ Squads publicados pela comunidade neste repositório.
 
 | Squad | O que faz | Status |
 |-------|-----------|--------|
-| _Nenhum squad publicado ainda_ | Seja o primeiro a contribuir! | — |
+| [**analista-processual**](squads/analista-processual/) | Análise de processos judiciais brasileiros: extração de dados, mapeamento de prazos (CPC/2015) e identificação de riscos processuais | 🟢 OPERATIONAL |
 
 > Tem um squad pronto? [Abra um PR](#contribuindo) e compartilhe com a comunidade.
 

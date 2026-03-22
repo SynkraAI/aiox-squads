@@ -1,0 +1,819 @@
+---
+# ==============================================================================
+# APEX SQUAD — WORKFLOW: Feature Build
+# wf-feature-build.yaml
+# ==============================================================================
+# Purpose:  End-to-end workflow for building a new feature across platforms.
+#           Covers design through architecture, implementation, polish, QA, and
+#           final shipment. All phases are gated and require explicit approval
+#           before the next phase begins.
+#
+# Trigger:  New story in status "Approved" (validated by @po)
+# Owner:    apex-lead
+# Squad:    Apex (Frontend Ultra-Premium)
+# Version:  1.0.0
+# ==============================================================================
+
+id: wf-feature-build
+name: Feature Build
+description: >
+  Main workflow for building a new feature across web, mobile, and embedded
+  platforms. Orchestrates all Apex agents through 6 sequential phases with
+  quality gates and checkpoints at every transition.
+
+metadata:
+  version: "1.0.0"
+  owner: apex-lead
+  squad: apex
+  created: "2026-03-01"
+  tags:
+    - feature
+    - cross-platform
+    - full-cycle
+
+# ------------------------------------------------------------------------------
+# INPUTS
+# ------------------------------------------------------------------------------
+inputs:
+  required:
+    - story_id:
+        type: string
+        description: The story ID (e.g. "3.2") to build
+    - story_path:
+        type: string
+        description: Absolute path to the story file
+  optional:
+    - target_platforms:
+        type: array
+        default: [web, mobile, embedded]
+        description: Platforms to target in this build
+    - expedited_mode:
+        type: boolean
+        default: false
+        description: >
+          Expedited mode for hotfixes. Requires apex-lead explicit approval
+          before activation. Only QG-AX-006 (motion) may be skipped.
+          All other gates remain mandatory. Every skip is logged.
+    - skip_motion:
+        type: boolean
+        default: false
+        description: Skip motion/animation polish if not required by story
+
+# ------------------------------------------------------------------------------
+# OUTPUTS
+# ------------------------------------------------------------------------------
+outputs:
+  - implemented_components:
+      description: List of created or modified component paths
+      type: array
+  - storybook_entries:
+      description: Storybook story files added
+      type: array
+  - test_results:
+      description: Test run summary (unit, integration, visual, perf)
+      type: object
+  - qa_verdict:
+      description: Final QA verdict (PASS | FAIL | WAIVED)
+      type: string
+  - pr_url:
+      description: GitHub PR URL created by @devops after ship phase
+      type: string
+
+# ------------------------------------------------------------------------------
+# ENFORCEMENT
+# ------------------------------------------------------------------------------
+enforcement:
+  veto_registry: data/veto-conditions.yaml
+  performance_budgets: data/performance-budgets.yaml
+  pre_execution_validation:
+    validate_agents: true
+    action: "BLOCK workflow if any referenced agent not in data/agent-registry.yaml"
+
+# ------------------------------------------------------------------------------
+# QUALITY GATES (with veto conditions)
+# ------------------------------------------------------------------------------
+gates:
+  - id: QG-AX-003
+    name: Design Spec Approved
+    description: Interaction design reviewed and approved before implementation
+    blocking: true
+    owner: interaction-dsgn
+    veto_conditions:
+      - ref: VC-003-A  # Design spec must contain APPROVED marker
+      - ref: VC-003-B  # All design artifacts must exist
+
+  - id: QG-AX-004
+    name: Architecture Review Passed
+    description: Frontend architecture approved by frontend-arch
+    blocking: true
+    owner: frontend-arch
+    veto_conditions:
+      - ref: VC-004-A  # All 3 architecture documents must exist
+      - ref: VC-004-B  # Components YAML must be valid
+
+  - id: QG-AX-005
+    name: Component Accessibility Passed
+    description: a11y audit passes WCAG 2.2 AA for all new components
+    blocking: true
+    owner: a11y-eng
+    veto_conditions:
+      - ref: VC-005-A  # axe-core zero violations
+      - ref: VC-005-B  # prefers-reduced-motion handled
+      - ref: VC-005-C  # All interactive elements have accessible names
+
+  - id: QG-AX-006
+    name: Motion & Animation Review
+    description: Motion design reviewed and timing/easing approved
+    blocking: false
+    owner: motion-eng
+    veto_conditions:
+      - ref: VC-006-A  # No CSS transition for motion (spring physics only)
+      - ref: VC-006-B  # No hardcoded animation durations
+
+  - id: QG-AX-007
+    name: Performance Budget Met
+    description: All perf metrics within budget — reference data/performance-budgets.yaml
+    blocking: true
+    owner: perf-eng
+    veto_conditions:
+      - ref: VC-007-A  # Lighthouse score >= 90
+      - ref: VC-007-B  # Bundle delta <= 50KB
+      - ref: VC-007-C  # LCP < 1.2s (from performance-budgets.yaml)
+
+  - id: QG-AX-010
+    name: Lead Sign-off
+    description: apex-lead final approval before merge — NON-WAIVABLE
+    blocking: true
+    owner: apex-lead
+    waivable: false
+    veto_conditions:
+      - ref: VC-010-A  # apex-lead sign-off recorded
+      - ref: VC-010-B  # Zero TypeScript errors
+      - ref: VC-010-C  # Zero lint errors
+
+# ------------------------------------------------------------------------------
+# PHASES
+# ------------------------------------------------------------------------------
+phases:
+
+  # ============================================================================
+  # PHASE 1: DESIGN
+  # ============================================================================
+  - id: phase-1-design
+    name: Design
+    sequence: 1
+    agent: apex-lead
+    delegates_to:
+      - interaction-dsgn
+    gate: QG-AX-003
+    description: >
+      apex-lead kicks off the feature, briefs interaction-dsgn, and oversees
+      production of a complete design spec including interaction patterns,
+      responsive breakpoints, and accessibility annotations.
+
+    steps:
+      - id: step-1-1
+        name: Feature Brief
+        agent: apex-lead
+        action: >
+          Review the story acceptance criteria. Identify all UI touchpoints,
+          user flows, and platform-specific considerations. Produce a brief
+          document at docs/briefs/{story_id}-brief.md summarizing scope.
+        output: docs/briefs/{story_id}-brief.md
+        on_error: BLOCK — brief must be complete before proceeding
+
+      - id: step-1-2
+        name: Interaction Design
+        agent: interaction-dsgn
+        checklists:
+          - ref: checklists/layout-review.md
+            reviewer: interaction-dsgn
+          - ref: checklists/responsive-checklist.md
+            reviewer: interaction-dsgn
+          - ref: checklists/figma-sync-checklist.md
+            reviewer: design-sys-eng
+          - ref: checklists/token-compliance.md
+            reviewer: design-sys-eng
+        action: >
+          Using the brief, produce Figma screens covering all states: default,
+          hover, focus, active, disabled, loading, error, and empty. Include
+          responsive variants for mobile, tablet, and desktop breakpoints.
+          Export design tokens as a JSON spec.
+        output:
+          - figma_link: Figma URL added to story file
+          - design_spec: docs/design/{story_id}-spec.md
+          - tokens_draft: packages/tokens/src/drafts/{story_id}.json
+        on_error: Return to step-1-1 with feedback
+
+      - id: step-1-3
+        name: Design Review
+        agent: apex-lead
+        checklists:
+          - ref: checklists/visual-review-checklist.md
+            reviewer: apex-lead
+        action: >
+          Review interaction design against story acceptance criteria. Annotate
+          Figma with approval comments. If revisions needed, return to step-1-2
+          with a numbered list of required changes.
+        decision:
+          APPROVE: Proceed to checkpoint-1
+          REVISE: Return to step-1-2
+          ESCALATE: Notify @pm and pause workflow
+        revision_policy:
+          max_iterations: 2
+          on_max_reached:
+            action: ESCALATE
+            to: apex-lead
+            message: "Design review stuck after 2 revision cycles."
+
+    checkpoint:
+      id: checkpoint-1
+      name: CP-01 Design to Architecture
+      gate: QG-AX-003
+      artifacts_required:
+        - docs/briefs/{story_id}-brief.md
+        - docs/design/{story_id}-spec.md
+        - packages/tokens/src/drafts/{story_id}.json
+      validation:
+        - All story AC mapped to at least one design screen
+        - Responsive variants present for all breakpoints
+        - Accessibility annotations present
+      on_fail: Block phase-2-architecture, return feedback to phase-1-design
+      on_pass:
+        notify:
+          target: frontend-arch
+          message: "CP-01 passed. Design artifacts ready. Your turn for architecture."
+          deadline_hours: 4
+          escalate_on_timeout: apex-lead
+
+  # ============================================================================
+  # PHASE 2: ARCHITECTURE
+  # ============================================================================
+  - id: phase-2-architecture
+    name: Architecture
+    sequence: 2
+    agent: frontend-arch
+    gate: QG-AX-004
+    description: >
+      frontend-arch defines the technical architecture for the feature:
+      component hierarchy, state management strategy, data fetching patterns,
+      and cross-platform abstraction layer.
+
+    steps:
+      - id: step-2-1
+        name: Component Hierarchy Design
+        agent: frontend-arch
+        checklists:
+          - ref: checklists/architecture-review.md
+            reviewer: frontend-arch
+          - ref: checklists/rsc-compliance.md
+            reviewer: frontend-arch
+        action: >
+          Analyze the design spec and map to a component tree. Identify shared
+          components that already exist in packages/ui/ and list new components
+          to be created. Document the hierarchy in YAML format.
+        output: docs/architecture/{story_id}-components.yaml
+        on_error: BLOCK — hierarchy required for implementation planning
+
+      - id: step-2-2
+        name: State & Data Architecture
+        agent: frontend-arch
+        action: >
+          Define state management strategy (local, context, store), data
+          fetching hooks, caching strategy, and optimistic update patterns.
+          Identify any new API contracts needed and document them.
+        output: docs/architecture/{story_id}-state.md
+        on_error: Return to step-2-1 with gaps identified
+
+      - id: step-2-3
+        name: Cross-Platform Strategy
+        agent: frontend-arch
+        checklists:
+          - ref: checklists/edge-compatibility.md
+            reviewer: frontend-arch
+          - ref: checklists/cross-platform-checklist.md
+            reviewer: cross-plat-eng
+        action: >
+          Define platform abstraction: shared logic in packages/core/,
+          platform-specific renderers. Map each component to its target
+          platform(s) from inputs.target_platforms. Flag any components
+          requiring native modules.
+        output: docs/architecture/{story_id}-platforms.md
+        on_error: BLOCK if native modules needed and not available
+
+      - id: step-2-4
+        name: Architecture Sign-off
+        agent: apex-lead
+        action: >
+          Review architecture documents. Verify alignment with existing
+          patterns. Approve or request revisions with specific feedback.
+        decision:
+          APPROVE: Proceed to checkpoint-2
+          REVISE: Return to step-2-1 with numbered feedback list
+        revision_policy:
+          max_iterations: 3
+          on_max_reached:
+            action: ESCALATE
+            to: apex-lead
+            message: "Architecture review stuck after 3 revision cycles."
+
+    checkpoint:
+      id: checkpoint-2
+      name: CP-02 Architecture to Implement
+      gate: QG-AX-004
+      artifacts_required:
+        - docs/architecture/{story_id}-components.yaml
+        - docs/architecture/{story_id}-state.md
+        - docs/architecture/{story_id}-platforms.md
+      validation:
+        - All design components mapped to implementation plan
+        - No unresolved platform gaps
+        - State strategy confirmed and documented
+      on_fail: Block phase-3-implement, return to phase-2-architecture
+      on_pass:
+        notify:
+          targets: [css-eng, react-eng, mobile-eng]
+          message: "CP-02 passed. Architecture approved. Implementation can begin."
+          deadline_hours: 2
+          escalate_on_timeout: apex-lead
+
+  # ============================================================================
+  # PHASE 3: IMPLEMENT
+  # ============================================================================
+  - id: phase-3-implement
+    name: Implement
+    sequence: 3
+    agents:
+      tier3:
+        - css-eng
+        - react-eng
+        - mobile-eng
+    description: >
+      Tier 3 engineers implement all components in parallel according to the
+      architecture plan. Each engineer owns their platform slice. css-eng leads
+      shared component implementation in packages/ui/.
+
+    steps:
+      - id: step-3-1
+        name: Scaffold Components
+        agent: css-eng
+        action: >
+          Create component scaffolds in packages/ui/ following the hierarchy
+          from docs/architecture/{story_id}-components.yaml. Generate index
+          files, TypeScript interfaces, and Storybook story stubs.
+        output:
+          - packages/ui/src/components/{ComponentName}/index.tsx (per component)
+          - packages/ui/src/components/{ComponentName}/{ComponentName}.stories.tsx
+          - packages/ui/src/components/{ComponentName}/{ComponentName}.test.tsx
+        on_error: BLOCK — scaffolds required before parallel implementation
+
+      - id: step-3-2
+        name: Web Implementation
+        agent: css-eng
+        parallel: true
+        checklists:
+          - ref: checklists/component-review-checklist.md
+            reviewer: react-eng
+          - ref: checklists/css-review-checklist.md
+            reviewer: css-eng
+          - ref: checklists/defensive-css-checklist.md
+            reviewer: interaction-dsgn
+          - ref: checklists/component-quality-checklist.md
+            reviewer: dev + apex-lead
+        action: >
+          Implement web-specific component logic and styling. Apply design
+          tokens from packages/tokens/. Implement all states from design spec.
+          Write unit tests for all logic branches.
+        output:
+          - packages/ui/src/components/{ComponentName}/{ComponentName}.tsx
+          - packages/ui/src/components/{ComponentName}/{ComponentName}.css.ts
+        on_error: Log to story file, attempt auto-fix, escalate if unresolved
+
+      - id: step-3-3
+        name: Mobile Implementation
+        agent: mobile-eng
+        parallel: true
+        checklists:
+          - ref: checklists/rn-performance-checklist.md
+            reviewer: mobile-eng
+          - ref: checklists/cross-platform-checklist.md
+            reviewer: cross-plat-eng
+        action: >
+          Implement React Native variants for all components flagged as
+          mobile targets in the architecture. Use platform abstraction from
+          packages/core/. Maintain feature parity with web implementation.
+        output:
+          - packages/ui/src/components/{ComponentName}/{ComponentName}.native.tsx
+        on_error: Log to story file, escalate to frontend-arch if blocked
+
+      - id: step-3-4
+        name: Integration & Wiring
+        agent: css-eng
+        action: >
+          Wire components into the feature page/screen. Connect data fetching
+          hooks, state management, and navigation. Ensure all platforms
+          integrate correctly. Run full test suite.
+        command: npm run test -- --coverage
+        on_error: Fix failing tests before proceeding to checkpoint-3
+
+    checkpoint:
+      id: checkpoint-3
+      name: CP-03 Implement to Polish
+      artifacts_required:
+        - All components from architecture plan scaffolded and implemented
+        - Unit test coverage >= 80% for new code
+        - No TypeScript errors (npm run typecheck passes)
+        - No lint errors (npm run lint passes)
+      commands:
+        - npm run typecheck
+        - npm run lint
+        - npm run test -- --coverage
+      on_fail: Return to phase-3-implement with failing checks listed
+      revision_policy:
+        max_iterations: 3
+        on_max_reached:
+          action: ESCALATE
+          to: apex-lead
+          message: "Implementation checkpoint failing after 3 attempts."
+      on_pass:
+        notify:
+          targets: [motion-eng, a11y-eng, perf-eng]
+          message: "CP-03 passed. Implementation complete. Polish phase ready."
+          deadline_hours: 2
+          escalate_on_timeout: apex-lead
+
+  # ============================================================================
+  # PHASE 4: POLISH
+  # ============================================================================
+  - id: phase-4-polish
+    name: Polish
+    sequence: 4
+    agents:
+      tier4:
+        - motion-eng
+        - a11y-eng
+        - perf-eng
+    gates:
+      - QG-AX-005
+      - QG-AX-006
+    description: >
+      Tier 4 specialists apply premium polish: motion/animation, accessibility
+      audit, and internationalization. These run in parallel where possible.
+
+    steps:
+      - id: step-4-1
+        name: Motion & Animation
+        agent: motion-eng
+        skip_if: inputs.skip_motion == true
+        checklists:
+          - ref: checklists/motion-review-checklist.md
+            reviewer: motion-eng
+        action: >
+          Review implemented components and apply motion design system tokens.
+          Implement enter/exit animations, state transition animations, and
+          micro-interactions. Verify reduced-motion variants exist for all
+          animated elements. Document animation catalog.
+        output:
+          - Motion variants applied to all animated components
+          - packages/ui/src/motion/{story_id}-animations.ts
+        on_error: Log issue, skip non-critical animations, flag for review
+
+      - id: step-4-2
+        name: Accessibility Audit
+        agent: a11y-eng
+        parallel: true
+        checklists:
+          - ref: checklists/a11y-review-checklist.md
+            reviewer: a11y-eng
+          - ref: checklists/wcag-22-checklist.md
+            reviewer: a11y-eng
+          - ref: checklists/interaction-a11y.md
+            reviewer: interaction-dsgn
+        action: >
+          Run full WCAG 2.2 AA audit on all new components and feature screens.
+          Test with keyboard navigation, screen readers (VoiceOver, TalkBack,
+          NVDA), and color contrast tools. Fix all critical and major issues.
+          Document findings in audit report.
+        output:
+          - docs/a11y/{story_id}-audit.md
+          - All critical a11y issues resolved in code
+        on_error: BLOCK — critical a11y failures must be resolved before QG-AX-005
+
+      - id: step-4-3
+        name: Internationalization
+        agent: react-eng
+        parallel: true
+        action: >
+          Extract all user-facing strings to locale files. Ensure no hardcoded
+          strings remain. Test RTL layout if applicable. Verify string
+          interpolation works correctly for all supported locales.
+        output:
+          - packages/i18n/locales/en/{story_id}.json
+          - All strings externalized from components
+        on_error: Log missing strings, create tracking issue, proceed with warning
+
+      - id: step-4-4
+        name: Polish Review
+        agent: apex-lead
+        action: >
+          Review motion, a11y audit report, and i18n completeness. Approve
+          or request targeted fixes before proceeding to QA.
+        gate: QG-AX-005
+        decision:
+          APPROVE: Proceed to checkpoint-4
+          REVISE: Return specific agents to their polish step
+          WAIVE_MOTION: Proceed without motion gate (requires written justification)
+        revision_policy:
+          max_iterations: 3
+          on_max_reached:
+            action: ESCALATE
+            to: apex-lead
+            message: "Polish review stuck after 3 revision cycles."
+
+    checkpoint:
+      id: checkpoint-4
+      name: CP-04 Polish to QA
+      gates:
+        - QG-AX-005
+        - QG-AX-006
+      artifacts_required:
+        - docs/a11y/{story_id}-audit.md (no critical failures)
+      validation:
+        - Zero critical a11y violations
+        - Reduced-motion variants present for all animated components
+      on_fail: Block phase-5-qa, return to phase-4-polish
+      revision_policy:
+        max_iterations: 3
+        on_max_reached:
+          action: ESCALATE
+          to: apex-lead
+          message: "Polish checkpoint failing after 3 attempts."
+      on_pass:
+        notify:
+          targets: [qa-visual, qa-xplatform, perf-eng]
+          message: "CP-04 passed. Polish complete. QA phase ready."
+          deadline_hours: 4
+          escalate_on_timeout: apex-lead
+
+  # ============================================================================
+  # PHASE 5: QA
+  # ============================================================================
+  - id: phase-5-qa
+    name: QA
+    sequence: 5
+    agents:
+      tier5:
+        - qa-visual
+        - qa-xplatform
+        - perf-eng
+    gates:
+      - QG-AX-007
+    description: >
+      Tier 5 QA agents run comprehensive quality validation: visual regression,
+      cross-platform compatibility, and performance auditing. All three run
+      in parallel, results collected and reviewed by apex-lead.
+
+    steps:
+      - id: step-5-1
+        name: Visual Regression
+        agent: qa-visual
+        parallel: true
+        checklists:
+          - ref: checklists/visual-qa-checklist.md
+            reviewer: qa-visual
+          - ref: checklists/visual-review-checklist.md
+            reviewer: apex-lead
+        action: >
+          Run visual regression tests against all new and modified components.
+          Compare against approved Figma spec. Generate diff report for any
+          pixel-level deviations. Approve or flag for fix.
+        command: npm run test:visual
+        output:
+          - Visual regression report (pass/fail per component)
+          - Diff screenshots for any failures
+        on_error: Flag component for fix, continue remaining visual tests
+
+      - id: step-5-2
+        name: Cross-Platform Compatibility
+        agent: qa-xplatform
+        parallel: true
+        checklists:
+          - ref: checklists/cross-platform-qa-checklist.md
+            reviewer: qa-xplatform
+          - ref: checklists/device-test-checklist.md
+            reviewer: qa-xplatform
+          - ref: checklists/cross-platform-checklist.md
+            reviewer: cross-plat-eng
+        action: >
+          Test on all platforms in inputs.target_platforms. For web: Chrome,
+          Firefox, Safari, Edge (latest 2 versions each). For mobile: iOS 16+,
+          Android 12+. Document any platform-specific issues with severity.
+        output:
+          - Cross-platform compatibility matrix
+          - Bug list with severity ratings
+        on_error: Log bugs to story, block on CRITICAL severity, warn on MAJOR
+
+      - id: step-5-3
+        name: Performance Audit
+        agent: perf-eng
+        parallel: true
+        checklists:
+          - ref: checklists/perf-review-checklist.md
+            reviewer: perf-eng
+          - ref: checklists/cwv-checklist.md
+            reviewer: perf-eng
+        action: >
+          Run Lighthouse CI on all new feature pages. Measure bundle size
+          delta vs main branch. Validate LCP < 1.2s, CLS < 0.1, INP < 200ms,
+          and bundle size within defined budget. Profile React render counts.
+        command: npm run perf:audit
+        gate: QG-AX-007
+        output:
+          - Performance audit report
+          - Bundle size analysis
+        on_error: BLOCK if performance budget exceeded by > 10%
+
+      - id: step-5-4
+        name: QA Summary & Verdict
+        agent: apex-lead
+        action: >
+          Review all QA results. Assign final verdict: PASS, FAIL, or WAIVED
+          (with justification). If FAIL, return specific agents to fix phase.
+          If WAIVED, document reason and risk acceptance.
+        decision:
+          PASS: Proceed to checkpoint-5
+          FAIL: Return to phase-3-implement or phase-4-polish with bug list
+          WAIVED: Document reason, proceed to checkpoint-5 with caveat
+        revision_policy:
+          max_iterations: 3
+          on_max_reached:
+            action: ESCALATE
+            to: apex-lead
+            message: "QA phase stuck after 3 cycles. Feature may need redesign."
+
+    checkpoint:
+      id: checkpoint-5
+      name: CP-05 QA to Ship
+      gate: QG-AX-007
+      artifacts_required:
+        - Visual regression report (no unresolved failures)
+        - Cross-platform matrix (no CRITICAL bugs unresolved)
+        - Performance audit (budget met per data/performance-budgets.yaml)
+      validation:
+        - QA verdict is PASS or WAIVED
+        - All CRITICAL and HIGH bugs resolved
+        - Performance budget met (reference data/performance-budgets.yaml)
+      on_fail: Block phase-6-ship, return to appropriate phase
+      revision_policy:
+        max_iterations: 3
+        on_max_reached:
+          action: ESCALATE
+          to: apex-lead
+          message: "QA checkpoint failing after 3 attempts."
+      on_pass:
+        notify:
+          target: apex-lead
+          message: "CP-05 passed. All QA gates clear. Ready for final review and ship."
+          deadline_hours: 2
+          escalate_on_timeout: aios-master
+
+  # ============================================================================
+  # PHASE 6: SHIP
+  # ============================================================================
+  - id: phase-6-ship
+    name: Ship
+    sequence: 6
+    agent: apex-lead
+    delegates_to:
+      - devops
+    gate: QG-AX-010
+    description: >
+      apex-lead performs final review and sign-off. Delegates push and PR
+      creation to @devops. Story is marked Done upon successful merge.
+
+    steps:
+      - id: step-6-1
+        name: Final Code Review
+        agent: apex-lead
+        checklists:
+          - ref: checklists/ship-readiness-checklist.md
+            reviewer: apex-lead + qa
+        action: >
+          Conduct final code review of all changes. Verify code quality,
+          consistency with patterns, and completeness against story AC.
+          Confirm all story checkboxes are marked complete.
+        gate: QG-AX-010
+        on_error: BLOCK — lead sign-off is mandatory
+
+      - id: step-6-2
+        name: Story File Update
+        agent: apex-lead
+        action: >
+          Update story file: mark all tasks [x], set status to InReview,
+          update File List section with all created/modified files.
+        output: Story file fully updated
+        on_error: Fix story file before proceeding
+
+      - id: step-6-2b
+        name: Generate AIOS Handoff Artifact
+        agent: apex-lead
+        action: >
+          Before delegating to @devops, generate a handoff artifact at
+          .aios/handoffs/handoff-apex-lead-to-devops-{timestamp}.yaml
+          following the AIOS agent-handoff protocol (see .claude/rules/agent-handoff.md).
+          Include from_agent, to_agent, story_context, decisions, files_modified,
+          and next_action: "*push". This ensures @devops receives full context.
+        output: ".aios/handoffs/handoff-apex-lead-to-devops-{timestamp}.yaml"
+
+      - id: step-6-3
+        name: Push & PR
+        agent: devops
+        action: >
+          Push branch to remote. Create GitHub PR with story ID in title,
+          full summary in body, and link to QA report. Request review from
+          apex-lead and one peer. Read handoff artifact for full context.
+        commands:
+          - git push origin {branch}
+          - gh pr create --title "feat: {story_title} [{story_id}]" --body "..."
+        output: PR URL stored in workflow outputs.pr_url
+        on_error: Retry once, escalate to @aios-master on second failure
+
+      - id: step-6-4
+        name: Story Done
+        agent: apex-lead
+        action: >
+          After PR merged: set story status to Done. Archive QA artifacts.
+          Send completion notification. Update epic progress tracker.
+        output: Story status = Done
+
+    checkpoint:
+      id: checkpoint-6
+      name: CP-06 Ship Complete
+      gate: QG-AX-010
+      artifacts_required:
+        - PR URL
+        - Story status = InReview (pending merge)
+        - All story checkboxes marked [x]
+      on_fail: Investigate PR or story file issues, re-run step-6-2 or step-6-3
+      on_pass:
+        notify:
+          targets: [apex-lead, devops]
+          message: "CP-06 passed. Ship complete. Story ready to mark Done."
+
+# ------------------------------------------------------------------------------
+# EXPEDITED MODE POLICY
+# ------------------------------------------------------------------------------
+expedited_mode:
+  activation_requires: "apex-lead explicit approval before workflow starts"
+  use_cases:
+    - "Critical hotfix (P0 production incident)"
+    - "Time-sensitive release with hard deadline"
+    - "Change is documentation-only (no code changes)"
+  skip_list:
+    - QG-AX-006  # Motion review — only skippable gate
+  never_skip:
+    - QG-AX-003  # Design spec
+    - QG-AX-004  # Architecture
+    - QG-AX-005  # Accessibility
+    - QG-AX-007  # Performance
+    - QG-AX-008  # Visual regression
+    - QG-AX-009  # Cross-platform compatibility
+    - QG-AX-010  # Lead sign-off
+  always_required:
+    - "npm run typecheck"
+    - "npm run lint"
+    - "npm run test -- --coverage"
+    - "apex-lead sign-off (QG-AX-010 never waivable)"
+  logging: "Every skip logged with gate ID, justification, and apex-lead approval timestamp"
+
+# ------------------------------------------------------------------------------
+# ERROR HANDLING
+# ------------------------------------------------------------------------------
+error_handling:
+  global_retry_limit: 2
+  on_unrecoverable_error:
+    action: ESCALATE
+    escalate_to: apex-lead
+    then: aios-master
+  on_timeout:
+    threshold_minutes: 120
+    action: PAUSE_AND_NOTIFY
+    notify: apex-lead
+  on_gate_fail:
+    action: BLOCK
+    allow_waiver: true
+    waiver_requires: apex-lead approval + written justification
+
+# ------------------------------------------------------------------------------
+# STORY STATUS TRANSITIONS
+# ------------------------------------------------------------------------------
+status_transitions:
+  - from: Approved
+    to: InProgress
+    trigger: phase-1-design starts
+  - from: InProgress
+    to: InReview
+    trigger: step-6-3 completes (PR created)
+  - from: InReview
+    to: Done
+    trigger: PR merged to main

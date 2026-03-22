@@ -1,0 +1,91 @@
+springs:
+  gentle:
+    stiffness: 120
+    damping: 14
+    mass: 1
+    description: "Subtle movements, fade-ins, opacity changes"
+    use_cases:
+      - Tooltip appear/disappear
+      - Overlay fade
+      - Subtle hover state transitions
+      - Background color shifts
+
+  responsive:
+    stiffness: 200
+    damping: 20
+    mass: 1
+    description: "Default for most UI interactions"
+    use_cases:
+      - Button press feedback
+      - Dropdown open/close
+      - Modal entrance
+      - Card expand/collapse
+
+  snappy:
+    stiffness: 300
+    damping: 25
+    mass: 1
+    description: "Quick feedback, toggles, taps"
+    use_cases:
+      - Toggle switch
+      - Checkbox state change
+      - Tab selection
+      - Icon button tap
+
+  bouncy:
+    stiffness: 400
+    damping: 10
+    mass: 1
+    description: "Playful elements, notifications, celebrations"
+    use_cases:
+      - Toast notification entrance
+      - Success confirmation
+      - Badge pop
+      - Celebration micro-interaction
+
+durations:
+  instant: "0ms"
+  fast: "100ms"
+  normal: "200ms"
+  slow: "400ms"
+  deliberate: "600ms"
+
+easing:
+  note: "Prefer springs over easing curves. Use easing ONLY for CSS transitions where spring is not available."
+  default: "cubic-bezier(0.16, 1, 0.3, 1)"
+  in: "cubic-bezier(0.55, 0, 1, 0.45)"
+  out: "cubic-bezier(0, 0.55, 0.45, 1)"
+
+reduced_motion:
+  strategy: "Replace motion with instant opacity transitions"
+  spring_replacement: "opacity 150ms ease"
+  scroll_animation: "disabled"
+  page_transition: "crossfade 200ms"
+  implementation_note: "Always check prefers-reduced-motion media query. Mandatory per WCAG 2.1 SC 2.3.3."
+
+usage:
+  framer_motion_example: |
+    import { motion } from "motion/react";
+
+    // Using spring preset
+    <motion.div
+      animate={{ x: 100 }}
+      transition={{ type: "spring", stiffness: 200, damping: 20, mass: 1 }}
+    />
+
+  react_spring_example: |
+    import { useSpring, animated } from "@react-spring/web";
+
+    const styles = useSpring({
+      to: { x: 100 },
+      config: { stiffness: 200, damping: 20, mass: 1 },
+    });
+
+  reanimated_example: |
+    import { withSpring } from "react-native-reanimated";
+
+    offset.value = withSpring(100, {
+      stiffness: 200,
+      damping: 20,
+      mass: 1,
+    });

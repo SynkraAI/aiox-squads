@@ -1,0 +1,163 @@
+# ==============================================================================
+# APEX SQUAD — Component Refactor Workflow
+# workflows/wf-component-refactor.yaml
+# ==============================================================================
+# Purpose:  Structured workflow for refactoring god components (>200 LOC,
+#           >5 hooks, mixed concerns). Ensures safe decomposition with
+#           tests, backward compatibility, and quality gates.
+#
+# Trigger:  *discover-components finds god_components > 0
+# Owner:    apex-lead
+# Version:  1.0.0
+# ==============================================================================
+
+id: wf-component-refactor
+version: "1.0.0"
+title: "Component Refactor Workflow"
+description: >
+  Safe refactoring of complex components into smaller, focused pieces.
+  Ensures no regressions through test coverage before and after.
+
+trigger:
+  manual: "*apex-refactor {component}"
+  suggested_after: "*discover-components when god_components > 0"
+
+# ==============================================================================
+# PHASES
+# ==============================================================================
+phases:
+
+  # --------------------------------------------------------------------------
+  # Phase 1: Analyze
+  # --------------------------------------------------------------------------
+  - id: analyze
+    name: "Analyze Component"
+    agent: "@frontend-arch"
+    steps:
+      - step: 1
+        action: "Read the component and map its responsibilities"
+        output:
+          - "Responsibility list (what does this component DO?)"
+          - "Hook inventory (which hooks, what they manage)"
+          - "Dependency tree (what it imports, who imports it)"
+          - "State map (which state is local, lifted, or global)"
+
+      - step: 2
+        action: "Propose decomposition plan"
+        output:
+          - "Target components (name, responsibility, estimated LOC)"
+          - "Shared state strategy (context, composition, props)"
+          - "Migration approach (incremental or big-bang)"
+
+    checkpoint:
+      name: "Decomposition Plan Approved"
+      requires: "User approves the plan before refactoring begins"
+      veto_conditions:
+        - condition: "Plan proposes more than 8 new components"
+          action: "WARN — Review if over-decomposition"
+
+  # --------------------------------------------------------------------------
+  # Phase 2: Test Coverage
+  # --------------------------------------------------------------------------
+  - id: test_coverage
+    name: "Ensure Test Coverage Before Refactor"
+    agent: "@react-eng"
+    steps:
+      - step: 1
+        action: "Check existing test coverage for the component"
+      - step: 2
+        action: "If coverage < 80%, write tests for current behavior BEFORE refactoring"
+        rationale: "Cannot safely refactor without knowing what currently works"
+      - step: 3
+        action: "Run tests — all must pass (baseline)"
+
+    checkpoint:
+      name: "Baseline Tests Pass"
+      veto_conditions:
+        - condition: "Tests do not pass before refactoring starts"
+          action: "VETO — Fix existing test failures first"
+
+  # --------------------------------------------------------------------------
+  # Phase 3: Refactor
+  # --------------------------------------------------------------------------
+  - id: refactor
+    name: "Execute Refactoring"
+    agent: "@react-eng"
+    steps:
+      - step: 1
+        action: "Create new component files per decomposition plan"
+      - step: 2
+        action: "Extract logic, hooks, and JSX per responsibility"
+      - step: 3
+        action: "Update imports in all consumers"
+      - step: 4
+        action: "Maintain backward-compatible export if component is public API"
+
+    checkpoint:
+      name: "Refactoring Complete"
+      veto_conditions:
+        - condition: "TypeScript errors present"
+          action: "VETO — Fix all type errors before proceeding"
+        - condition: "Lint errors present"
+          action: "VETO — Fix all lint errors"
+
+  # --------------------------------------------------------------------------
+  # Phase 4: Verify
+  # --------------------------------------------------------------------------
+  - id: verify
+    name: "Verify Refactoring"
+    agents: ["@react-eng", "@perf-eng", "@a11y-eng"]
+    steps:
+      - step: 1
+        action: "Run all baseline tests — must still pass"
+        agent: "@react-eng"
+      - step: 2
+        action: "Write tests for new sub-components"
+        agent: "@react-eng"
+      - step: 3
+        action: "Verify no performance regression (bundle size, render count)"
+        agent: "@perf-eng"
+      - step: 4
+        action: "Verify accessibility preserved"
+        agent: "@a11y-eng"
+
+    checkpoint:
+      name: "Refactor Verified"
+      veto_conditions:
+        - condition: "Baseline tests fail after refactoring"
+          action: "VETO — Regression detected. Fix before proceeding."
+        - condition: "Bundle size increased by > 5KB"
+          action: "WARN — Review if decomposition added overhead"
+
+  # --------------------------------------------------------------------------
+  # Phase 5: Cleanup
+  # --------------------------------------------------------------------------
+  - id: cleanup
+    name: "Cleanup & Document"
+    agent: "@react-eng"
+    steps:
+      - step: 1
+        action: "Remove dead code from original component"
+      - step: 2
+        action: "Update component exports and barrel files"
+      - step: 3
+        action: "Run *discover-components to verify god_components reduced"
+
+    checkpoint:
+      name: "Refactor Complete"
+      gate:
+        - "All tests pass"
+        - "TypeScript clean"
+        - "Lint clean"
+        - "god_components count reduced"
+        - "No orphaned components created"
+
+# ==============================================================================
+# SUMMARY
+# ==============================================================================
+summary:
+  phases: 5
+  agents: ["frontend-arch", "react-eng", "perf-eng", "a11y-eng"]
+  checkpoints: 5
+  veto_conditions: 4
+  estimated_complexity: "MEDIUM — scales with component size"

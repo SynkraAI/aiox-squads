@@ -1,0 +1,389 @@
+# ==============================================================================
+# APEX SQUAD — Pipeline State Schema
+# data/pipeline-state-schema.yaml
+# ==============================================================================
+# Purpose:  Defines the schema for persistent pipeline state stored at
+#           .aios/apex-pipeline/{pipeline-id}.yaml. Enables resume between
+#           sessions, progress tracking, and audit trail.
+#
+# Used by:  apex-pipeline-executor.md, wf-apex-pipeline.yaml
+# Owner:    apex-lead
+# Version:  1.0.0
+# ==============================================================================
+
+version: "1.0.0"
+
+schema:
+  pipeline:
+    id:
+      type: string
+      format: "apex-pipe-{timestamp}"
+      description: "Unique pipeline identifier"
+      required: true
+
+    feature:
+      type: string
+      description: "Short description of the feature being built"
+      required: true
+
+    story_id:
+      type: string
+      description: "Associated story ID (e.g., '3.2')"
+      required: false
+
+    mode:
+      type: enum
+      values: [autonomous, guided]
+      description: "Execution mode — autonomous runs all phases, guided pauses after each"
+      required: true
+
+    current_phase:
+      type: integer
+      range: [1, 7]
+      description: "Current active phase number"
+      required: true
+
+    current_agent:
+      type: string
+      description: "Currently active agent ID"
+      required: false
+
+    status:
+      type: enum
+      values:
+        - running            # Pipeline actively executing
+        - paused_at_checkpoint  # Waiting for user decision at checkpoint
+        - blocked_at_gate    # Quality gate failed, awaiting fix
+        - completed          # All phases done, feature shipped
+        - failed             # Unrecoverable error
+        - aborted            # User cancelled via *apex-abort
+      required: true
+
+    target_platforms:
+      type: array
+      items: [web, mobile, spatial]
+      default: [web]
+      description: "Platforms targeted by this pipeline run"
+
+    created_at:
+      type: string
+      format: "ISO 8601"
+      description: "Pipeline creation timestamp"
+
+    updated_at:
+      type: string
+      format: "ISO 8601"
+      description: "Last state update timestamp"
+
+  # ----------------------------------------------------------------------------
+  # PHASES
+  # ----------------------------------------------------------------------------
+  phases:
+    type: object
+    properties:
+      1_specify:
+        status:
+          type: enum
+          values: [pending, in_progress, completed, skipped]
+        started_at: { type: string, format: "ISO 8601" }
+        completed_at: { type: string, format: "ISO 8601" }
+        scope_classification:
+          type: enum
+          values: [single-agent, multi-agent, full-pipeline]
+
+      2_design:
+        status:
+          type: enum
+          values: [pending, in_progress, completed, blocked]
+        started_at: { type: string, format: "ISO 8601" }
+        completed_at: { type: string, format: "ISO 8601" }
+        gates:
+          QG-AX-001: { type: enum, values: [PENDING, PASS, FAIL] }
+          QG-AX-002: { type: enum, values: [PENDING, PASS, FAIL] }
+          QG-AX-003: { type: enum, values: [PENDING, PASS, FAIL] }
+        revision_count: { type: integer, default: 0, max: 3 }
+
+      3_architect:
+        status:
+          type: enum
+          values: [pending, in_progress, completed, blocked]
+        started_at: { type: string, format: "ISO 8601" }
+        completed_at: { type: string, format: "ISO 8601" }
+        gates:
+          QG-AX-004: { type: enum, values: [PENDING, PASS, FAIL] }
+
+      4_implement:
+        status:
+          type: enum
+          values: [pending, in_progress, completed, blocked]
+        started_at: { type: string, format: "ISO 8601" }
+        completed_at: { type: string, format: "ISO 8601" }
+        parallel_agents:
+          type: object
+          description: "Status per agent running in parallel"
+          dynamic_keys: true
+          value_schema:
+            type: enum
+            values: [pending, in_progress, completed, failed, skipped]
+        waves:
+          wave_1: { status: pending, agent: css-eng }
+          wave_2: { status: pending, agents: [] }
+          wave_3: { status: pending, agent: react-eng }
+
+      5_polish:
+        status:
+          type: enum
+          values: [pending, in_progress, completed, blocked]
+        started_at: { type: string, format: "ISO 8601" }
+        completed_at: { type: string, format: "ISO 8601" }
+        gates:
+          QG-AX-005: { type: enum, values: [PENDING, PASS, FAIL] }
+          QG-AX-006: { type: enum, values: [PENDING, PASS, FAIL] }
+          QG-AX-007: { type: enum, values: [PENDING, PASS, FAIL] }
+
+      6_qa:
+        status:
+          type: enum
+          values: [pending, in_progress, completed, blocked]
+        started_at: { type: string, format: "ISO 8601" }
+        completed_at: { type: string, format: "ISO 8601" }
+        gates:
+          QG-AX-008: { type: enum, values: [PENDING, PASS, FAIL] }
+          QG-AX-009: { type: enum, values: [PENDING, PASS, FAIL] }
+
+      7_ship:
+        status:
+          type: enum
+          values: [pending, in_progress, completed, blocked]
+        started_at: { type: string, format: "ISO 8601" }
+        completed_at: { type: string, format: "ISO 8601" }
+        gates:
+          QG-AX-010: { type: enum, values: [PENDING, PASS, FAIL] }
+
+  # ----------------------------------------------------------------------------
+  # CHECKPOINTS
+  # ----------------------------------------------------------------------------
+  checkpoints:
+    type: object
+    properties:
+      CP-01:
+        name: "Feature Brief"
+        status: { type: enum, values: [pending, presented, completed, skipped] }
+        decision: { type: string, description: "User's feature description" }
+        decided_at: { type: string, format: "ISO 8601" }
+
+      CP-02:
+        name: "Design Review"
+        status: { type: enum, values: [pending, presented, completed] }
+        decision: { type: enum, values: [APPROVE, REVISE] }
+        revision_count: { type: integer, default: 0, max: 3 }
+        notes: { type: string }
+        decided_at: { type: string, format: "ISO 8601" }
+
+      CP-03:
+        name: "Architecture Decision"
+        status: { type: enum, values: [pending, presented, completed] }
+        decision: { type: enum, values: [APPROVE, REVISE] }
+        notes: { type: string }
+        decided_at: { type: string, format: "ISO 8601" }
+
+      CP-04:
+        name: "Visual Review"
+        status: { type: enum, values: [pending, presented, completed] }
+        decision: { type: enum, values: [APPROVE, REVISE] }
+        notes: { type: string }
+        decided_at: { type: string, format: "ISO 8601" }
+
+      CP-05:
+        name: "Motion Feel"
+        status: { type: enum, values: [pending, presented, completed, skipped] }
+        decision: { type: enum, values: [APPROVE, ADJUST] }
+        adjustments: { type: string, description: "Spring config adjustment requests" }
+        decided_at: { type: string, format: "ISO 8601" }
+
+      CP-06:
+        name: "Final Ship Decision"
+        status: { type: enum, values: [pending, presented, completed] }
+        decision: { type: enum, values: [SHIP, BLOCK] }
+        block_reason: { type: string }
+        decided_at: { type: string, format: "ISO 8601" }
+
+  # ----------------------------------------------------------------------------
+  # ARTIFACTS
+  # ----------------------------------------------------------------------------
+  artifacts:
+    type: object
+    description: "Paths to artifacts produced during pipeline execution"
+    dynamic_keys: true
+    value_schema:
+      path: { type: string }
+      phase: { type: integer }
+      agent: { type: string }
+      created_at: { type: string, format: "ISO 8601" }
+
+  # ----------------------------------------------------------------------------
+  # GATE RESULTS
+  # ----------------------------------------------------------------------------
+  gate_results:
+    type: object
+    description: "Detailed results for each quality gate evaluation"
+    dynamic_keys: true
+    value_schema:
+      gate_id: { type: string }
+      verdict: { type: enum, values: [PASS, FAIL, WAIVED] }
+      evaluated_by: { type: string }
+      evaluated_at: { type: string, format: "ISO 8601" }
+      veto_conditions_checked:
+        type: array
+        items:
+          ref: { type: string }
+          result: { type: enum, values: [PASS, FAIL] }
+          detail: { type: string }
+      fix_attempts: { type: integer, default: 0, max: 3 }
+
+  # ----------------------------------------------------------------------------
+  # LOGS
+  # ----------------------------------------------------------------------------
+  veto_log:
+    type: array
+    description: "Log of all veto condition triggers during pipeline"
+    items:
+      gate_id: { type: string }
+      veto_id: { type: string }
+      triggered_at: { type: string, format: "ISO 8601" }
+      agent: { type: string }
+      action_taken: { type: string }
+
+  handoff_log:
+    type: array
+    description: "Log of all agent handoffs during pipeline"
+    items:
+      from_agent: { type: string }
+      to_agent: { type: string }
+      phase: { type: integer }
+      timestamp: { type: string, format: "ISO 8601" }
+      artifact_path: { type: string }
+
+  # ----------------------------------------------------------------------------
+  # METRICS (collected automatically during pipeline execution)
+  # ----------------------------------------------------------------------------
+  metrics:
+    type: object
+    description: "Pipeline execution metrics for optimization insights"
+    properties:
+      total_duration_minutes:
+        type: number
+        description: "Total pipeline duration from start to completion"
+        computed: "(completed_at - created_at) in minutes"
+      phases_completed:
+        type: integer
+        description: "Number of phases that reached completed status"
+      phases_skipped:
+        type: integer
+        description: "Number of phases skipped (profile-based or expedited)"
+      gates_total:
+        type: integer
+        description: "Total quality gates evaluated"
+      gates_passed_first_try:
+        type: integer
+        description: "Gates that passed on first evaluation"
+      gates_failed_then_fixed:
+        type: integer
+        description: "Gates that failed initially but were fixed and passed"
+      gates_skipped:
+        type: integer
+        description: "Gates skipped (tool unavailable or profile mismatch)"
+      revision_cycles_total:
+        type: integer
+        description: "Total checkpoint revision cycles across all checkpoints"
+      agents_used:
+        type: array
+        items: { type: string }
+        description: "List of agent IDs that participated in the pipeline"
+      pivot_count:
+        type: integer
+        default: 0
+        description: "Number of pivots during pipeline execution"
+      profile:
+        type: string
+        description: "Squad profile used (full, web-next, web-spa, minimal)"
+      pipeline_type:
+        type: string
+        description: "Pipeline type used (apex-go, apex-step, apex-quick, apex-fix)"
+
+  # ----------------------------------------------------------------------------
+  # PIVOT LOG
+  # ----------------------------------------------------------------------------
+  pivot_log:
+    type: array
+    description: "Log of all pivots during pipeline execution"
+    items:
+      pivot_number: { type: integer }
+      at_phase: { type: string }
+      reason: { type: string }
+      reopened_checkpoint: { type: string }
+      timestamp: { type: string, format: "ISO 8601" }
+      files_preserved: { type: array, items: { type: string } }
+
+# ==============================================================================
+# DEFAULTS — Initial state template for new pipeline
+# ==============================================================================
+defaults:
+  pipeline:
+    status: running
+    current_phase: 1
+    current_agent: apex-lead
+  phases:
+    1_specify: { status: pending }
+    2_design: { status: pending, gates: { QG-AX-001: PENDING, QG-AX-002: PENDING, QG-AX-003: PENDING }, revision_count: 0 }
+    3_architect: { status: pending, gates: { QG-AX-004: PENDING } }
+    4_implement: { status: pending, parallel_agents: {} }
+    5_polish: { status: pending, gates: { QG-AX-005: PENDING, QG-AX-006: PENDING, QG-AX-007: PENDING } }
+    6_qa: { status: pending, gates: { QG-AX-008: PENDING, QG-AX-009: PENDING } }
+    7_ship: { status: pending, gates: { QG-AX-010: PENDING } }
+  checkpoints:
+    CP-01: { status: pending }
+    CP-02: { status: pending, revision_count: 0 }
+    CP-03: { status: pending }
+    CP-04: { status: pending }
+    CP-05: { status: pending }
+    CP-06: { status: pending }
+  artifacts: {}
+  gate_results: {}
+  veto_log: []
+  handoff_log: []
+  metrics:
+    total_duration_minutes: 0
+    phases_completed: 0
+    phases_skipped: 0
+    gates_total: 0
+    gates_passed_first_try: 0
+    gates_failed_then_fixed: 0
+    gates_skipped: 0
+    revision_cycles_total: 0
+    agents_used: []
+    pivot_count: 0
+    profile: ""
+    pipeline_type: ""
+  pivot_log: []
+
+# ==============================================================================
+# ERROR HANDLING
+# ==============================================================================
+error_handling:
+  gate_failure:
+    max_fix_attempts: 3
+    escalation_chain: [responsible_agent, apex-lead, aios-master]
+    action: "Create FIX sub-task for responsible agent (unidirectional — never rollback)"
+
+  agent_failure:
+    max_retries: 1
+    escalation_chain: [apex-lead, aios-master]
+
+  checkpoint_timeout:
+    threshold_hours: 48
+    action: "Pause pipeline, preserve state for *apex-resume"
+
+  pipeline_crash:
+    action: "State persisted — restore via *apex-resume"
+    state_path: ".aios/apex-pipeline/{pipeline-id}.yaml"

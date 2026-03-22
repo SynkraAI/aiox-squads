@@ -1,0 +1,604 @@
+---
+# ==============================================================================
+# APEX SQUAD — WORKFLOW: Cross-Platform Synchronization
+# wf-cross-platform-sync.yaml
+# ==============================================================================
+# Purpose:  Ensures feature parity and token consistency across all platforms
+#           (web, mobile, spatial). Validates shared packages, runs parallel
+#           platform implementations, and performs cross-platform QA.
+#
+# Trigger:  Feature or component requires implementation across multiple
+#           platforms, or shared packages have been updated.
+# Owner:    apex-lead
+# Squad:    Apex (Frontend Ultra-Premium)
+# Version:  1.0.0
+# ==============================================================================
+
+id: wf-cross-platform-sync
+name: Cross-Platform Synchronization
+description: >
+  Five-phase workflow that synchronizes feature implementation across web,
+  mobile, and spatial platforms. Starts with shared package validation and
+  token parity checks, then runs parallel platform implementations, and
+  concludes with cross-platform QA and final visual review. All phases are
+  gated and require explicit approval before the next phase begins.
+  Ensures behavioral and visual consistency across all target platforms.
+
+metadata:
+  version: "1.0.0"
+  owner: apex-lead
+  squad: apex
+  created: "2026-03-01"
+  tags:
+    - cross-platform
+    - synchronization
+    - token-parity
+    - multi-platform
+    - consistency
+
+# ------------------------------------------------------------------------------
+# INPUTS
+# ------------------------------------------------------------------------------
+inputs:
+  required:
+    - story_id:
+        type: string
+        description: Associated story ID (e.g. "3.2")
+    - feature_name:
+        type: string
+        description: Name of the feature being synchronized
+    - target_platforms:
+        type: array
+        description: >
+          Platforms to synchronize. At least 2 required.
+          Options: web, mobile, spatial
+  optional:
+    - shared_packages:
+        type: array
+        default: []
+        description: >
+          List of shared packages to validate before platform builds.
+          e.g. ["packages/tokens", "packages/ui", "packages/utils"]
+    - skip_spatial:
+        type: boolean
+        default: true
+        description: Skip spatial (R3F/WebXR) implementation step if not applicable
+    - token_strict_parity:
+        type: boolean
+        default: true
+        description: >
+          When true, every token used on one platform must exist and match
+          on all other target platforms. When false, platform-specific
+          tokens are allowed.
+
+# ------------------------------------------------------------------------------
+# OUTPUTS
+# ------------------------------------------------------------------------------
+outputs:
+  - parity_report:
+      description: Token parity report across all platforms
+      path: docs/qa/cross-platform/{story_id}-parity-report.md
+      type: file
+  - platform_implementations:
+      description: Implemented feature files per platform
+      type: array
+  - qa_report:
+      description: Cross-platform QA results with pass/fail per platform
+      path: docs/qa/cross-platform/{story_id}-qa-report.md
+      type: file
+
+# ------------------------------------------------------------------------------
+# ENFORCEMENT
+# ------------------------------------------------------------------------------
+enforcement:
+  veto_registry: data/veto-conditions.yaml
+  performance_budgets: data/performance-budgets.yaml
+  pre_execution_validation:
+    validate_agents: true
+    action: "BLOCK workflow if any referenced agent not in data/agent-registry.yaml"
+
+# ------------------------------------------------------------------------------
+# QUALITY GATES (with veto conditions)
+# ------------------------------------------------------------------------------
+gates:
+  - id: QG-AX-XP-001
+    name: Shared Package Validation Passed
+    description: >
+      All shared packages compile, pass tests, and have no breaking changes
+      that would affect downstream platform builds.
+    blocking: true
+    owner: cross-plat-eng
+    veto_conditions:
+      - ref: VC-XP-001-A  # All shared packages typecheck passes
+      - ref: VC-XP-001-B  # All shared packages tests pass
+      - ref: VC-XP-001-C  # No breaking API changes in shared packages
+
+  - id: QG-AX-XP-002
+    name: Token Parity Verified
+    description: >
+      Design tokens audited for parity across all target platforms. Every
+      token used on one platform exists and matches on all others (when
+      strict parity enabled).
+    blocking: true
+    owner: design-sys-eng
+    veto_conditions:
+      - ref: VC-XP-002-A  # Parity report generated and reviewed
+      - ref: VC-XP-002-B  # Zero unresolved parity mismatches (strict mode)
+      - ref: VC-XP-002-C  # Platform-specific exceptions documented
+
+  - id: QG-AX-XP-003
+    name: Cross-Platform QA Passed
+    description: >
+      Cross-platform QA validates behavioral and visual consistency across
+      all implemented platforms. No blocking issues remain.
+    blocking: true
+    owner: qa-xplatform
+    veto_conditions:
+      - ref: VC-XP-003-A  # Cross-platform comparison completed for all platforms
+      - ref: VC-XP-003-B  # No CRITICAL platform-specific issues unresolved
+      - ref: VC-XP-003-C  # Platform parity score meets threshold
+
+  - id: QG-AX-XP-004
+    name: Final Visual Review Approved
+    description: >
+      Apex lead approves cross-platform synchronization after side-by-side
+      visual review of all platforms. NON-WAIVABLE.
+    blocking: true
+    owner: apex-lead
+    waivable: false
+    veto_conditions:
+      - ref: VC-XP-004-A  # apex-lead sign-off recorded
+      - ref: VC-XP-004-B  # Design intent preserved across all platforms
+      - ref: VC-XP-004-C  # No regressions in existing functionality
+
+# ------------------------------------------------------------------------------
+# PHASES
+# ------------------------------------------------------------------------------
+phases:
+
+  # ============================================================================
+  # PHASE 1: VALIDATION
+  # ============================================================================
+  - id: phase-1-validation
+    name: Validation
+    sequence: 1
+    agent: cross-plat-eng
+    delegates_to:
+      - design-sys-eng
+    gates:
+      - QG-AX-XP-001
+      - QG-AX-XP-002
+    description: >
+      Validate shared packages and check token parity across all target
+      platforms. Ensures the foundation is sound before any platform-specific
+      implementation begins.
+
+    steps:
+      - id: step-1-1
+        name: Validate Shared Packages
+        agent: cross-plat-eng
+        action: >
+          Validate that all shared packages compile, pass tests, and have no
+          breaking changes that would affect downstream platform builds.
+          Run typecheck and tests for all shared packages listed in
+          inputs.shared_packages. Verify package exports are consistent
+          and no circular dependencies exist.
+        commands:
+          - npm run typecheck --workspace=packages/tokens
+          - npm run typecheck --workspace=packages/ui
+          - npm run test --workspace=packages/tokens
+          - npm run test --workspace=packages/ui
+        on_error: >
+          BLOCK — Shared package validation must pass before any platform
+          build begins. Fix errors in shared packages first.
+
+      - id: step-1-2
+        name: Build Shared Packages
+        agent: cross-plat-eng
+        action: >
+          Verify shared package APIs have not changed in a breaking way.
+          Check that all platform-specific consumers can resolve imports.
+        commands:
+          - npm run build --workspace=packages/tokens
+          - npm run build --workspace=packages/ui
+        on_error: BLOCK — shared packages must build before proceeding
+
+      - id: step-1-3
+        name: Check Token Parity
+        agent: design-sys-eng
+        checklists:
+          - ref: checklists/token-compliance.md
+            reviewer: design-sys-eng
+          - ref: checklists/multi-mode-checklist.md
+            reviewer: design-sys-eng
+          - ref: checklists/cross-platform-checklist.md
+            reviewer: cross-plat-eng
+        action: >
+          Audit design tokens to ensure parity across all target platforms.
+          Every token used in the feature must have equivalent definitions
+          for web (CSS custom properties), mobile (React Native StyleSheet),
+          and spatial (R3F materials) platforms.
+          Compare token outputs across platform build targets:
+          - packages/tokens/dist/css/ (web)
+          - packages/tokens/dist/rn/ (mobile)
+          - packages/tokens/dist/r3f/ (spatial, if applicable)
+          Identify tokens present in one platform but missing in another.
+          Identify tokens with value mismatches across platforms.
+        on_error: >
+          If token_strict_parity is true, BLOCK until all parity issues resolved.
+          If false, document platform-specific exceptions and proceed.
+
+      - id: step-1-4
+        name: Generate Parity Report
+        agent: design-sys-eng
+        action: >
+          Generate parity report documenting:
+          - Tokens with full parity (present and matching on all platforms)
+          - Tokens with partial coverage (missing on one or more platforms)
+          - Tokens with value drift (different values across platforms)
+          - Platform-specific tokens (intentionally different, documented)
+        output: docs/qa/cross-platform/{story_id}-parity-report.md
+        on_error: BLOCK — parity report required before platform implementations
+
+    checkpoint:
+      id: checkpoint-1
+      name: CP-01 Validation to Implementation
+      gates:
+        - QG-AX-XP-001
+        - QG-AX-XP-002
+      artifacts_required:
+        - All shared packages typecheck and test results (PASS)
+        - All shared packages build artifacts (success)
+        - docs/qa/cross-platform/{story_id}-parity-report.md
+      validation:
+        - All shared packages compile without errors
+        - All shared package tests pass
+        - No breaking API changes detected
+        - Token parity verified per strict/lenient mode
+      on_fail: Block phase-2-implementation, return to phase-1-validation with failing checks
+      revision_policy:
+        max_iterations: 3
+        on_max_reached:
+          action: ESCALATE
+          to: apex-lead
+          message: "Shared package validation or token parity failing after 3 attempts."
+      on_pass:
+        notify:
+          targets: [react-eng, css-eng, mobile-eng, spatial-eng]
+          message: "CP-01 passed. Shared packages validated and token parity confirmed. Platform implementation can begin."
+          deadline_hours: 2
+          escalate_on_timeout: apex-lead
+
+  # ============================================================================
+  # PHASE 2: IMPLEMENTATION
+  # ============================================================================
+  - id: phase-2-implementation
+    name: Implementation
+    sequence: 2
+    agents:
+      parallel:
+        - react-eng
+        - css-eng
+        - mobile-eng
+        - spatial-eng
+    description: >
+      Parallel platform-specific implementations. Each engineer implements
+      the feature for their target platform using validated shared packages
+      and tokens from phase 1. All platforms build simultaneously.
+
+    steps:
+      - id: step-2-1
+        name: Web Implementation
+        agent: css-eng
+        parallel: true
+        skip_if: "'web' not in inputs.target_platforms"
+        checklists:
+          - ref: checklists/component-review-checklist.md
+            reviewer: react-eng
+          - ref: checklists/css-review-checklist.md
+            reviewer: css-eng
+          - ref: checklists/rsc-compliance.md
+            reviewer: frontend-arch
+          - ref: checklists/edge-compatibility.md
+            reviewer: frontend-arch
+        action: >
+          Implement the feature for the web platform (Next.js). Use validated
+          tokens from phase 1. Follow component patterns established in the
+          design system. Implement web components using React + CSS Modules/
+          Vanilla Extract. Consume tokens from packages/tokens/dist/css/. Ensure:
+          - All component states implemented (default, hover, focus, etc.)
+          - Responsive behavior with container queries
+          - SSR compatibility (no window/document access in render)
+          - Storybook stories for all variants
+          Run web-specific tests:
+          - Unit tests with Jest/Vitest
+          - Storybook build verification
+          - TypeScript typecheck
+        agents:
+          - react-eng
+          - css-eng
+        commands:
+          - npm run test -- --testPathPattern=apps/web
+          - npm run typecheck --workspace=apps/web
+        on_error: Log web-specific failures, attempt fix, escalate to frontend-arch if blocked
+
+      - id: step-2-2
+        name: Mobile Implementation
+        agent: mobile-eng
+        parallel: true
+        skip_if: "'mobile' not in inputs.target_platforms"
+        checklists:
+          - ref: checklists/rn-performance-checklist.md
+            reviewer: mobile-eng
+          - ref: checklists/device-test-checklist.md
+            reviewer: qa-xplatform
+        action: >
+          Implement the feature for mobile (React Native). Use validated tokens
+          from phase 1. Maintain behavioral parity with the web implementation.
+          Implement React Native components consuming tokens from
+          packages/tokens/dist/rn/. Ensure:
+          - Platform-specific adaptations (iOS vs Android)
+          - Safe area and notch handling
+          - Touch target sizes >= 44x44pt
+          - Animated/Reanimated for transitions
+          - Behavioral parity with web (same states, same interactions)
+          Run mobile-specific tests:
+          - Unit tests
+          - TypeScript typecheck
+          - iOS and Android build verification
+        commands:
+          - npm run test -- --testPathPattern=apps/mobile
+          - npm run typecheck --workspace=apps/mobile
+        on_error: Log mobile-specific failures, escalate platform gaps to frontend-arch
+
+      - id: step-2-3
+        name: Spatial Implementation
+        agent: spatial-eng
+        parallel: true
+        skip_if: "inputs.skip_spatial == true or 'spatial' not in inputs.target_platforms"
+        action: >
+          Implement the feature for spatial computing (R3F/WebXR). Use validated
+          tokens from phase 1. Adapt 2D design patterns to 3D spatial context.
+          Implement spatial components using React Three Fiber / WebXR.
+          Consume tokens from packages/tokens/dist/r3f/. Ensure:
+          - 3D spatial layout adapts design intent from 2D spec
+          - Interaction patterns adapted for spatial input (gaze, hand tracking)
+          - Performance within spatial rendering budget (60fps minimum)
+          - Graceful fallback when WebXR is not available
+          Run spatial-specific tests:
+          - Unit tests for component logic
+          - R3F render tests
+          - Performance benchmarks (frame time, draw calls)
+        commands:
+          - npm run test -- --testPathPattern=apps/spatial
+          - npm run typecheck --workspace=apps/spatial
+        on_error: Log spatial-specific failures, escalate to frontend-arch
+
+    checkpoint:
+      id: checkpoint-2
+      name: CP-02 Implementation to QA
+      artifacts_required:
+        - Web implementation files (if web in target_platforms)
+        - Mobile implementation files (if mobile in target_platforms)
+        - Spatial implementation files (if spatial in target_platforms)
+        - All platform-specific tests pass
+        - Zero TypeScript errors across all platforms
+      validation:
+        - All target platform implementations complete
+        - Platform-specific test suites pass
+        - TypeScript typecheck passes for all target workspaces
+        - No breaking changes to shared packages introduced
+      on_fail: Return to phase-2-implementation with failing platform(s) identified
+      revision_policy:
+        max_iterations: 3
+        on_max_reached:
+          action: ESCALATE
+          to: apex-lead
+          message: "Platform implementation failing after 3 attempts."
+      on_pass:
+        notify:
+          target: qa-xplatform
+          message: "CP-02 passed. All platform implementations complete. Cross-platform QA can begin."
+          deadline_hours: 4
+          escalate_on_timeout: apex-lead
+
+  # ============================================================================
+  # PHASE 3: CROSS-PLATFORM QA
+  # ============================================================================
+  - id: phase-3-cross-platform-qa
+    name: Cross-Platform QA
+    sequence: 3
+    agent: qa-xplatform
+    gate: QG-AX-XP-003
+    depends_on:
+      - phase-2-implementation
+    description: >
+      Perform cross-platform quality assurance. Compare behavior, visual
+      appearance, and interaction patterns across all implemented platforms.
+      Ensure consistency and identify platform-specific regressions.
+
+    steps:
+      - id: step-3-1
+        name: Cross-Platform Comparison
+        agent: qa-xplatform
+        checklists:
+          - ref: checklists/cross-platform-qa-checklist.md
+            reviewer: qa-xplatform
+          - ref: checklists/cross-platform-checklist.md
+            reviewer: cross-plat-eng
+        action: >
+          Run cross-platform comparison:
+          - Visual comparison: screenshots from each platform at equivalent states
+          - Behavioral comparison: interaction flows produce same outcomes
+          - Token verification: rendered values match token definitions
+          - Performance comparison: each platform within its performance budget
+        on_error: Log comparison failures, continue with remaining comparisons
+
+      - id: step-3-2
+        name: Automated Cross-Platform Tests
+        agent: qa-xplatform
+        action: >
+          Run automated cross-platform test suite:
+          - Shared test cases executed on each platform
+          - Accessibility audit per platform
+          - RTL layout verification per platform
+        commands:
+          - npm run test:cross-platform -- --story-id={story_id}
+        on_error: Flag failing test cases with platform and severity
+
+      - id: step-3-3
+        name: Cross-Platform QA Report
+        agent: qa-xplatform
+        action: >
+          Generate cross-platform QA report documenting:
+          - Platform parity score (% of matching behaviors)
+          - Visual consistency score (% of matching renders)
+          - Platform-specific issues found
+          - Recommended fixes per platform
+        output: docs/qa/cross-platform/{story_id}-qa-report.md
+        gate: QG-AX-XP-003
+        decision:
+          PASS: All platforms consistent, no blocking issues. Proceed to checkpoint-3.
+          CONCERNS: Minor differences documented but acceptable. Proceed with notes.
+          FAIL: Significant inconsistencies found. Return to respective platform step.
+        revision_policy:
+          max_iterations: 3
+          on_max_reached:
+            action: ESCALATE
+            to: apex-lead
+            message: "Cross-platform QA stuck after 3 review cycles."
+
+    checkpoint:
+      id: checkpoint-3
+      name: CP-03 QA to Final Review
+      gate: QG-AX-XP-003
+      artifacts_required:
+        - docs/qa/cross-platform/{story_id}-qa-report.md
+        - Cross-platform comparison results (all platforms)
+        - Automated test results per platform
+      validation:
+        - QA verdict is PASS or CONCERNS (not FAIL)
+        - No CRITICAL platform-specific issues unresolved
+        - Platform parity score meets threshold
+        - All automated cross-platform tests pass
+      on_fail: >
+        Categorize failures by platform and return to phase-2-implementation
+        for fixes on the respective platform(s). Re-run phase-3 after.
+      revision_policy:
+        max_iterations: 3
+        on_max_reached:
+          action: ESCALATE
+          to: apex-lead
+          message: "Cross-platform QA checkpoint failing after 3 attempts."
+      on_pass:
+        notify:
+          target: apex-lead
+          message: "CP-03 passed. Cross-platform QA complete. Ready for final visual review."
+          deadline_hours: 2
+          escalate_on_timeout: aios-master
+
+  # ============================================================================
+  # PHASE 4: FINAL REVIEW
+  # ============================================================================
+  - id: phase-4-final-review
+    name: Final Review
+    sequence: 4
+    agent: apex-lead
+    gate: QG-AX-XP-004
+    depends_on:
+      - phase-3-cross-platform-qa
+    description: >
+      Apex lead performs final visual review across all platforms. Confirms
+      design intent is preserved, interaction quality meets premium bar,
+      and the feature is ready to ship.
+
+    steps:
+      - id: step-4-1
+        name: Side-by-Side Platform Review
+        agent: apex-lead
+        checklists:
+          - ref: checklists/visual-review-checklist.md
+            reviewer: apex-lead
+          - ref: checklists/a11y-review-checklist.md
+            reviewer: a11y-eng
+        action: >
+          Review all platforms side-by-side:
+          - Web: Storybook + running application
+          - Mobile: Simulator/device preview
+          - Spatial: WebXR preview (if applicable)
+          Verify:
+          - Design intent preserved across platforms
+          - Motion and transitions feel premium
+          - Accessibility requirements met on all platforms
+          - No regressions in existing functionality
+        on_error: Document review issues, request specific platform fixes
+
+      - id: step-4-2
+        name: Final Verdict
+        agent: apex-lead
+        action: >
+          Issue final verdict:
+          - APPROVED: Feature is synchronized and ready to ship
+          - NEEDS_POLISH: Minor issues, return to specific platform engineer
+          - REJECTED: Significant quality issues, return to implementation
+        gate: QG-AX-XP-004
+        decision:
+          APPROVED: Workflow complete. All platforms synchronized and approved.
+          NEEDS_POLISH: Return specific items to respective engineers for refinement.
+          REJECTED: Return to implementation phase with detailed rejection notes.
+        revision_policy:
+          max_iterations: 3
+          on_max_reached:
+            action: ESCALATE
+            to: aios-master
+            message: "Final review stuck after 3 cycles. Feature may need redesign."
+
+    checkpoint:
+      id: checkpoint-4
+      name: CP-04 Final Review Complete
+      gate: QG-AX-XP-004
+      artifacts_required:
+        - docs/qa/cross-platform/{story_id}-parity-report.md (from phase 1)
+        - docs/qa/cross-platform/{story_id}-qa-report.md (from phase 3)
+        - apex-lead sign-off recorded
+      validation:
+        - Final verdict is APPROVED
+        - All platforms synchronized and visually consistent
+        - Design intent preserved across all target platforms
+        - No regressions in existing functionality
+      on_fail: >
+        Return to phase-2-implementation or phase-4-final-review depending
+        on the nature of the issue (implementation gap vs review feedback).
+      revision_policy:
+        max_iterations: 3
+        on_max_reached:
+          action: ESCALATE
+          to: aios-master
+          message: "Final review checkpoint failing after 3 attempts."
+      on_pass:
+        notify:
+          targets: [apex-lead, cross-plat-eng]
+          message: "CP-04 passed. Cross-platform sync complete. All platforms approved."
+
+# ------------------------------------------------------------------------------
+# ERROR HANDLING
+# ------------------------------------------------------------------------------
+error_handling:
+  global_retry_limit: 3
+  on_unrecoverable_error:
+    action: ESCALATE
+    escalate_to: apex-lead
+    then: frontend-arch
+    then_last: aios-master
+  on_platform_build_failure:
+    action: BLOCK
+    notify: cross-plat-eng
+    message: >
+      Platform build failed during cross-platform sync. Isolate the failing
+      platform and fix before re-running synchronization.
+  on_parity_drift:
+    action: WARN
+    notify: design-sys-eng
+    message: >
+      Token parity drift detected during sync. Review parity report and
+      update tokens before next release.

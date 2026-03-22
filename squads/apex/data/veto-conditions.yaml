@@ -1,0 +1,808 @@
+# ==============================================================================
+# APEX SQUAD — Veto Conditions Registry
+# data/veto-conditions.yaml
+# ==============================================================================
+# Purpose:  Central registry of ALL automated veto conditions that physically
+#           block wrong paths in Squad Apex workflows. Every quality gate has
+#           at least one veto condition with an automated enforcement mechanism.
+#
+# Philosophy: "Se o executor CONSEGUE fazer errado, o processo está errado."
+#             Veto conditions are not suggestions — they are physical blocks.
+#
+# Owner:    apex-lead
+# Version:  1.1.0
+# ==============================================================================
+
+version: "1.1.0"
+enforcement_mode: strict  # strict = all veto conditions are blocking
+fallback_on_tool_failure: BLOCK  # If verification tool fails, block (safe default)
+
+# ==============================================================================
+# QUALITY GATE VETO CONDITIONS
+# ==============================================================================
+gates:
+
+  QG-AX-001:
+    name: Design Token Spec Validated
+    profiles: [full, web-next]  # Only enforced when token system exists
+    veto_conditions:
+      - id: VC-001-A
+        condition: "Hardcoded hex values found in component source"
+        available_check: "test -d packages/ui/src/components"
+        on_unavailable: SKIP_WITH_WARNING
+        check: "grep -rn '#[0-9a-fA-F]\\{3,8\\}' packages/ui/src/components/ --include='*.tsx' --include='*.ts' --include='*.css.ts' | grep -v '.stories.' | grep -v '.test.' | wc -l"
+        threshold: 0
+        operator: equals
+        action: "VETO — Remove all hardcoded hex values. Use design tokens from packages/tokens/."
+        auto_fixable: false
+
+      - id: VC-001-B
+        condition: "Hardcoded pixel values in spacing (not derived from token scale)"
+        available_check: "test -d packages/ui/src/components"
+        on_unavailable: SKIP_WITH_WARNING
+        check: "grep -rn 'padding:\\s*[0-9]\\+px\\|margin:\\s*[0-9]\\+px\\|gap:\\s*[0-9]\\+px' packages/ui/src/components/ --include='*.css.ts' | wc -l"
+        threshold: 0
+        operator: equals
+        action: "VETO — Use spacing tokens (var(--spacing-*)) instead of hardcoded pixels."
+        auto_fixable: false
+
+      - id: VC-001-C
+        condition: "Token naming does not follow convention"
+        available_check: "npm run tokens:validate --dry-run 2>/dev/null"
+        on_unavailable: SKIP_WITH_WARNING
+        check: "npm run tokens:validate -- --naming-only --exit-code"
+        threshold: 0
+        operator: exit_code_equals
+        action: "VETO — Fix token naming to follow {category}/{variant}/{state} convention."
+        auto_fixable: false
+
+  QG-AX-002:
+    name: Figma Spec Completeness
+    profiles: [full, web-next]  # Full pipeline only
+    veto_conditions:
+      - id: VC-002-A
+        condition: "Design spec document missing or empty"
+        available_check: "test -d docs/design"
+        on_unavailable: SKIP_WITH_WARNING
+        check: "test -s docs/design/{story_id}-spec.md"
+        threshold: true
+        operator: file_exists_and_not_empty
+        action: "VETO — Design spec must exist and contain content before proceeding."
+        auto_fixable: false
+
+      - id: VC-002-B
+        condition: "Token delta list not produced"
+        available_check: "test -d docs/design"
+        on_unavailable: SKIP_WITH_WARNING
+        check: "test -s docs/design/{story_id}-token-delta.md"
+        threshold: true
+        operator: file_exists_and_not_empty
+        action: "VETO — Token delta analysis required before token extraction."
+        auto_fixable: false
+
+      - id: VC-002-C
+        name: 4px Grid Compliance
+        description: "All spacing and sizing values must be multiples of 4px"
+        available_check: "test -d packages/ui/src/components"
+        on_unavailable: SKIP_WITH_WARNING
+        check: "grep for non-4px-multiple values in component CSS files — no 3px, 5px, 7px, 11px etc."
+        threshold: "Zero hardcoded non-grid values (e.g., no 3px, 5px, 7px, 11px, 13px, 15px)"
+        enforcement_level: 2  # Pre-commit Hook
+        tool: "grep -rn 'margin:\\|padding:\\|gap:\\|width:\\|height:' --include='*.css.ts' --include='*.module.css' | grep -vE '(0|4|8|12|16|20|24|28|32|36|40|44|48|52|56|60|64|72|80|96|128)px'"
+
+  QG-AX-003:
+    name: Design Spec Approved
+    profiles: [full, web-next]
+    veto_conditions:
+      - id: VC-003-A
+        condition: "Design spec not approved by apex-lead"
+        available_check: "test -d docs/design"
+        on_unavailable: SKIP_WITH_WARNING
+        check: "grep -c 'APPROVED' docs/design/{story_id}-spec.md"
+        threshold: 1
+        operator: greater_or_equal
+        action: "VETO — apex-lead must add APPROVED marker to design spec."
+        auto_fixable: false
+
+      - id: VC-003-B
+        condition: "Required design artifacts missing"
+        available_check: "test -d docs/design"
+        on_unavailable: SKIP_WITH_WARNING
+        check: |
+          test -f docs/design/{story_id}-spec.md &&
+          test -f docs/design/{story_id}-token-delta.md
+        threshold: true
+        operator: all_pass
+        action: "VETO — All design artifacts must exist at checkpoint."
+        auto_fixable: false
+
+  QG-AX-004:
+    name: Architecture Review Passed
+    profiles: [full, web-next]
+    veto_conditions:
+      - id: VC-004-A
+        condition: "Architecture documents missing"
+        available_check: "test -d docs/architecture"
+        on_unavailable: SKIP_WITH_WARNING
+        check: |
+          test -f docs/architecture/{story_id}-components.yaml &&
+          test -f docs/architecture/{story_id}-state.md &&
+          test -f docs/architecture/{story_id}-platforms.md
+        threshold: true
+        operator: all_pass
+        action: "VETO — All 3 architecture documents required before implementation."
+        auto_fixable: false
+
+      - id: VC-004-B
+        condition: "Components YAML not valid"
+        available_check: "test -d docs/architecture"
+        on_unavailable: SKIP_WITH_WARNING
+        check: "node -e \"require('js-yaml').load(require('fs').readFileSync('docs/architecture/{story_id}-components.yaml','utf8'))\""
+        threshold: 0
+        operator: exit_code_equals
+        action: "VETO — Components hierarchy YAML must be valid."
+        auto_fixable: false
+
+  QG-AX-005:
+    name: Component Accessibility Passed
+    profiles: [full, web-next, web-spa, minimal]  # Always enforced
+    veto_conditions:
+      - id: VC-005-A
+        condition: "axe-core violations found"
+        available_check: "npm run test:a11y --dry-run 2>/dev/null"
+        on_unavailable: MANUAL_CHECK  # Agent performs manual a11y review instead
+        check: "npm run test:a11y -- --exit-code"
+        threshold: 0
+        operator: exit_code_equals
+        action: "VETO — Zero axe-core violations required. Fix all violations before proceeding."
+        auto_fixable: false
+
+      - id: VC-005-B
+        condition: "Missing prefers-reduced-motion handling"
+        available_check: "test -d packages/ui/src/components || test -d src/components"
+        on_unavailable: MANUAL_CHECK
+        check: "grep -rL 'prefers-reduced-motion\\|useReducedMotion\\|shouldReduceMotion' src/components/ --include='*.tsx' --include='*.css' 2>/dev/null | wc -l"
+        threshold: 0
+        operator: equals
+        action: "VETO — Components with animation must handle prefers-reduced-motion."
+        auto_fixable: false
+
+      - id: VC-005-C
+        condition: "Interactive element without accessible name"
+        available_check: "npm run test:a11y --dry-run 2>/dev/null"
+        on_unavailable: MANUAL_CHECK
+        check: "npm run test:a11y -- --rule=label --exit-code"
+        threshold: 0
+        operator: exit_code_equals
+        action: "VETO — All interactive elements must have accessible names (aria-label, visible text, etc.)."
+        auto_fixable: false
+
+      - id: VC-005-D
+        name: WCAG 2.2 AA Compliance
+        description: "Full WCAG 2.2 AA audit must pass — axe-core alone is insufficient for complete AA coverage"
+        available_check: "npm run test:a11y --dry-run 2>/dev/null"
+        on_unavailable: MANUAL_CHECK
+        check: "axe-core automated scan (VC-005-A) PLUS manual keyboard navigation test PLUS screen reader test (VoiceOver or NVDA)"
+        threshold: "Zero critical/serious axe violations AND keyboard test pass AND screen reader test pass"
+        enforcement_level: 2  # Pre-commit Hook (automated) + 3 Workflow Blocker (manual)
+        tool: "axe-core + manual audit checklist (checklists/wcag-22-checklist.md)"
+
+  QG-AX-006:
+    name: Motion & Animation Review
+    profiles: [full, web-next, web-spa]  # Enforced when motion library present
+    veto_conditions:
+      - id: VC-006-A
+        condition: "CSS transition/animation used instead of spring physics"
+        available_check: "test -d src/components || test -d packages/ui/src/components"
+        on_unavailable: SKIP_WITH_WARNING
+        check: "grep -rn 'transition:\\|animation:' src/components/ --include='*.tsx' --include='*.css' | grep -v 'color\\|background\\|opacity\\|border-color\\|outline' | wc -l"
+        threshold: 0
+        operator: equals
+        action: "VETO — Use spring physics (Framer Motion / Reanimated) for all motion. CSS transitions allowed only for color/opacity."
+        auto_fixable: false
+
+      - id: VC-006-B
+        condition: "Hardcoded animation durations (not from motion tokens)"
+        available_check: "test -d src/components || test -d packages/ui/src/components"
+        on_unavailable: SKIP_WITH_WARNING
+        check: "grep -rn 'duration:\\s*[0-9]' src/components/ --include='*.tsx' | grep -v 'import\\|from\\|//' | wc -l"
+        threshold: 0
+        operator: equals
+        action: "VETO — All animation durations must reference motion tokens."
+        auto_fixable: false
+
+  QG-AX-007:
+    name: Performance Budget Met
+    profiles: [full, web-next, web-spa]
+    veto_conditions:
+      - id: VC-007-A
+        condition: "Lighthouse performance score below threshold"
+        available_check: "npx lhci --version 2>/dev/null"
+        on_unavailable: MANUAL_CHECK  # Agent reviews build output size manually
+        check: "npm run lighthouse:ci -- --performance=90 --exit-code"
+        threshold: 0
+        operator: exit_code_equals
+        action: "VETO — Lighthouse Performance score must be >= 90."
+        auto_fixable: false
+
+      - id: VC-007-B
+        condition: "Bundle size exceeds budget"
+        available_check: "npm run analyze:bundle --dry-run 2>/dev/null"
+        on_unavailable: MANUAL_CHECK  # Agent checks build output size from vite build
+        check: "npm run analyze:bundle -- --max-delta=50 --exit-code"
+        threshold: 0
+        operator: exit_code_equals
+        action: "VETO — Bundle size delta exceeds 50KB limit."
+        auto_fixable: false
+
+      - id: VC-007-C
+        condition: "LCP exceeds 1.2s on any measured page"
+        available_check: "npx lhci --version 2>/dev/null"
+        on_unavailable: MANUAL_CHECK
+        check: "npm run lighthouse:ci -- --lcp=1200 --exit-code"
+        threshold: 0
+        operator: exit_code_equals
+        action: "VETO — LCP must be < 1.2s. Reference: data/performance-budgets.yaml"
+        auto_fixable: false
+
+      - id: VC-007-D
+        name: INP Budget
+        description: "Interaction to Next Paint must be under 200ms"
+        available_check: "npx lhci --version 2>/dev/null"
+        on_unavailable: MANUAL_CHECK
+        check: "Lighthouse CI INP measurement on representative user flows"
+        threshold: "inp < 200ms"
+        enforcement_level: 1  # CI Pipeline
+        tool: "lighthouse-ci --collect --assert"
+
+      - id: VC-007-E
+        name: CLS Budget
+        description: "Cumulative Layout Shift must be under 0.1"
+        available_check: "npx lhci --version 2>/dev/null"
+        on_unavailable: MANUAL_CHECK
+        check: "Lighthouse CI CLS measurement on all feature pages"
+        threshold: "cls < 0.1"
+        enforcement_level: 1  # CI Pipeline
+        tool: "lighthouse-ci --collect --assert"
+
+  QG-AX-008:
+    name: Visual Regression Passed
+    profiles: [full, web-next]  # Only when Chromatic/Storybook configured
+    veto_conditions:
+      - id: VC-008-A
+        condition: "Chromatic visual regressions detected"
+        available_check: "npx chromatic --version 2>/dev/null"
+        on_unavailable: SKIP_WITH_WARNING
+        check: "npm run chromatic -- --exit-zero-on-changes=false --exit-code"
+        threshold: 0
+        operator: exit_code_equals
+        action: "VETO — Zero unresolved visual regressions allowed."
+        auto_fixable: false
+
+      - id: VC-008-B
+        condition: "Storybook build fails"
+        available_check: "npx storybook --version 2>/dev/null"
+        on_unavailable: SKIP_WITH_WARNING
+        check: "npm run storybook:build -- --exit-code"
+        threshold: 0
+        operator: exit_code_equals
+        action: "VETO — Storybook must build without errors."
+        auto_fixable: false
+
+  QG-AX-009:
+    name: Cross-Platform Compatibility
+    profiles: [full]  # Only for cross-platform projects
+    veto_conditions:
+      - id: VC-009-A
+        condition: "Playwright cross-browser tests fail"
+        available_check: "npx playwright --version 2>/dev/null"
+        on_unavailable: SKIP_WITH_WARNING
+        check: "npm run test:e2e -- --exit-code"
+        threshold: 0
+        operator: exit_code_equals
+        action: "VETO — All Playwright cross-browser tests must pass."
+        auto_fixable: false
+
+      - id: VC-009-B
+        condition: "CRITICAL severity bug found in cross-platform testing"
+        available_check: "test -d docs/qa/ship"
+        on_unavailable: SKIP_WITH_WARNING
+        check: "grep -c 'severity: CRITICAL' docs/qa/ship/{story_id}-xplatform-report.md 2>/dev/null"
+        threshold: 0
+        operator: equals
+        action: "VETO — Zero CRITICAL bugs allowed. Fix before ship."
+        auto_fixable: false
+
+      - id: VC-009-C
+        condition: "Mobile app cold start exceeds 1 second"
+        available_check: "npx detox --version 2>/dev/null"
+        on_unavailable: SKIP_WITH_WARNING  # Mobile not in project
+        check: "Measure cold start time on reference device (iPhone 14 / Pixel 7)"
+        threshold: "startup_time < 1000ms"
+        operator: less_than
+        enforcement_level: 3  # Workflow Blocker
+        action: "VETO — Mobile app cold start must be under 1 second."
+        tool: "Detox performance measurement or manual measurement with stopwatch"
+        auto_fixable: false
+
+      - id: VC-009-D
+        condition: "UI animations or scrolling drop below 60fps"
+        available_check: "npx detox --version 2>/dev/null || npx react-native --version 2>/dev/null"
+        on_unavailable: SKIP_WITH_WARNING  # Mobile not in project
+        check: "Profile with Xcode Instruments (iOS) or Android Studio Profiler"
+        threshold: "fps >= 60 for all user interactions"
+        operator: greater_or_equal
+        enforcement_level: 3  # Workflow Blocker
+        action: "VETO — UI animations and scrolling must maintain 60fps."
+        tool: "Platform profiler"
+        auto_fixable: false
+
+      - id: VC-009-E
+        condition: "Application Not Responding event detected"
+        available_check: "npx detox --version 2>/dev/null"
+        on_unavailable: SKIP_WITH_WARNING  # Mobile not in project
+        check: "Monitor ANR events during E2E test suite execution"
+        threshold: "anr_count == 0"
+        operator: equals
+        enforcement_level: 3  # Workflow Blocker
+        action: "VETO — ANR rate must be zero. No ANR events allowed."
+        tool: "Detox E2E or platform-specific ANR monitoring"
+        auto_fixable: false
+
+  QG-AX-010:
+    name: Lead Sign-off
+    veto_conditions:
+      - id: VC-010-A
+        condition: "apex-lead has not signed off"
+        available_check: "manual"
+        on_unavailable: MANUAL_CHECK
+        check: "manual"
+        threshold: "apex-lead approval recorded"
+        operator: manual_verification
+        action: "VETO — Non-waivable. apex-lead sign-off is always required."
+        auto_fixable: false
+        waivable: false
+
+      - id: VC-010-B
+        condition: "TypeScript errors present"
+        available_check: "npm run typecheck --dry-run 2>/dev/null"
+        on_unavailable: SKIP_WITH_WARNING  # No TypeScript in project
+        check: "npm run typecheck -- --exit-code"
+        threshold: 0
+        operator: exit_code_equals
+        action: "VETO — Zero TypeScript errors before merge."
+        auto_fixable: false
+
+      - id: VC-010-C
+        condition: "Lint errors present"
+        available_check: "npm run lint --dry-run 2>/dev/null"
+        on_unavailable: SKIP_WITH_WARNING  # No linter configured
+        check: "npm run lint -- --exit-code"
+        threshold: 0
+        operator: exit_code_equals
+        action: "VETO — Zero lint errors before merge."
+        auto_fixable: false
+
+# ==============================================================================
+# CROSS-PLATFORM SYNC GATES (QG-AX-XP)
+# ==============================================================================
+
+  QG-AX-XP-001:
+    name: Shared Package Validation Passed
+    profiles: [full]  # Only for monorepo cross-platform projects
+    veto_conditions:
+      - id: VC-XP-001-A
+        name: Shared Package Builds
+        description: "All shared packages in packages/ must build without errors"
+        available_check: "test -d packages && npm run build --workspace=packages/* --dry-run 2>/dev/null"
+        on_unavailable: SKIP_WITH_WARNING  # No monorepo packages/ directory
+        check: "npm run build --workspace=packages/*"
+        threshold: "Exit code 0, zero TypeScript errors"
+        enforcement_level: 1  # CI Pipeline
+        tool: "npm run build"
+      - id: VC-XP-001-B
+        name: Shared Package Tests Pass
+        description: "All shared package unit tests must pass"
+        available_check: "test -d packages && npm run test --workspace=packages/* --dry-run 2>/dev/null"
+        on_unavailable: SKIP_WITH_WARNING  # No monorepo packages/ directory
+        check: "npm run test --workspace=packages/*"
+        threshold: "Zero test failures"
+        enforcement_level: 1  # CI Pipeline
+        tool: "npm run test"
+      - id: VC-XP-001-C
+        name: No Breaking API Changes
+        description: "Shared package public API must not have breaking changes without major version bump"
+        available_check: "npx api-extractor --version 2>/dev/null"
+        on_unavailable: MANUAL_CHECK  # Agent reviews exports diff manually
+        check: "Compare exported types/functions against previous release"
+        threshold: "Zero unintentional breaking changes"
+        enforcement_level: 3  # Workflow Blocker
+        tool: "api-extractor or manual diff review"
+
+  QG-AX-XP-002:
+    name: Token Parity Verified
+    profiles: [full]  # Only for cross-platform with multi-platform tokens
+    veto_conditions:
+      - id: VC-XP-002-A
+        name: Token File Exists Per Platform
+        description: "Token output files must exist for all target platforms"
+        available_check: "test -d tokens/build"
+        on_unavailable: SKIP_WITH_WARNING  # No multi-platform token build
+        check: "Verify token build output exists for web, iOS, Android"
+        threshold: "All platform token files present and non-empty"
+        enforcement_level: 2  # Pre-commit Hook
+        tool: "test -s tokens/build/web.css && test -s tokens/build/ios.json && test -s tokens/build/android.xml"
+      - id: VC-XP-002-B
+        name: Token Values Match Across Platforms
+        description: "Semantic token values must be identical across all platform outputs"
+        available_check: "test -d tokens/build && ls tokens/build/*.json 2>/dev/null | wc -l | grep -q '[2-9]'"
+        on_unavailable: SKIP_WITH_WARNING  # Less than 2 platform outputs
+        check: "Cross-compare token values between platform outputs"
+        threshold: "Zero value mismatches for semantic tokens"
+        enforcement_level: 3  # Workflow Blocker
+        tool: "Custom token parity script or manual comparison"
+      - id: VC-XP-002-C
+        name: No Platform-Only Tokens
+        description: "No semantic tokens should exist in only one platform output"
+        available_check: "test -d tokens/build && ls tokens/build/*.json 2>/dev/null | wc -l | grep -q '[2-9]'"
+        on_unavailable: SKIP_WITH_WARNING  # Less than 2 platform outputs
+        check: "Diff token key lists across platforms"
+        threshold: "All semantic token keys present in all platforms"
+        enforcement_level: 3  # Workflow Blocker
+        tool: "diff <(jq keys web.json) <(jq keys ios.json)"
+
+  QG-AX-XP-003:
+    name: Cross-Platform QA Passed
+    profiles: [full]  # Only for cross-platform projects
+    veto_conditions:
+      - id: VC-XP-003-A
+        name: Web Browser Matrix Pass
+        description: "Feature must render correctly in Chrome, Firefox, Safari, Edge (latest 2 versions)"
+        available_check: "npx playwright --version 2>/dev/null"
+        on_unavailable: SKIP_WITH_WARNING  # Playwright not installed
+        check: "Playwright cross-browser test suite"
+        threshold: "Zero failures across all browser targets"
+        enforcement_level: 1  # CI Pipeline
+        tool: "npx playwright test --project=chromium,firefox,webkit"
+      - id: VC-XP-003-B
+        name: Mobile Platform Pass
+        description: "Feature must function correctly on iOS 16+ and Android 12+"
+        available_check: "npx detox --version 2>/dev/null"
+        on_unavailable: SKIP_WITH_WARNING  # Mobile/Detox not in project
+        check: "Detox E2E test suite on reference devices"
+        threshold: "Zero critical failures on reference devices"
+        enforcement_level: 3  # Workflow Blocker
+        tool: "npx detox test --configuration ios.sim.release && npx detox test --configuration android.emu.release"
+      - id: VC-XP-003-C
+        name: Feature Parity Verified
+        description: "Core user flows must produce equivalent results across all platforms"
+        available_check: "test -d docs/qa/ship"
+        on_unavailable: MANUAL_CHECK  # Agent performs manual parity review
+        check: "Cross-platform scenario comparison (same inputs → same outputs)"
+        threshold: "All core flows produce equivalent results"
+        enforcement_level: 3  # Workflow Blocker
+        tool: "Manual cross-platform walkthrough with documented checklist"
+
+  QG-AX-XP-004:
+    name: Final Visual Review Approved
+    profiles: [full]  # Only for cross-platform projects
+    veto_conditions:
+      - id: VC-XP-004-A
+        name: Visual Regression Clean
+        description: "Zero unreviewed visual diffs across all platforms"
+        available_check: "npx chromatic --version 2>/dev/null || npx percy --version 2>/dev/null"
+        on_unavailable: MANUAL_CHECK  # Agent performs manual visual comparison
+        check: "Chromatic or Percy visual regression across platforms"
+        threshold: "Zero unreviewed visual changes"
+        enforcement_level: 1  # CI Pipeline
+        tool: "npx chromatic --exit-zero-on-changes=false"
+      - id: VC-XP-004-B
+        name: Design Fidelity Approved
+        description: "apex-lead confirms implementation matches Figma across all platforms"
+        available_check: "manual"
+        on_unavailable: MANUAL_CHECK  # Always manual — apex-lead review
+        check: "Manual overlay comparison against Figma spec"
+        threshold: "Within 1px tolerance on all platforms"
+        enforcement_level: 4  # Manual Sign-off
+        tool: "Manual review by apex-lead"
+      - id: VC-XP-004-C
+        name: Interaction Consistency
+        description: "Interactions (hover, press, focus, swipe) feel consistent across platforms"
+        available_check: "manual"
+        on_unavailable: MANUAL_CHECK  # Always manual — apex-lead review
+        check: "Manual interaction testing on each platform"
+        threshold: "Interactions feel native and consistent"
+        enforcement_level: 4  # Manual Sign-off
+        tool: "Manual review by apex-lead"
+
+# ==============================================================================
+# POLISH CYCLE GATES (QG-AX-PL)
+# ==============================================================================
+
+  QG-AX-PL-001:
+    name: Audits Complete
+    profiles: [full, web-next, web-spa]  # Polish cycle for all non-minimal profiles
+    veto_conditions:
+      - id: VC-PL-001-A
+        name: Motion Audit Report Generated
+        description: "Motion audit report must exist (or skip justification recorded)"
+        available_check: "test -d docs/qa/polish"
+        on_unavailable: SKIP_WITH_WARNING  # Polish directory not created yet
+        check: "test -s docs/qa/polish/{story_id}-motion-audit.md || inputs.skip_motion_audit == true"
+        threshold: "File exists and is non-empty, OR skip flag is true"
+        enforcement_level: 3  # Workflow Blocker
+        tool: "File existence check"
+      - id: VC-PL-001-B
+        name: Accessibility Audit Report Generated
+        description: "Accessibility audit report must exist — never skippable"
+        available_check: "test -d docs/qa/polish"
+        on_unavailable: SKIP_WITH_WARNING  # Polish directory not created yet
+        check: "test -s docs/qa/polish/{story_id}-a11y-audit.md"
+        threshold: "File exists and is non-empty"
+        enforcement_level: 3  # Workflow Blocker
+        tool: "File existence check"
+      - id: VC-PL-001-C
+        name: Performance Audit Report Generated
+        description: "Performance audit report must exist — never skippable"
+        available_check: "test -d docs/qa/polish"
+        on_unavailable: SKIP_WITH_WARNING  # Polish directory not created yet
+        check: "test -s docs/qa/polish/{story_id}-perf-audit.md"
+        threshold: "File exists and is non-empty"
+        enforcement_level: 3  # Workflow Blocker
+        tool: "File existence check"
+
+  QG-AX-PL-002:
+    name: Accessibility WCAG 2.2 AA Compliant
+    profiles: [full, web-next, web-spa, minimal]  # Always enforced
+    veto_conditions:
+      - id: VC-PL-002-A
+        name: axe-core Zero Violations
+        description: "axe-core automated scan must return zero violations"
+        available_check: "npm run test:a11y --dry-run 2>/dev/null"
+        on_unavailable: MANUAL_CHECK  # Agent performs manual a11y review
+        check: "npm run test:a11y -- --story-id={story_id}"
+        threshold: "Zero violations (critical, serious, moderate)"
+        enforcement_level: 1  # CI Pipeline
+        tool: "axe-core"
+      - id: VC-PL-002-B
+        name: Keyboard Navigation Functional
+        description: "All interactive elements reachable and operable via keyboard"
+        available_check: "manual"
+        on_unavailable: MANUAL_CHECK  # Always manual
+        check: "Manual keyboard navigation test documented in a11y audit report"
+        threshold: "Zero keyboard navigation failures"
+        enforcement_level: 3  # Workflow Blocker
+        tool: "Manual test (keyboard only navigation)"
+      - id: VC-PL-002-C
+        name: Screen Reader Announces Correctly
+        description: "All content and state changes announced correctly by screen readers"
+        available_check: "manual"
+        on_unavailable: MANUAL_CHECK  # Always manual
+        check: "Manual screen reader test (VoiceOver or NVDA) documented in a11y audit report"
+        threshold: "Zero critical screen reader issues"
+        enforcement_level: 3  # Workflow Blocker
+        tool: "Manual test (VoiceOver, NVDA, or TalkBack)"
+
+  QG-AX-PL-003:
+    name: Performance Budget Met
+    profiles: [full, web-next, web-spa]  # Performance gates for all web profiles
+    veto_conditions:
+      - id: VC-PL-003-A
+        name: LCP Within Budget
+        description: "Largest Contentful Paint must be under 1.2s (Apex ultra-premium)"
+        available_check: "npx lhci --version 2>/dev/null"
+        on_unavailable: MANUAL_CHECK  # Agent checks via browser DevTools
+        check: "Lighthouse CI LCP measurement"
+        threshold: "lcp < 1200ms"
+        enforcement_level: 1  # CI Pipeline
+        tool: "lighthouse-ci"
+      - id: VC-PL-003-B
+        name: INP Within Budget
+        description: "Interaction to Next Paint must be under 200ms"
+        available_check: "npx lhci --version 2>/dev/null"
+        on_unavailable: MANUAL_CHECK  # Agent checks via browser DevTools
+        check: "Lighthouse CI INP measurement"
+        threshold: "inp < 200ms"
+        enforcement_level: 1  # CI Pipeline
+        tool: "lighthouse-ci"
+      - id: VC-PL-003-C
+        name: CLS Within Budget
+        description: "Cumulative Layout Shift must be under 0.1"
+        available_check: "npx lhci --version 2>/dev/null"
+        on_unavailable: MANUAL_CHECK  # Agent checks via browser DevTools
+        check: "Lighthouse CI CLS measurement"
+        threshold: "cls < 0.1"
+        enforcement_level: 1  # CI Pipeline
+        tool: "lighthouse-ci"
+      - id: VC-PL-003-D
+        name: Bundle Size Within Budget
+        description: "JS bundle size must be within budget per data/performance-budgets.yaml"
+        available_check: "npm run build --dry-run 2>/dev/null"
+        on_unavailable: MANUAL_CHECK  # Agent checks build output size manually
+        check: "Bundle analyzer comparison against budget file"
+        threshold: "Total gzipped JS < 80KB (or per-feature budget)"
+        enforcement_level: 1  # CI Pipeline
+        tool: "npm run build -- --analyze"
+
+  QG-AX-PL-004:
+    name: Polish Gate Approved
+    profiles: [full, web-next, web-spa]  # Polish gate for all non-minimal profiles
+    veto_conditions:
+      - id: VC-PL-004-A
+        name: apex-lead Sign-off Recorded
+        description: "apex-lead must record explicit approval in polish gate verdict"
+        available_check: "manual"
+        on_unavailable: MANUAL_CHECK  # Always manual — apex-lead review
+        check: "Polish gate verdict is APPROVED (not NEEDS_POLISH or REJECTED)"
+        threshold: "verdict == APPROVED"
+        enforcement_level: 4  # Manual Sign-off
+        tool: "apex-lead manual review"
+      - id: VC-PL-004-B
+        name: All Critical/High Issues Resolved
+        description: "Zero critical or high severity issues remaining in any audit domain"
+        available_check: "test -d docs/qa/polish"
+        on_unavailable: SKIP_WITH_WARNING  # No polish reports yet
+        check: "Cross-check all three audit reports for unresolved critical/high items"
+        threshold: "Zero unresolved critical/high severity items"
+        enforcement_level: 3  # Workflow Blocker
+        tool: "Audit report review"
+      - id: VC-PL-004-C
+        name: Hands-On Review Passed
+        description: "apex-lead completed hands-on review (keyboard, screen reader, reduced motion, dark mode, mobile)"
+        available_check: "manual"
+        on_unavailable: MANUAL_CHECK  # Always manual — apex-lead review
+        check: "All hands-on review items checked in step-4-2"
+        threshold: "All items passed"
+        enforcement_level: 4  # Manual Sign-off
+        tool: "Manual review by apex-lead"
+
+# ==============================================================================
+# WORKFLOW VETO CONDITIONS (Cross-cutting)
+# ==============================================================================
+workflow_veto_conditions:
+
+  - id: VC-WF-001
+    name: Agent Registry Validation
+    trigger: "Before any workflow starts"
+    condition: "Referenced agent does not exist in squad agent registry"
+    available_check: "test -f squads/apex/data/agent-registry.yaml"
+    on_unavailable: BLOCK
+    check: |
+      # Validate all agents referenced in workflow exist in squads/apex/data/agent-registry.yaml
+      for agent in $(grep -oP 'agent:\s*\K\S+' {workflow_file}); do
+        grep -q "id: $agent" squads/apex/data/agent-registry.yaml || exit 1
+      done
+    action: "VETO — Block workflow start. All referenced agents must exist in agent-registry.yaml."
+
+  - id: VC-WF-002
+    name: Prerequisites Check
+    trigger: "Before workflow phase starts"
+    condition: "Required input artifacts from previous phase do not exist"
+    available_check: "manual"
+    on_unavailable: MANUAL_CHECK
+    check: "Validate artifacts_required list at each checkpoint"
+    action: "VETO — Cannot start phase without all required artifacts from previous phase."
+
+  - id: VC-WF-003
+    name: Revision Loop Limit
+    trigger: "When a phase attempts to loop back"
+    condition: "Revision count exceeds max_iterations for that checkpoint"
+    available_check: "manual"
+    on_unavailable: MANUAL_CHECK
+    check: "Counter tracked per checkpoint per story"
+    action: "ESCALATE to apex-lead. Phase stuck in loop — requires intervention."
+    max_iterations_default: 3
+
+  - id: VC-WF-004
+    name: Command Registry Validation
+    trigger: "On squad activation or *apex-audit"
+    condition: "Command listed in agent-registry.yaml does not exist in agent file"
+    available_check: "test -f squads/apex/data/agent-registry.yaml"
+    on_unavailable: SKIP_WITH_WARNING
+    check: |
+      For each agent in data/agent-registry.yaml:
+        Read agent file from agents/{agent-id}.md
+        Verify each listed command exists in the agent's commands section
+    action: "WARN — Log mismatched commands for registry cleanup."
+
+  - id: VC-WF-005
+    name: Profile Agent Validation
+    trigger: "On pipeline start"
+    condition: "Pipeline references agent not active in current profile"
+    available_check: "test -f squads/apex/squad.yaml"
+    on_unavailable: SKIP_WITH_WARNING
+    check: "Compare pipeline agent list against profile active agents"
+    action: "SKIP agent steps for inactive agents. Log with reason."
+
+# ==============================================================================
+# EXPEDITED MODE VETO CONDITIONS
+# ==============================================================================
+expedited_mode_veto_conditions:
+
+  - id: VC-EXP-001
+    condition: "Expedited mode activated without apex-lead approval"
+    available_check: "manual"
+    on_unavailable: MANUAL_CHECK
+    action: "VETO — apex-lead must explicitly approve expedited mode before activation."
+
+  - id: VC-EXP-002
+    condition: "Attempt to skip non-skippable gate in expedited mode"
+    available_check: "manual"
+    on_unavailable: BLOCK
+    never_skip:
+      - QG-AX-001  # Design tokens
+      - QG-AX-003  # Design spec approval
+      - QG-AX-005  # Accessibility
+      - QG-AX-007  # Performance budget
+      - QG-AX-008  # Visual regression
+      - QG-AX-009  # Cross-platform compatibility
+      - QG-AX-010  # Lead sign-off
+    may_skip_with_justification:
+      - QG-AX-006  # Motion (non-blocking by default)
+    action: "VETO — These gates cannot be skipped even in expedited mode."
+
+# ==============================================================================
+# ENFORCEMENT LEVELS
+# ==============================================================================
+enforcement:
+  levels:
+    - level: 1
+      name: "CI Pipeline"
+      description: "Automated checks run in CI. Failures block PR merge."
+      gates: [QG-AX-005, QG-AX-007, QG-AX-008, QG-AX-009]
+
+    - level: 2
+      name: "Pre-commit Hook"
+      description: "Checks run before git commit. Failures block commit."
+      gates: [QG-AX-001, QG-AX-006]
+
+    - level: 3
+      name: "Workflow Blocker"
+      description: "Checked at checkpoint transitions. Failures block phase."
+      gates: [QG-AX-002, QG-AX-003, QG-AX-004]
+
+    - level: 4
+      name: "Manual + Recorded"
+      description: "Requires human approval recorded in artifact."
+      gates: [QG-AX-010]
+
+# ==============================================================================
+# DISCOVERY VETO CONDITIONS
+# ==============================================================================
+discovery_gates:
+  - id: VC-DISC-COMP-001
+    phase: discover-components
+    condition: "No React component files found in project"
+    action: "BLOCK — not a React project, discovery not applicable"
+    blocking: true
+    available_check: "glob src/**/*.tsx OR src/**/*.jsx returns results"
+    on_unavailable: BLOCK
+    profiles: [full, web-next, web-spa, minimal]
+
+  - id: VC-DISC-COMP-002
+    phase: discover-components
+    condition: "Project has > 500 components"
+    action: "WARN — large project, discovery may take a moment"
+    blocking: false
+    available_check: "glob src/**/*.tsx OR src/**/*.jsx returns results"
+    on_unavailable: SKIP_WITH_WARNING
+    profiles: [full, web-next, web-spa]
+
+  - id: VC-DISC-DS-001
+    phase: discover-design
+    condition: "No CSS files, no Tailwind config, no theme files"
+    action: "WARN — no design system detected, report as adhoc"
+    blocking: false
+    available_check: "CSS files OR tailwind.config.* OR theme.ts exists"
+    on_unavailable: SKIP_WITH_WARNING
+    fallback: "Report inline styles and className patterns as implicit tokens"
+    profiles: [full, web-next, web-spa, minimal]
+
+  - id: VC-DISC-DS-002
+    phase: discover-design
+    condition: "Project uses CSS-in-JS exclusively (no CSS/Tailwind)"
+    action: "ADAPT — scan theme objects instead of CSS files"
+    blocking: false
+    available_check: "styled-components OR emotion in package.json"
+    on_unavailable: SKIP_WITH_WARNING
+    profiles: [full, web-next, web-spa]

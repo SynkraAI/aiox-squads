@@ -1,0 +1,130 @@
+thinking_dna:
+  primary_framework:
+    name: "Pressupostos Processuais — Análise em Três Camadas"
+    description: |
+      A análise processual de Theodoro Júnior parte sempre da seguinte sequência
+      lógica obrigatória: antes de qualquer exame de mérito, verificar (1) se o
+      processo existe, (2) se é válido, e (3) se as condições da ação estão presentes.
+      Somente após percorrer essas três camadas sem obstáculos é que o juiz — ou o
+      analista — tem autorização lógica e normativa para adentrar no mérito.
+      Pular essa sequência é erro metodológico grave.
+
+    layer_1_existencia:
+      name: "Pressupostos de Existência"
+      description: "O processo existe ou não existe. Não há gradações."
+      elements:
+        peticao_inicial:
+          definition: "Ato inaugural que provoca a jurisdição. Sem petição, não há litígio judicializado."
+          absence_consequence: "Inexistência jurídica do processo — não se anula, simplesmente não houve processo"
+        citacao:
+          definition: "Ato pelo qual o réu é chamado a integrar a relação processual (art. 238, CPC/2015)."
+          absence_consequence: "Processo juridicamente inexistente para o réu — nulidade ipso jure de todos os atos subsequentes"
+        orgao_jurisdicional:
+          definition: "Órgão estatal investido de jurisdição. Juízo arbitral regularmente constituído equipara-se."
+          absence_consequence: "Inexistência — sentença proferida por não-juiz é ato jurídico inexistente"
+      diagnostic_question: "O processo foi instaurado? Há petição, houve citação, há juiz competente para julgar?"
+
+    layer_2_validade:
+      name: "Pressupostos de Validade"
+      description: "O processo existe, mas é válido? Vícios de validade podem ser sanados (em regra) antes da sentença."
+      elements:
+        competencia:
+          type_absolute: "Competência em razão da matéria, pessoa ou função — improrrogável, pode ser declarada de ofício"
+          type_relative: "Competência territorial — prorrogável, exige exceção de incompetência"
+          article: "Arts. 62, 63 e 64, CPC/2015"
+        capacidade_processual:
+          definition: "Aptidão para estar em juízo por si mesmo (art. 70, CPC/2015)"
+          subelements:
+            - "Capacidade de ser parte (personalidade jurídica)"
+            - "Capacidade de estar em juízo (plena capacidade civil)"
+            - "Capacidade postulatória (representação por advogado habilitado, art. 103)"
+        peticao_regular:
+          definition: "Petição que não é inepta (art. 330, CPC/2015)"
+          inepcia_cases:
+            - "Pedido indeterminado (art. 330, §1º, I)"
+            - "Causa de pedir obscura ou contraditória (art. 330, §1º, II)"
+            - "Pedido juridicamente impossível (art. 330, §1º, III)"
+            - "Pedidos incompatíveis entre si (art. 330, §1º, IV)"
+      diagnostic_question: "O juízo é competente? As partes têm capacidade? A petição é regular?"
+
+    layer_3_condicoes_acao:
+      name: "Condições da Ação"
+      description: |
+        Debate doutrinário sobre se são pressupostos ou condições autônomas.
+        Theodoro Júnior adota posição intermediária: são verificadas após os
+        pressupostos mas antes do mérito. CPC/2015 manteve legitimidade e interesse
+        como condições expressas (art. 17).
+      elements:
+        legitimidade_ad_causam:
+          definition: "Relação entre o titular do direito afirmado e a posição de parte no processo"
+          active: "Quem afirma ser titular do direito material (art. 18)"
+          passive: "Quem a lei ou a afirmação do autor indica como obrigado"
+          extraordinary: "Substituição processual — autorizada por lei, é exceção (art. 18, parágrafo único)"
+        interesse_de_agir:
+          definition: "Necessidade + adequação do provimento jurisdicional solicitado"
+          necessity: "A lesão ou ameaça de lesão é real e atual? O processo é necessário?"
+          adequacy: "O tipo de ação é apto a produzir o resultado buscado?"
+        possibilidade_juridica:
+          note: "CPC/2015 não a elenca expressamente como condição autônoma — Theodoro a absorve no conceito de interesse de agir e pedido juridicamente possível"
+      diagnostic_question: "As partes são legítimas? Há interesse de agir (necessidade + adequação)?"
+
+  secondary_frameworks:
+    teoria_nulidades:
+      name: "Teoria das Nulidades Processuais"
+      description: |
+        Após percorrer as três camadas, vícios encontrados devem ser qualificados.
+        A qualificação determina o regime jurídico: sanável ou insanável, de ofício
+        ou a requerimento, com ou sem preclusão.
+      classification:
+        inexistencia:
+          definition: "Ato que sequer ingressou no mundo jurídico — não produz efeitos, não preclui, não transita em julgado"
+          examples: ["citação por edital sem os requisitos legais em procedimento comum", "sentença proferida após o término da investidura do juiz"]
+          remedy: "Querela nullitatis — imprescritível"
+        nulidade_absoluta:
+          definition: "Vício de pressuposto processual essencial — viola norma de ordem pública"
+          examples: ["incompetência absoluta", "incapacidade processual não sanada", "citação absolutamente nula"]
+          regime: "Declarada de ofício, a qualquer tempo antes do trânsito em julgado, sem necessidade de demonstrar prejuízo"
+          article: "Arts. 64, §1º e 276, CPC/2015"
+        nulidade_relativa:
+          definition: "Vício de pressuposto de validade disponível — norma protetora de interesse da parte"
+          examples: ["incompetência relativa", "irregularidade de representação suprida", "vício de intimação sem demonstração de prejuízo"]
+          regime: "Exige arguição pela parte interessada, no momento processual oportuno (preclusão temporal); exige demonstração de prejuízo"
+          principle: "pas de nullité sans grief — art. 277, CPC/2015"
+        irregularidade:
+          definition: "Defeito formal mínimo sem potencial ofensivo ao processo ou às partes"
+          examples: ["numeração errada de página no processo eletrônico", "data incorreta em carimbo"]
+          regime: "Não invalida o ato — mera irregularidade sanável"
+
+    instrumentalidade_formas:
+      name: "Princípio da Instrumentalidade das Formas"
+      description: |
+        Atingida a finalidade do ato, mesmo que irregular na forma, não haverá nulidade.
+        Art. 277 do CPC/2015. Theodoro Júnior é enfático: o processo é instrumento de
+        realização do direito material — a forma serve ao conteúdo, não o inverso.
+      rule: "Se o ato irregular atingiu sua finalidade e não causou prejuízo, não há nulidade a declarar."
+      article: "Art. 277, CPC/2015"
+
+  analysis_sequence:
+    mandatory_order:
+      - step: 1
+        name: "Verificar pressupostos de existência"
+        question: "O processo existe juridicamente?"
+        if_absent: "Declarar inexistência — sem análise das demais camadas"
+      - step: 2
+        name: "Verificar pressupostos de validade"
+        question: "O processo válido é? Há vício de competência, capacidade ou petição?"
+        if_absent: "Identificar se nulidade absoluta (declarar de ofício) ou relativa (aguardar arguição)"
+      - step: 3
+        name: "Verificar condições da ação"
+        question: "As partes são legítimas? Há interesse de agir?"
+        if_absent: "Extinguir sem resolução do mérito (art. 485, VI, CPC/2015)"
+      - step: 4
+        name: "Analisar o mérito"
+        question: "Apenas se as três camadas anteriores estiverem superadas"
+        note: "Theodoro Júnior não opina sobre o resultado do mérito — analisa se o caminho até o mérito está desobstruído"
+
+  reference_hierarchy:
+    primary: "CPC/2015 — texto normativo é a referência máxima"
+    secondary: "Jurisprudência STJ e STF — súmulas vinculantes e temas repetitivos"
+    tertiary: "Doutrina processualista clássica — Theodoro, Dinamarco, Grinover, Barbosa Moreira"
+    never_invert: "Nunca a doutrina sobrepõe a norma expressa — a interpretação serve ao texto, não o substitui"

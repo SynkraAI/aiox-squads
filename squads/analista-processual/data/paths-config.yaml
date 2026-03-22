@@ -1,0 +1,275 @@
+# paths-config.yaml — Configuração de Caminhos Fixos
+# Analista Processual Squad — Sistema de Arquivos
+
+# ═══════════════════════════════════════════════════════
+# RAIZ DO SISTEMA
+# ═══════════════════════════════════════════════════════
+root: "K:\\Meu Drive\\Processos_Judiciais_IA"
+
+# ═══════════════════════════════════════════════════════
+# ESTRUTURA DE PASTAS DE DEMANDAS
+# ═══════════════════════════════════════════════════════
+demandas:
+  path: "K:\\Meu Drive\\Processos_Judiciais_IA"
+  descricao: "Pasta raiz de todas as demandas judiciais"
+
+  # Convenção de nomenclatura das pastas de demanda
+  convencao_nomenclatura:
+    formato: "{N}. {Nome da Demanda}"
+    exemplos:
+      - "1. Execução Compulsória Extrajudicial"
+      - "2. Ação de Cobrança — Contrato de Prestação de Serviços"
+      - "3. Mandado de Segurança — Licitação"
+    regras:
+      - "Número sequencial + ponto + espaço + nome descritivo"
+      - "Nome deve identificar o tipo de ação e/ou a parte contrária"
+      - "Evitar abreviações que dificultem a identificação"
+
+  # Convenção de nomenclatura das subpastas de demandas correlatas
+  subpastas_correlatas:
+    formato: "{N}.{S} {Nome da Demanda Correlata}"
+    descricao: "Demandas derivadas ou correlacionadas à demanda principal"
+    exemplos:
+      - "1.1 Ação de Imissão na Posse"
+      - "1.2 Execução de Título Extrajudicial"
+      - "2.1 Cautelar de Arresto"
+    acesso_cruzado: true
+    descricao_acesso: |
+      Os agentes focam na subpasta ativa, mas PODEM acessar outras subpastas
+      e a pasta principal para buscar: fatos correlatos, fundamentos jurídicos,
+      documentos probatórios, contexto geral e precedentes internos aplicáveis.
+
+  # Estrutura interna recomendada para cada pasta de demanda
+  estrutura_interna:
+    - nome: "01_Processo"
+      descricao: "Arquivo(s) do processo judicial principal"
+      convencao_identificacao: "NNNNNNN-DD.AAAA.J.TT.OOOO.pdf"
+      nota: |
+        O formato CNJ serve apenas para IDENTIFICAR que o arquivo é o processo judicial principal.
+        Outros arquivos presentes nesta pasta (ou em qualquer subpasta da demanda), com nomes
+        distintos, são igualmente válidos e DEVEM ser considerados pelos agentes para análise,
+        extração de dados, elaboração de minutas e pesquisa de subsídios.
+    - nome: "02_Peticoes"
+      descricao: "Petições elaboradas e protocoladas"
+    - nome: "03_Decisoes"
+      descricao: "Decisões, despachos, sentenças e acórdãos"
+    - nome: "04_Documentos_Probatorios"
+      descricao: "Documentos de prova juntados aos autos"
+    - nome: "05_Intimacoes"
+      descricao: "Intimações e certidões recebidas"
+    - nome: "06_Minutas"
+      descricao: "Minutas elaboradas pelo squad (rascunhos e versões finais)"
+    - nome: "07_Cronograma_Prazos"
+      descricao: "Relatórios de prazos e calendário processual"
+    - nome: "08_Relatorios_Analise"
+      descricao: "Relatórios de análise gerados pelo squad"
+    - nome: "09_Correspondencias"
+      descricao: "E-mails, notificações e comunicações extrajudiciais"
+    - nome: "10_Notas_Internas"
+      descricao: "Notas de trabalho, estratégia e anotações internas"
+
+# ═══════════════════════════════════════════════════════
+# BIBLIOTECA DE CONHECIMENTO
+# ═══════════════════════════════════════════════════════
+biblioteca:
+  path: "K:\\Meu Drive\\Processos_Judiciais_IA\\Biblioteca de Conhecimento"
+  descricao: "Repositório central de conhecimento jurídico — indexado e consultado pelos agentes"
+  indexacao: true
+  uso_pelos_agentes: |
+    Os agentes DEVEM consultar a Biblioteca antes de qualquer pesquisa externa.
+    Documentos salvos na biblioteca são priorizados sobre fontes genéricas.
+    Ao gerar análises, agentes DEVEM salvar versões genéricas na área correspondente.
+
+  pastas:
+    - id: "01"
+      nome: "01_Direito_Civil"
+      path: "K:\\Meu Drive\\Processos_Judiciais_IA\\Biblioteca de Conhecimento\\01_Direito_Civil"
+      descricao: "Obrigações, contratos, responsabilidade civil, família, sucessões, posse e propriedade"
+      subpastas:
+        - "01_Obrigacoes_e_Contratos"
+        - "02_Responsabilidade_Civil"
+        - "03_Direito_de_Familia"
+        - "04_Direito_das_Sucessoes"
+        - "05_Posse_e_Propriedade"
+        - "06_Direitos_Reais"
+
+    - id: "02"
+      nome: "02_Direito_Processual_Civil"
+      path: "K:\\Meu Drive\\Processos_Judiciais_IA\\Biblioteca de Conhecimento\\02_Direito_Processual_Civil"
+      descricao: "CPC/2015, procedimentos, recursos, execução, tutelas de urgência"
+      subpastas:
+        - "01_CPC_2015_Comentado"
+        - "02_Procedimentos_Especiais"
+        - "03_Recursos"
+        - "04_Execucao_Civil"
+        - "05_Tutelas_de_Urgencia"
+        - "06_Provas"
+
+    - id: "03"
+      nome: "03_Direito_Trabalhista"
+      path: "K:\\Meu Drive\\Processos_Judiciais_IA\\Biblioteca de Conhecimento\\03_Direito_Trabalhista"
+      descricao: "CLT, relação de emprego, rescisão, horas extras, adicionais, processo do trabalho"
+      subpastas:
+        - "01_Relacao_de_Emprego"
+        - "02_Rescisao_Contratual"
+        - "03_Verbas_Trabalhistas"
+        - "04_Processo_do_Trabalho"
+        - "05_Reforma_Trabalhista"
+
+    - id: "04"
+      nome: "04_Direito_Tributario_e_Fiscal"
+      path: "K:\\Meu Drive\\Processos_Judiciais_IA\\Biblioteca de Conhecimento\\04_Direito_Tributario_e_Fiscal"
+      descricao: "CTN, tributos, execução fiscal, parcelamentos, mandado de segurança tributário"
+      subpastas:
+        - "01_CTN_e_Principios"
+        - "02_Impostos_Federais"
+        - "03_Impostos_Estaduais"
+        - "04_Impostos_Municipais"
+        - "05_Execucao_Fiscal"
+        - "06_Planejamento_Tributario"
+
+    - id: "05"
+      nome: "05_Direito_Administrativo"
+      path: "K:\\Meu Drive\\Processos_Judiciais_IA\\Biblioteca de Conhecimento\\05_Direito_Administrativo"
+      descricao: "Licitações, contratos administrativos, servidores públicos, atos administrativos"
+      subpastas:
+        - "01_Licitacoes_Lei_14133"
+        - "02_Contratos_Administrativos"
+        - "03_Servidores_Publicos"
+        - "04_Atos_Administrativos"
+        - "05_Improbidade_Administrativa"
+
+    - id: "06"
+      nome: "06_Direito_Constitucional"
+      path: "K:\\Meu Drive\\Processos_Judiciais_IA\\Biblioteca de Conhecimento\\06_Direito_Constitucional"
+      descricao: "CF/1988, direitos fundamentais, controle de constitucionalidade, remédios constitucionais"
+      subpastas:
+        - "01_Direitos_Fundamentais"
+        - "02_Controle_de_Constitucionalidade"
+        - "03_Remedios_Constitucionais"
+        - "04_Organizacao_do_Estado"
+
+    - id: "07"
+      nome: "07_Direito_do_Consumidor"
+      path: "K:\\Meu Drive\\Processos_Judiciais_IA\\Biblioteca de Conhecimento\\07_Direito_do_Consumidor"
+      descricao: "CDC, relação de consumo, práticas abusivas, dano moral, recall"
+      subpastas:
+        - "01_Relacao_de_Consumo"
+        - "02_Praticas_Abusivas"
+        - "03_Responsabilidade_do_Fornecedor"
+        - "04_Juizados_Especiais_CDC"
+
+    - id: "08"
+      nome: "08_Direito_Empresarial"
+      path: "K:\\Meu Drive\\Processos_Judiciais_IA\\Biblioteca de Conhecimento\\08_Direito_Empresarial"
+      descricao: "Sociedades, contratos comerciais, falência e recuperação judicial, títulos de crédito"
+      subpastas:
+        - "01_Sociedades_Empresariais"
+        - "02_Contratos_Comerciais"
+        - "03_Falencia_e_Recuperacao_Judicial"
+        - "04_Titulos_de_Credito"
+        - "05_Propriedade_Intelectual"
+
+    - id: "09"
+      nome: "09_Direito_Imobiliario"
+      path: "K:\\Meu Drive\\Processos_Judiciais_IA\\Biblioteca de Conhecimento\\09_Direito_Imobiliario"
+      descricao: "Registros públicos, incorporação imobiliária, locação, usucapião, regularização fundiária"
+      subpastas:
+        - "01_Registros_Publicos"
+        - "02_Incorporacao_Imobiliaria"
+        - "03_Locacao"
+        - "04_Usucapiao"
+        - "05_Regularizacao_Fundiaria"
+
+    - id: "10"
+      nome: "10_Direito_Previdenciario"
+      path: "K:\\Meu Drive\\Processos_Judiciais_IA\\Biblioteca de Conhecimento\\10_Direito_Previdenciario"
+      descricao: "RGPS, RPPS, benefícios previdenciários, aposentadorias, auxílios"
+      subpastas:
+        - "01_Beneficios_Previdenciarios"
+        - "02_Aposentadorias"
+        - "03_Auxilio_Acidente_e_Doenca"
+        - "04_Planejamento_Previdenciario"
+
+    - id: "11"
+      nome: "11_Direito_Penal"
+      path: "K:\\Meu Drive\\Processos_Judiciais_IA\\Biblioteca de Conhecimento\\11_Direito_Penal"
+      descricao: "CP, CPP, crimes específicos, processo penal, execução penal"
+      subpastas:
+        - "01_Parte_Geral_CP"
+        - "02_Crimes_Contra_Patrimonio"
+        - "03_Crimes_Financeiros"
+        - "04_Processo_Penal"
+        - "05_Execucao_Penal"
+
+    - id: "12"
+      nome: "12_Jurisprudencia"
+      path: "K:\\Meu Drive\\Processos_Judiciais_IA\\Biblioteca de Conhecimento\\12_Jurisprudencia"
+      descricao: "Precedentes indexados por tribunal e tema — priorizados nas análises"
+      subpastas:
+        - "01_STF"
+        - "02_STJ"
+        - "03_TST"
+        - "04_TRFs"
+        - "05_TJs"
+        - "06_TRTs"
+        - "07_Sumulas_e_Teses"
+        - "08_IAC_e_IRDR"
+
+    - id: "13"
+      nome: "13_Doutrina_e_Livros"
+      path: "K:\\Meu Drive\\Processos_Judiciais_IA\\Biblioteca de Conhecimento\\13_Doutrina_e_Livros"
+      descricao: "Livros em PDF, artigos doutrinários, manuais — indexados por área e autor"
+      subpastas:
+        - "01_Manuais_e_Cursos"
+        - "02_Obras_Especializadas"
+        - "03_Artigos_Juridicos"
+        - "04_Pareceres_Doutrinarios"
+
+    - id: "14"
+      nome: "14_Modelos_e_Minutas"
+      path: "K:\\Meu Drive\\Processos_Judiciais_IA\\Biblioteca de Conhecimento\\14_Modelos_e_Minutas"
+      descricao: "Modelos genéricos de peças processuais gerados pelos agentes e pelo usuário"
+      subpastas:
+        - "01_Peticoes_Iniciais"
+        - "02_Contestacoes"
+        - "03_Recursos"
+        - "04_Manifestacoes_e_Requerimentos"
+        - "05_Contratos_e_Notificacoes"
+        - "06_Pareceres_e_Relatorios"
+
+    - id: "15"
+      nome: "15_Pesquisas_e_Analises"
+      path: "K:\\Meu Drive\\Processos_Judiciais_IA\\Biblioteca de Conhecimento\\15_Pesquisas_e_Analises"
+      descricao: "Pesquisas temáticas, análises comparativas e memorandos internos gerados pelos agentes"
+      subpastas:
+        - "01_Pesquisas_Tematicas"
+        - "02_Analises_Comparativas"
+        - "03_Memorandos_Internos"
+        - "04_Notas_Tecnicas"
+
+# ═══════════════════════════════════════════════════════
+# NAVEGAÇÃO — COMPORTAMENTO DOS AGENTES
+# ═══════════════════════════════════════════════════════
+navegacao:
+  ao_iniciar_sessao:
+    - "Perguntar ao usuário qual demanda/pasta trabalhar"
+    - "Listar as 10 últimas pastas acessadas (ou todas, se solicitado)"
+    - "Confirmar o caminho antes de iniciar qualquer operação"
+
+  listagem_pastas:
+    padrao: 10
+    expandido: "todas"
+    ordenacao: "data_modificacao_desc"  # mais recentes primeiro
+
+  acesso_cruzado:
+    subpastas_correlatas: true
+    biblioteca: true
+    outras_demandas: false  # requer autorização explícita do usuário
+
+  ao_salvar_conhecimento:
+    - "Identificar a área jurídica do conteúdo"
+    - "Versionar o arquivo (v1, v2...)"
+    - "Tornar o conteúdo genérico (remover dados específicos da parte)"
+    - "Salvar na pasta correta da Biblioteca de Conhecimento"
+    - "Registrar no índice da biblioteca"

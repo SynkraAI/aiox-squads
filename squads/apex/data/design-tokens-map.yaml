@@ -1,0 +1,159 @@
+token_architecture:
+  layers:
+    primitive:
+      description: "Raw values, no semantic meaning. Never used directly in components."
+      examples:
+        colors:
+          - blue-500
+          - gray-100
+          - red-600
+          - green-400
+          - yellow-300
+          - purple-700
+          - white
+          - black
+        spacing:
+          - "space-1 (4px)"
+          - "space-2 (8px)"
+          - "space-3 (12px)"
+          - "space-4 (16px)"
+          - "space-6 (24px)"
+          - "space-8 (32px)"
+          - "space-12 (48px)"
+          - "space-16 (64px)"
+        typography:
+          - "font-size-xs (12px)"
+          - "font-size-sm (14px)"
+          - "font-size-base (16px)"
+          - "font-size-lg (18px)"
+          - "font-size-xl (20px)"
+          - "font-size-2xl (24px)"
+          - "font-weight-regular (400)"
+          - "font-weight-medium (500)"
+          - "font-weight-semibold (600)"
+          - "font-weight-bold (700)"
+        radii:
+          - "radius-sm (4px)"
+          - "radius-md (8px)"
+          - "radius-lg (12px)"
+          - "radius-xl (16px)"
+          - "radius-full (9999px)"
+        shadows:
+          - "shadow-sm"
+          - "shadow-md"
+          - "shadow-lg"
+          - "shadow-xl"
+
+    semantic:
+      description: "Contextual meaning, theme-aware. These tokens change value between modes (light/dark/high-contrast)."
+      examples:
+        colors:
+          - color-bg-primary
+          - color-bg-secondary
+          - color-bg-surface
+          - color-bg-overlay
+          - color-text-primary
+          - color-text-secondary
+          - color-text-disabled
+          - color-text-on-primary
+          - color-border-default
+          - color-border-focus
+          - color-border-destructive
+          - color-accent-primary
+          - color-accent-primary-hover
+          - color-feedback-success
+          - color-feedback-warning
+          - color-feedback-error
+          - color-feedback-info
+        spacing:
+          - space-component-gap
+          - space-component-gap-sm
+          - space-section-gap
+          - space-page-margin
+        typography:
+          - text-body
+          - text-body-sm
+          - text-heading-sm
+          - text-heading-md
+          - text-heading-lg
+          - text-label
+          - text-caption
+
+    component:
+      description: "Component-specific tokens. Scoped to a single component, can override semantic tokens."
+      examples:
+        button:
+          - button-bg
+          - button-bg-hover
+          - button-bg-active
+          - button-bg-disabled
+          - button-text
+          - button-text-disabled
+          - button-border
+          - button-radius
+          - button-padding-x
+          - button-padding-y
+        card:
+          - card-bg
+          - card-border
+          - card-shadow
+          - card-radius
+          - card-padding
+        input:
+          - input-bg
+          - input-border
+          - input-border-focus
+          - input-border-error
+          - input-text
+          - input-placeholder
+          - input-radius
+          - input-padding
+
+  modes:
+    - light
+    - dark
+    - high-contrast
+    - dark-high-contrast
+
+  naming_convention:
+    pattern: "{category}-{property}-{variant}-{state}"
+    rules:
+      - "All lowercase, hyphen-separated"
+      - "No abbreviations (use 'background' not 'bg' in primitives)"
+      - "Semantic tokens use contextual names, not color names"
+      - "Never encode color values in semantic token names"
+    examples:
+      - "color-bg-primary"
+      - "color-bg-primary-hover"
+      - "color-text-on-primary"
+      - "space-component-gap-sm"
+      - "button-bg-disabled"
+      - "color-feedback-error"
+
+  sync_pipeline:
+    source: "Figma Variables"
+    transform: "Style Dictionary"
+    outputs:
+      web: "CSS Custom Properties (packages/tokens/dist/web/)"
+      mobile: "React Native StyleSheet (packages/tokens/dist/native/)"
+      spatial: "R3F theme object (packages/tokens/dist/spatial/)"
+    pipeline_stages:
+      - name: "Figma Variables export"
+        tool: "Figma REST API or Tokens Studio"
+        output: "tokens.json (raw)"
+      - name: "Style Dictionary transform"
+        tool: "Style Dictionary 4+"
+        output: "Platform-specific token files"
+      - name: "Type generation"
+        tool: "TypeScript codegen"
+        output: "Token type definitions"
+    trigger: "Manual or CI on design token PR"
+
+  anti_patterns:
+    - "Using primitive tokens directly in components (bypass semantic layer)"
+    - "Hardcoded color values (#fff, rgb(), hsl()) in component code"
+    - "Hardcoded spacing values (px, rem literals) in component styles"
+    - "Token names that encode color (e.g., color-blue instead of color-accent)"
+    - "Missing dark mode / high-contrast variant for any semantic token"
+
+  audit_rule: "Zero hardcoded values. All color, spacing, radius, shadow, and typography must trace to a design token."

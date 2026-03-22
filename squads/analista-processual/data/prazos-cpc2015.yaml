@@ -1,0 +1,208 @@
+# Prazos Processuais — CPC/2015 e Legislação Especial
+# Analista Processual Squad v1.2.0
+# Todos os prazos em dias úteis (Art. 219, CPC/2015), salvo indicação em contrário
+
+schema_version: "1.0.0"
+updated: "2026-03-17"
+base_normativa: "Lei 13.105/2015 (CPC/2015)"
+
+# ─────────────────────────────────────────────
+# PRAZOS PARA O RÉU / DEMANDADO
+# ─────────────────────────────────────────────
+defesa:
+  - ato: "Contestação"
+    prazo_dias_uteis: 15
+    fundamento: "Art. 335, CPC/2015"
+    observacoes: "Prazo dobrado para litisconsortes com procuradores diferentes (Art. 229)"
+    excepcoes:
+      - regra: "Fazenda Pública e MP"
+        prazo_dias_uteis: 30
+        fundamento: "Art. 183, CPC/2015"
+
+  - ato: "Reconvenção"
+    prazo_dias_uteis: 15
+    fundamento: "Art. 343, CPC/2015"
+    observacoes: "Apresentada na própria contestação"
+
+  - ato: "Impugnação ao Valor da Causa"
+    prazo_dias_uteis: 15
+    fundamento: "Art. 293, CPC/2015"
+
+  - ato: "Exceção de Incompetência Relativa"
+    prazo_dias_uteis: 15
+    fundamento: "Art. 64, CPC/2015"
+    observacoes: "Alegada na contestação (Art. 337, II)"
+
+# ─────────────────────────────────────────────
+# RECURSOS
+# ─────────────────────────────────────────────
+recursos:
+  - recurso: "Apelação"
+    prazo_dias_uteis: 15
+    fundamento: "Art. 1.003, §5º, CPC/2015"
+    contagem: "Da intimação da sentença"
+
+  - recurso: "Agravo de Instrumento"
+    prazo_dias_uteis: 15
+    fundamento: "Art. 1.003, §5º, CPC/2015"
+    contagem: "Da intimação da decisão interlocutória"
+    observacoes: "Cabível apenas nas hipóteses taxativas do Art. 1.015"
+
+  - recurso: "Embargos de Declaração"
+    prazo_dias_uteis: 5
+    fundamento: "Art. 1.023, CPC/2015"
+    contagem: "Da intimação da decisão embargada"
+    efeito: "Interrompem o prazo para demais recursos (Art. 1.026)"
+
+  - recurso: "Agravo Interno"
+    prazo_dias_uteis: 15
+    fundamento: "Art. 1.021, CPC/2015"
+    contagem: "Da intimação da decisão monocrática do relator"
+
+  - recurso: "Recurso Especial (STJ)"
+    prazo_dias_uteis: 15
+    fundamento: "Art. 1.003, §5º, CPC/2015"
+    contagem: "Da intimação do acórdão"
+    observacoes: "Exige prequestionamento; cabível por violação de lei federal"
+
+  - recurso: "Recurso Extraordinário (STF)"
+    prazo_dias_uteis: 15
+    fundamento: "Art. 1.003, §5º, CPC/2015"
+    contagem: "Da intimação do acórdão"
+    observacoes: "Exige repercussão geral; cabível por violação constitucional"
+
+  - recurso: "Embargos de Divergência"
+    prazo_dias_uteis: 15
+    fundamento: "Art. 1.043, CPC/2015"
+
+# ─────────────────────────────────────────────
+# ATOS POSTULATÓRIOS
+# ─────────────────────────────────────────────
+postulatórios:
+  - ato: "Réplica (resposta à contestação)"
+    prazo_dias_uteis: 15
+    fundamento: "Art. 351, CPC/2015"
+
+  - ato: "Manifestação sobre documentos novos"
+    prazo_dias_uteis: 15
+    fundamento: "Art. 437, §1º, CPC/2015"
+
+  - ato: "Impugnação ao cumprimento de sentença"
+    prazo_dias_uteis: 15
+    fundamento: "Art. 525, CPC/2015"
+    observacoes: "Após garantia do juízo ou depósito"
+
+  - ato: "Embargos à Execução (Título Extrajudicial)"
+    prazo_dias_uteis: 15
+    fundamento: "Art. 915, CPC/2015"
+    contagem: "Da data da juntada do auto de penhora"
+
+  - ato: "Impugnação à gratuidade de justiça"
+    prazo_dias_uteis: 15
+    fundamento: "Art. 100, CPC/2015"
+
+# ─────────────────────────────────────────────
+# PRAZOS PARA O AUTOR
+# ─────────────────────────────────────────────
+autor:
+  - ato: "Emenda à petição inicial"
+    prazo_dias_uteis: 15
+    fundamento: "Art. 321, CPC/2015"
+
+  - ato: "Manifestação sobre laudo pericial"
+    prazo_dias_uteis: 15
+    fundamento: "Art. 477, §1º, CPC/2015"
+
+# ─────────────────────────────────────────────
+# PRAZOS EM EXECUÇÃO
+# ─────────────────────────────────────────────
+execucao:
+  - ato: "Pagamento voluntário (cumprimento de sentença)"
+    prazo_dias_uteis: 15
+    fundamento: "Art. 523, CPC/2015"
+    observacoes: "Multa de 10% + honorários de 10% se não pago no prazo"
+
+  - ato: "Depósito em garantia (execução de título extrajudicial)"
+    prazo_dias_uteis: 3
+    fundamento: "Art. 829, CPC/2015"
+    observacoes: "Após intimação do executado"
+
+  - ato: "Nomeação de bens à penhora"
+    prazo_dias_uteis: 5
+    fundamento: "Art. 829, §1º, CPC/2015"
+
+# ─────────────────────────────────────────────
+# PRAZOS ESPECIAIS (LEGISLAÇÃO COMPLEMENTAR)
+# ─────────────────────────────────────────────
+legislacao_especial:
+  - lei: "Lei 9.099/1995 (Juizados Especiais Cíveis)"
+    prazos:
+      - ato: "Resposta do réu"
+        prazo_dias: 15
+        tipo: "corridos"
+        fundamento: "Art. 30, Lei 9.099/1995"
+      - ato: "Recurso Inominado"
+        prazo_dias: 10
+        tipo: "dias (corridos)"
+        fundamento: "Art. 42, Lei 9.099/1995"
+
+  - lei: "Lei 6.830/1980 (Execução Fiscal)"
+    prazos:
+      - ato: "Embargos à Execução Fiscal"
+        prazo_dias: 30
+        tipo: "dias corridos"
+        fundamento: "Art. 16, Lei 6.830/1980"
+      - ato: "Exceção de Pré-Executividade"
+        prazo: "Sem prazo legal taxativo"
+        fundamento: "Construção jurisprudencial"
+
+  - lei: "Lei 8.078/1990 (CDC)"
+    prazos:
+      - ato: "Prescrição — reparação de danos"
+        prazo_anos: 5
+        fundamento: "Art. 27, CDC"
+      - ato: "Decadência — vícios do produto"
+        prazo_dias: 30
+        tipo: "dias corridos (bens não-duráveis)"
+        fundamento: "Art. 26, CDC"
+      - ato: "Decadência — vícios do produto (duráveis)"
+        prazo_dias: 90
+        tipo: "dias corridos"
+        fundamento: "Art. 26, CDC"
+
+# ─────────────────────────────────────────────
+# REGRAS GERAIS DE CONTAGEM
+# ─────────────────────────────────────────────
+regras_contagem:
+  - regra: "Prazo em dias úteis (regra geral)"
+    fundamento: "Art. 219, CPC/2015"
+    aplicacao: "Todos os prazos processuais, salvo expressa previsão em contrário"
+
+  - regra: "Excludente do dia inicial"
+    fundamento: "Art. 224, CPC/2015"
+    descricao: "O prazo começa a correr no primeiro dia útil após a intimação"
+
+  - regra: "Inclusão do último dia"
+    fundamento: "Art. 224, §2º, CPC/2015"
+    descricao: "O último dia do prazo é incluído na contagem"
+
+  - regra: "Vencimento em dia não útil"
+    fundamento: "Art. 224, §1º, CPC/2015"
+    descricao: "Prorroga para o próximo dia útil"
+
+  - regra: "Prazo dobrado — Fazenda Pública e MP"
+    fundamento: "Art. 183, CPC/2015"
+    descricao: "Todos os prazos são em dobro"
+
+  - regra: "Prazo dobrado — litisconsortes com procuradores diferentes"
+    fundamento: "Art. 229, CPC/2015"
+    descricao: "Em autos físicos, dobro para manifestação; em autos eletrônicos, não se aplica"
+
+  - regra: "Suspensão — férias forenses"
+    fundamento: "Art. 220, CPC/2015"
+    periodo: "20 de dezembro a 20 de janeiro"
+    descricao: "Prazos ficam suspensos; recomeçam no 1º dia útil após 20/01"
+
+  - regra: "Suspensão — feriado local"
+    fundamento: "Art. 216, CPC/2015"
+    descricao: "Verificar calendário do tribunal competente"
