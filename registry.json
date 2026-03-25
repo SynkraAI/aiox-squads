@@ -1,0 +1,14 @@
+{
+  "version": "1.0.0",
+  "squads": {
+    "official": [],
+    "community": [
+      {
+        "name": "rvl-platform",
+        "version": "1.0.0",
+        "description": "Squad de orquestração da metodologia RVL™ Platform — sistema de branding estratégico da Nōrtica Strategy",
+        "author": "Nōrtica Strategy"
+      }
+    ]
+  }
+}

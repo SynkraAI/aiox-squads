@@ -1,0 +1,155 @@
+workflow:
+  id: rvl-project-execution
+  name: "RVL™ Project Execution"
+  description: "Pipeline completo de execução de projeto RVL™ — do intake ao VAULT"
+  version: "1.0.0"
+  type: sequential
+  squad: rvl-platform
+
+  sequence:
+    - agent: intake
+      action: classify-project
+      creates: PROJETO_CLASSIFICADO
+
+    - agent: orquestrador
+      action: validate-handshake
+      validates: PROJETO_CLASSIFICADO
+      creates: MSG-02_AUTORIZACAO_E1
+
+    - agent: estrategista
+      action: execute-gene
+      requires: MSG-02_AUTORIZACAO_E1
+      creates: GENE_DNA
+
+    - agent: estrategista
+      action: execute-lens
+      requires: GENE_DNA
+      creates: LENS_DIFERENCIAL
+
+    - agent: estrategista
+      action: execute-frame
+      requires: LENS_DIFERENCIAL
+      creates: FRAME_PLATAFORMA
+
+    - agent: estrategista
+      action: send-handshake-e1
+      requires: FRAME_PLATAFORMA
+      creates: MSG-01_HANDSHAKE_E1
+
+    - agent: orquestrador
+      action: validate-handshake
+      validates: MSG-01_HANDSHAKE_E1
+      creates: MSG-02_AUTORIZACAO_E2
+
+    - agent: expressao
+      action: execute-self
+      requires: MSG-02_AUTORIZACAO_E2
+      creates: SELF_PERSONALIDADE
+
+    - agent: expressao
+      action: execute-tenet
+      requires: SELF_PERSONALIDADE
+      creates: TENET_PRINCIPIOS
+
+    - agent: expressao
+      action: execute-echo
+      requires: TENET_PRINCIPIOS
+      creates: ECHO_TOM_DE_VOZ
+
+    - agent: expressao
+      action: execute-signa
+      requires: ECHO_TOM_DE_VOZ
+      creates: SIGNA_IDENTIDADE_VISUAL
+
+    - agent: expressao
+      action: execute-atlas
+      requires: SIGNA_IDENTIDADE_VISUAL
+      creates: ATLAS_MANUAL_VIVO
+
+    - agent: expressao
+      action: check-coerencia
+      validates: ATLAS_MANUAL_VIVO
+      creates: MSG-01_HANDSHAKE_E2
+
+    - agent: orquestrador
+      action: validate-handshake
+      validates: MSG-01_HANDSHAKE_E2
+      creates: MSG-02_AUTORIZACAO_E3
+
+    - agent: experiencia
+      action: check-atlas-completude
+      requires: MSG-02_AUTORIZACAO_E3
+      validates: ATLAS_MANUAL_VIVO
+
+    - agent: experiencia
+      action: execute-ritual
+      requires: ATLAS_MANUAL_VIVO
+      creates: RITUAL_JORNADAS
+
+    - agent: experiencia
+      action: execute-trace
+      requires: RITUAL_JORNADAS
+      creates: TRACE_TOUCHPOINTS
+
+    - agent: experiencia
+      action: execute-lift
+      requires: TRACE_TOUCHPOINTS
+      creates: LIFT_ROADMAP
+
+    - agent: experiencia
+      action: execute-north
+      requires: LIFT_ROADMAP
+      creates: NORTH_GOVERNANCA
+
+    - agent: experiencia
+      action: execute-vault
+      requires: NORTH_GOVERNANCA
+      creates: VAULT_MEMORIA_INSTITUCIONAL
+
+    - workflow_end:
+        output: VAULT_MEMORIA_INSTITUCIONAL
+        status: complete
+
+  handoff_prompts:
+    intake_to_orquestrador: |
+      O INTAKE concluiu a reclassificação do projeto. Encaminhando PROJETO_CLASSIFICADO
+      para validação. Verifique: (1) arquétipo declarado com justificativa e evidência,
+      (2) gatilhos ativados documentados, (3) recipe inicial selecionado,
+      (4) riscos identificados com severidade. Se inconclusivo, retornar ao INTAKE
+      com instrução de coleta de material adicional.
+
+    orquestrador_to_estrategista: |
+      ORQUESTRADOR autorizou início de E1. O ESTRATEGISTA recebe PROJETO_CLASSIFICADO
+      com arquétipo, gene_modo e condicionais sinalizadas. Atenção: (1) operar no
+      gene_modo correto (destilacao | mediacao | construcao), (2) não contaminar
+      output com inferências de E2, (3) aplicar os 3 testes obrigatórios em cada
+      artefato (unicidade, operacionalidade, handshake), (4) não avançar para E2
+      sem nova MSG-02 AUTORIZAÇÃO.
+
+    estrategista_to_orquestrador: |
+      ESTRATEGISTA concluiu E1. Encaminhando GENE_DNA + LENS_DIFERENCIAL +
+      FRAME_PLATAFORMA para validação. ORQUESTRADOR verifica: campos obrigatórios
+      presentes, regras_integridade_verificadas preenchidas, gene_modo documentado,
+      condicionais_detectadas listadas. Não avaliar qualidade estratégica do conteúdo —
+      apenas completude formal dos schemas.
+
+    orquestrador_to_expressao: |
+      ORQUESTRADOR autorizou início de E2. EXPRESSÃO recebe todos os artefatos de E1
+      validados. Atenção: (1) ler E1 completo antes de iniciar qualquer derivação,
+      (2) cada decisão de expressão deve ter âncora explícita em campo de E1,
+      (3) se gene_modo == "mediacao", ler registro_mediacao antes de derivar
+      personalidade, (4) não reescrever artefatos de E1 — escalar via MSG-03.
+
+    expressao_to_orquestrador: |
+      EXPRESSÃO concluiu E2. Encaminhando artefatos para validação com checks críticos:
+      coerencia_verbal_visual e atlas_completude. ORQUESTRADOR verifica: (1) ambos os
+      checks com status documentado, (2) se coerencia == false ou atlas_completude == false,
+      emitir MSG-04 REJEIÇÃO com instrução precisa antes de autorizar E3.
+      atlas_completude == false bloqueia E3 completamente.
+
+    orquestrador_to_experiencia: |
+      ORQUESTRADOR autorizou início de E3. EXPERIÊNCIA recebe E1 + E2 completos.
+      Atenção: (1) verificar atlas_completude antes de qualquer execução — se false,
+      parar imediatamente, (2) não omitir momentos_da_verdade_off_brand no TRACE™,
+      (3) se saude_geral == "vermelho", LIFT™ abre com fase_emergencial obrigatória,
+      (4) VAULT™ consolida E1+E2+E3 — não apenas E3.

@@ -1,0 +1,68 @@
+name: rvl-platform
+version: 1.0.0
+description: "Squad de orquestração da metodologia RVL™ Platform — sistema de branding estratégico da Nōrtica Strategy"
+author: Nōrtica Strategy
+license: UNLICENSED
+slashPrefix: rvl
+
+aiox:
+  minVersion: "2.1.0"
+  type: squad
+
+components:
+  agents:
+    - intake.md
+    - estrategista.md
+    - expressao.md
+    - experiencia.md
+    - orquestrador.md
+  tasks:
+    # intake
+    - intake/classify-project.md
+    - intake/apply-decision-tree.md
+    - intake/produce-classification.md
+    # estrategista
+    - estrategista/execute-gene.md
+    - estrategista/execute-lens.md
+    - estrategista/execute-frame.md
+    - estrategista/send-handshake-e1.md
+    # expressao
+    - expressao/execute-self.md
+    - expressao/execute-tenet.md
+    - expressao/execute-echo.md
+    - expressao/execute-signa.md
+    - expressao/execute-atlas.md
+    - expressao/check-coerencia.md
+    # experiencia
+    - experiencia/check-atlas-completude.md
+    - experiencia/execute-ritual.md
+    - experiencia/execute-trace.md
+    - experiencia/execute-lift.md
+    - experiencia/execute-north.md
+    - experiencia/execute-vault.md
+    # orquestrador
+    - orquestrador/validate-handshake.md
+    - orquestrador/authorize-phase.md
+    - orquestrador/reject-artifact.md
+    - orquestrador/activate-conditional.md
+    - orquestrador/classify-escalation.md
+  workflows:
+    - rvl-project-execution.yaml
+  checklists: []
+  templates: []
+  tools: []
+  scripts: []
+
+config:
+  extends: none
+
+dependencies:
+  node: []
+  python: []
+  squads: []
+
+tags:
+  - branding
+  - strategy
+  - rvl-platform
+  - nortica
