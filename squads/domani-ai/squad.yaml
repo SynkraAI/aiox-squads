@@ -1,0 +1,42 @@
+name: domani-ai
+version: 0.1.0
+description: "Squad de inteligência comercial e criação para a Domani.AI — propostas, orçamentos, copy, prompts de IA, resposta a clientes, manuais, design e expertise em plataforma"
+author: "Domani.AI Team"
+license: MIT
+slashPrefix: domani-ai
+
+aiox:
+  minVersion: "2.1.0"
+  type: squad
+  template: agent-only
+
+components:
+  agents:
+    - agents/*.md
+  tasks: []
+  workflows: []
+  checklists: []
+  templates: []
+  tools: []
+  scripts: []
+
+config:
+  extends: extend
+  coding-standards: config/coding-standards.md
+  tech-stack: config/tech-stack.md
+  source-tree: config/source-tree.md
+
+dependencies:
+  node: []
+  python: []
+  squads: []
+
+tags:
+  - domani-ai
+  - comercial
+  - criacao
+  - copy
+  - propostas
+  - orcamentos
+  - design
+  - inteligencia-comercial
