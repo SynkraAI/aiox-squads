@@ -1,0 +1,193 @@
+id: wf-prd-to-lib
+name: wf-prd-to-lib
+version: 1.0.0
+description: "Pipeline completo: PRD + conversa → biblioteca de scripts Python validada"
+type: pipeline
+entry_agent: lib-forge-chief
+
+# Canonical execution contract (sequence takes precedence over phases)
+sequence:
+  - agent: lib-forge-chief
+    action: "Receber material do usuário (PRD + conversa de contexto) e confirmar antes de avançar"
+    creates: material_confirmed
+    checkpoint: CP_001
+
+  - agent: prd-analyst
+    action: "Analisar PRD e extrair mapa de oportunidades de automação"
+    requires: material_confirmed
+    creates: opportunities_map
+    checkpoint: CP_002
+
+  - agent: lib-architect
+    action: "Projetar estrutura da biblioteca (funções, pastas, type hints) — aguarda aprovação humana"
+    requires: opportunities_map
+    creates: lib_design
+    human_gate: true
+    checkpoint: CP_003
+
+  - agent: script-writer
+    action: "Gerar scripts Python seguindo exatamente o design aprovado"
+    requires: lib_design
+    creates: generated_scripts
+    checkpoint: CP_004
+
+  - agent: lib-validator
+    action: "Validar qualidade dos scripts gerados (docstrings, type hints, aderência ao design)"
+    requires: generated_scripts
+    creates: validation_report
+    checkpoint: CP_005
+
+  - agent: lib-forge-chief
+    action: "Publicar scripts aprovados em victor-libs/ e entregar resumo ao usuário"
+    requires: validation_report
+    creates: delivery_summary
+    checkpoint: CP_006
+
+handoff_prompts:
+  lib-forge-chief→prd-analyst: |
+    Material confirmado: {material_confirmed}. Analise o PRD e a conversa de contexto para
+    extrair o mapa de oportunidades. Cada oportunidade deve ter ID, tipo, domínio, entrada e saída.
+  prd-analyst→lib-architect: |
+    Mapa de oportunidades pronto: {opportunities_map}. Projete a estrutura da biblioteca com
+    nomes de funções autoexplicativos em português. Apresente ao usuário para aprovação antes de avançar.
+  lib-architect→script-writer: |
+    Design aprovado pelo usuário: {lib_design}. Implemente EXATAMENTE o que está no design —
+    sem funções adicionais, sem remoções. Docstrings em português em todas as funções.
+  script-writer→lib-validator: |
+    Scripts gerados: {generated_scripts}. Valide docstrings, type hints, aderência ao design e
+    ausência de código fora do escopo aprovado. Relatório com APROVADO ou BLOQUEADO por script.
+  lib-validator→lib-forge-chief: |
+    Relatório de validação: {validation_report}. Se todos APROVADOS, publique em victor-libs/ e
+    entregue resumo ao usuário. Se há BLOQUEADOS, retorne para @script-writer via wf-validation-gate.
+
+# Detailed phase metadata (informational — sequence above is authoritative)
+phases:
+  - id: PHASE_1_INTAKE
+    name: "Recepção de Material"
+    duration: "2-5 min"
+    tier: orchestrator
+    agent: lib-forge-chief
+    tasks:
+      - receber PRD do usuário (arquivo ou texto colado)
+      - receber conversa de contexto (opcional mas recomendado)
+      - confirmar material recebido antes de avançar
+    checkpoint:
+      id: CP_001
+      criteria:
+        - PRD fornecido em qualquer formato
+        - usuário confirmou material completo
+      on_fail: "Solicitar material faltante ao usuário"
+
+  - id: PHASE_2_ANALYSIS
+    name: "Análise e Extração"
+    duration: "5-15 min"
+    tier: tier_1
+    agent: prd-analyst
+    tasks:
+      - tasks/analyze-prd.md
+      - tasks/extract-opportunities.md
+    outputs:
+      - mapa de oportunidades com ID, tipo, domínio, entrada, saída, prioridade
+    checkpoint:
+      id: CP_002
+      criteria:
+        - mínimo 1 oportunidade identificada
+        - cada oportunidade com tipo e domínio definidos
+        - ambiguidades resolvidas ou escaladas
+      on_fail: "Solicitar esclarecimento ao usuário sobre pontos ambíguos"
+
+  - id: PHASE_3_DESIGN
+    name: "Arquitetura da Lib"
+    duration: "5-10 min"
+    tier: tier_2
+    agent: lib-architect
+    tasks:
+      - tasks/design-lib-structure.md
+    outputs:
+      - estrutura de pastas victor-libs/
+      - assinaturas de funções com type hints
+      - dependências necessárias
+    human_approval:
+      required: true
+      prompt: |
+        "Design da biblioteca pronto. Revise:
+        - Nomes das funções fazem sentido para você?
+        - A organização por pastas está clara?
+        - Alguma função que esperava não está na lista?
+        Confirme para gerar o código."
+    checkpoint:
+      id: CP_003
+      criteria:
+        - design aprovado explicitamente pelo usuário
+        - todas as oportunidades mapeadas têm função correspondente
+        - estrutura de pastas definida
+      on_fail: "Aguardar aprovação ou ajustar design conforme feedback"
+
+  - id: PHASE_4_GENERATION
+    name: "Geração de Scripts"
+    duration: "10-20 min"
+    tier: tier_3
+    agent: script-writer
+    tasks:
+      - tasks/generate-scripts.md
+    outputs:
+      - arquivos .py para cada módulo aprovado
+      - cada arquivo com docstrings em português e type hints
+    checkpoint:
+      id: CP_004
+      criteria:
+        - todos os scripts do design gerados
+        - nenhuma função extra além do design
+        - docstrings presentes em todas as funções
+      on_fail: "Corrigir scripts fora do design antes de validar"
+
+  - id: PHASE_5_VALIDATION
+    name: "Validação de Qualidade"
+    duration: "5-10 min"
+    tier: tier_4
+    agent: lib-validator
+    tasks:
+      - tasks/validate-scripts.md
+    outputs:
+      - relatório de validação por script
+      - lista de APROVADOS e BLOQUEADOS
+    checkpoint:
+      id: CP_005
+      criteria:
+        - todos os scripts com status APROVADO
+        - zero itens bloqueantes pendentes
+      on_fail: "Retornar scripts com problemas para @script-writer corrigir"
+
+  - id: PHASE_6_DELIVERY
+    name: "Publicação e Entrega"
+    duration: "2-5 min"
+    tier: orchestrator
+    agent: lib-forge-chief
+    tasks:
+      - tasks/publish-to-victor-libs.md
+    outputs:
+      - scripts organizados em victor-libs/
+      - README.md do módulo gerado
+    checkpoint:
+      id: CP_006
+      criteria:
+        - scripts publicados no destino correto
+        - README.md do módulo criado
+        - usuário informado com resumo do que foi entregue
+      on_fail: "Verificar permissões de escrita no destino"
+
+veto_conditions:
+  - id: LF_VETO_001
+    condition: "Usuário não aprovou design na PHASE_3"
+    action: "BLOCK — não avançar para geração"
+  - id: LF_VETO_002
+    condition: "Script gerado com função fora do design aprovado"
+    action: "BLOCK — reportar desvio antes de continuar"
+  - id: LF_VETO_003
+    condition: "Script sem docstring chega na validação"
+    action: "BLOCK — retornar para @script-writer"
+  - id: LF_VETO_004
+    condition: "Zero oportunidades identificadas na análise"
+    action: "BLOCK — PRD pode estar incompleto, pedir mais contexto"
+
+flow: "PHASE_1 → PHASE_2 → PHASE_3 [HUMAN GATE] → PHASE_4 → PHASE_5 → PHASE_6"

@@ -1,0 +1,77 @@
+heuristics:
+  version: "1.0.0"
+  squad: lib-forge
+
+  global:
+    - id: "LF-G001"
+      name: "Aprovação Humana é Obrigatória"
+      rule: "IF design pronto → THEN exibir ao usuário e aguardar aprovação BEFORE gerar código"
+      severity: non-negotiable
+
+    - id: "LF-G002"
+      name: "Pipeline Sempre Visível"
+      rule: "IF avançando de fase → THEN informar o usuário em qual fase está e o que vem a seguir"
+      severity: must
+
+    - id: "LF-G003"
+      name: "Português para Negócio"
+      rule: "IF domínio usa termos em português → THEN nomes de funções, variáveis e docs em português"
+      severity: must
+
+    - id: "LF-G004"
+      name: "Um Script, Uma Coisa"
+      rule: "IF função faz mais de uma ação distinta → THEN separar em dois scripts"
+      severity: non-negotiable
+
+    - id: "LF-G005"
+      name: "Contexto da Conversa Vale"
+      rule: "IF PRD tem termo vago E conversa esclarece → THEN usar definição da conversa como authoritative"
+      severity: must
+
+  analyst:
+    - id: "LF-A001"
+      name: "Ação Repetitiva = Oportunidade"
+      rule: "IF ação aparece mais de uma vez no fluxo → THEN candidata a script"
+
+    - id: "LF-A002"
+      name: "Sistema Externo = Integração"
+      rule: "IF PRD menciona sistema externo → THEN criar oportunidade tipo integração"
+
+    - id: "LF-A003"
+      name: "Ambiguidade Bloqueia"
+      rule: "IF termo vago sem esclarecimento → THEN perguntar usuário BEFORE criar oportunidade"
+
+  architect:
+    - id: "LF-AR001"
+      name: "Nome Autoexplicativo"
+      rule: "IF nome de função precisa de comentário para ser entendido → THEN renomear"
+
+    - id: "LF-AR002"
+      name: "Domínio Organiza"
+      rule: "IF múltiplos domínios → THEN uma pasta por domínio em victor-libs/"
+
+    - id: "LF-AR003"
+      name: "Entradas Explícitas"
+      rule: "IF função depende de config → THEN passar como parâmetro, não como global"
+
+  writer:
+    - id: "LF-W001"
+      name: "Design é Lei"
+      rule: "IF função não está no design aprovado → THEN não implementar sem consultar"
+
+    - id: "LF-W002"
+      name: "Docstring Obrigatória"
+      rule: "IF função escrita → THEN docstring em português com params + retorno + exceções"
+
+    - id: "LF-W003"
+      name: "Erro Visível"
+      rule: "IF chamada externa → THEN try/except com mensagem explicativa em português"
+
+  validator:
+    - id: "LF-V001"
+      name: "Aprovação É Final"
+      rule: "IF todos checks passaram → THEN APROVADO sem ressalvas"
+
+    - id: "LF-V002"
+      name: "Bloqueante com Solução"
+      rule: "IF item bloqueante → THEN explicar problema E como corrigir em linguagem simples"

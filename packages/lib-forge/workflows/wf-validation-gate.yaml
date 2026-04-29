@@ -1,0 +1,72 @@
+id: wf-validation-gate
+name: wf-validation-gate
+version: 1.0.0
+description: "Ciclo de validação e correção de scripts — pode iterar até todos aprovados"
+type: loop
+max_iterations: 3
+
+# Canonical execution contract
+sequence:
+  - agent: lib-validator
+    action: "Validar todos os scripts gerados e produzir relatório com APROVADO/BLOQUEADO por script"
+    creates: validation_report
+
+  - agent: lib-forge-chief
+    action: "Decidir fluxo: se todos aprovados → PUBLISH; se bloqueados e iterações < max → FIX; senão escalar"
+    requires: validation_report
+    updates: iteration_count
+
+  - agent: script-writer
+    action: "Corrigir apenas os itens bloqueantes listados no relatório — sem adicionar nem remover funções"
+    requires: validation_report
+    updates: generated_scripts
+
+  - agent: lib-forge-chief
+    action: "Publicar scripts aprovados em victor-libs/ após ciclo de validação concluído"
+    requires: validation_report
+    creates: delivery_summary
+
+handoff_prompts:
+  lib-validator→lib-forge-chief: |
+    Relatório de validação: {validation_report}. Decisão: se approved_scripts == total_scripts →
+    ir para PUBLISH. Se blocked_scripts > 0 e iteração {iteration} < {max_iterations} → ir para FIX.
+    Se iterações esgotadas → escalar para usuário com relatório completo.
+  lib-forge-chief→script-writer: |
+    Scripts bloqueados: {blocked_scripts}. Corrija APENAS os itens listados em validation_report.
+    Não adicione nem remova funções. Após correções, retorne para validação.
+  script-writer→lib-validator: |
+    Scripts corrigidos (iteração {iteration}). Re-valide todos os scripts com foco nos itens
+    que estavam bloqueados. Confirme se as correções resolveram os problemas.
+
+# Detailed phase metadata (informational — sequence above is authoritative)
+phases:
+  - id: VALIDATE
+    agent: lib-validator
+    task: tasks/validate-scripts.md
+    outputs:
+      - validation_report
+      - approved_scripts
+      - blocked_scripts
+
+  - id: DECIDE
+    agent: lib-forge-chief
+    actions:
+      - "IF todos scripts APROVADOS → ir para PUBLISH"
+      - "IF algum BLOQUEADO AND iterações < max_iterations → ir para FIX"
+      - "IF iterações >= max_iterations → escalar para usuário"
+
+  - id: FIX
+    agent: script-writer
+    actions:
+      - "Receber relatório de validação com itens bloqueados"
+      - "Corrigir apenas os itens listados no relatório"
+      - "Não adicionar nem remover funções"
+      - "Retornar para VALIDATE"
+
+  - id: PUBLISH
+    agent: lib-forge-chief
+    task: tasks/publish-to-victor-libs.md
+
+veto_conditions:
+  - condition: "Mesmo erro bloqueante após 3 iterações"
+    action: "Escalar para usuário com relatório completo"
