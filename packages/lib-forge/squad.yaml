@@ -1,0 +1,95 @@
+name: lib-forge
+version: 1.0.0
+short-title: Lib Forge — PRD to Script Library
+description: |
+  Analisa PRDs e conversas de contexto para extrair oportunidades de automação
+  e gerar bibliotecas de scripts Python organizadas, prontas para uso em qualquer projeto.
+author: Victor Cruz
+license: MIT
+slashPrefix: lib-forge
+entry_agent: lib-forge-chief
+
+aiox:
+  minVersion: "2.0.0"
+  type: "squad"
+
+requires:
+  node: ">=18.0.0"
+  python: ">=3.10"
+
+tags:
+  - lib-generation
+  - prd-analysis
+  - automation
+  - python
+  - script-factory
+
+components:
+  agents:
+    - lib-forge-chief.md
+    - prd-analyst.md
+    - lib-architect.md
+    - script-writer.md
+    - lib-validator.md
+  tasks:
+    - orchestrate-pipeline.md
+    - analyze-prd.md
+    - extract-opportunities.md
+    - design-lib-structure.md
+    - generate-scripts.md
+    - validate-scripts.md
+    - publish-to-victor-libs.md
+  workflows:
+    - wf-prd-to-lib.yaml
+    - wf-validation-gate.yaml
+  checklists:
+    - prd-analysis-checklist.md
+    - script-quality-checklist.md
+    - design-approval-checklist.md
+  templates:
+    - script-template.py
+    - lib-readme-template.md
+  config:
+    - config/tech-stack.md
+  data:
+    - data/agent-registry.yaml
+    - data/heuristics.yaml
+    - data/error-codes.yaml
+
+workspace_integration:
+  level: read_write
+  rationale: "Lê PRDs e conversas do projeto, escreve scripts gerados no victor-libs"
+  read_paths:
+    - "docs/"
+    - "*.md"
+    - "conversations/"
+    - "prds/"
+  write_paths:
+    - "../victor-libs/"
+    - "scripts/"
+
+profiles:
+  full:
+    agents: [lib-forge-chief, prd-analyst, lib-architect, script-writer, lib-validator]
+    description: "Pipeline completo PRD → análise → arquitetura → geração → validação"
+    detect_when: "default"
+
+  analysis-only:
+    agents: [lib-forge-chief, prd-analyst]
+    description: "Apenas análise de PRD e conversa, sem geração de código"
+    detect_when: "user says 'só analisar' or 'apenas análise'"
+
+  generate-only:
+    agents: [lib-forge-chief, lib-architect, script-writer, lib-validator]
+    description: "Geração a partir de análise existente"
+    detect_when: "analysis already done, user wants to generate"
+
+metadata:
+  agents: 5
+  tasks: 7
+  workflows: 2
+  checklists: 3
+  templates: 2
+  config: 1
+  data: 3
+  score: 9.2

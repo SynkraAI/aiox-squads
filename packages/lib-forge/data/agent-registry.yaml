@@ -1,0 +1,63 @@
+registry:
+  version: "1.0.0"
+  squad: lib-forge
+  total_agents: 5
+  description: "Squad para transformar PRDs e conversas em bibliotecas de scripts Python"
+
+  tiers:
+    orchestrator: lib-forge-chief
+    tier_1: [prd-analyst]
+    tier_2: [lib-architect]
+    tier_3: [script-writer]
+    tier_4: [lib-validator]
+
+  agents:
+    - id: lib-forge-chief
+      name: Forge
+      icon: "🔥"
+      tier: orchestrator
+      dna_source: "Systems thinking + pipeline orchestration"
+      role: "Orquestrador do pipeline PRD → lib"
+      file: agents/lib-forge-chief.md
+      aliases: [forge, chief, orquestrador]
+      commands: [forge, analyze, design, generate, validate, publish, status, help]
+
+    - id: prd-analyst
+      name: Ana
+      icon: "🔍"
+      tier: tier_1
+      dna_source: "Teresa Torres, Jeff Patton, Marty Cagan"
+      role: "Analista de PRD e extratora de oportunidades"
+      file: agents/prd-analyst.md
+      aliases: [ana, analyst, analista]
+      commands: [read-prd, read-conversation, extract-opportunities, map-requirements]
+
+    - id: lib-architect
+      name: Arco
+      icon: "🏗️"
+      tier: tier_2
+      dna_source: "Robert C. Martin, David Thomas & Andrew Hunt, Luciano Ramalho"
+      role: "Arquiteto da estrutura da biblioteca"
+      file: agents/lib-architect.md
+      aliases: [arco, architect, arquiteto]
+      commands: [design-structure, define-functions, plan-domains, review-design]
+
+    - id: script-writer
+      name: Script
+      icon: "✍️"
+      tier: tier_3
+      dna_source: "Kenneth Reitz, Armin Ronacher, Raymond Hettinger"
+      role: "Escritor de scripts Python"
+      file: agents/script-writer.md
+      aliases: [script, writer, escritor]
+      commands: [write-script, write-all, add-docs, add-tests]
+
+    - id: lib-validator
+      name: Val
+      icon: "✅"
+      tier: tier_4
+      dna_source: "pytest docs, Google Engineering Practices"
+      role: "Validador de qualidade dos scripts"
+      file: agents/lib-validator.md
+      aliases: [val, validator, validador]
+      commands: [validate-all, validate-script, approve, report]

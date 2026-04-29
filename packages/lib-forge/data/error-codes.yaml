@@ -1,0 +1,164 @@
+error_codes:
+  version: "1.0.0"
+  squad: lib-forge
+
+  # Formato de mensagem para o usuário:
+  # "❌ [LF-EXXX] {user_message}"
+  # Formato técnico para logs:
+  # "[LF-EXXX] {technical_detail}"
+
+  # ── INTAKE (PHASE_1) ──────────────────────────────────────────
+  intake:
+    - code: "LF-E001"
+      name: NO_MATERIAL_PROVIDED
+      severity: blocker
+      phase: PHASE_1
+      agent: lib-forge-chief
+      user_message: "Nenhum material foi fornecido. Cole o PRD, informe o caminho do arquivo ou descreva o que o produto deve fazer."
+      technical: "prd_source is null or empty on pipeline start"
+      recovery: request_prd_from_user
+
+    - code: "LF-E002"
+      name: FILE_NOT_FOUND
+      severity: blocker
+      phase: PHASE_1
+      agent: lib-forge-chief
+      user_message: "Arquivo não encontrado: {path}. Verifique o caminho e tente novamente."
+      technical: "prd_source points to non-existent file path"
+      recovery: request_valid_path
+
+    - code: "LF-E003"
+      name: UNSUPPORTED_FILE_FORMAT
+      severity: blocker
+      phase: PHASE_1
+      agent: lib-forge-chief
+      user_message: "Formato de arquivo não suportado: {extension}. Use .md, .txt ou .pdf."
+      technical: "prd_source file extension not in [.md, .txt, .pdf]"
+      recovery: request_supported_format
+
+  # ── ANALYSIS (PHASE_2) ───────────────────────────────────────
+  analysis:
+    - code: "LF-E010"
+      name: NO_OPPORTUNITIES_FOUND
+      severity: blocker
+      phase: PHASE_2
+      agent: prd-analyst
+      user_message: "Não encontrei oportunidades de automação neste material. O PRD descreve ações repetitivas ou integrações com sistemas externos? Adicione mais contexto e tente novamente."
+      technical: "opportunities_map is empty after extractOpportunities()"
+      recovery: request_additional_context
+
+    - code: "LF-E011"
+      name: UNRESOLVED_AMBIGUITY
+      severity: warning
+      phase: PHASE_2
+      agent: prd-analyst
+      user_message: "Encontrei termos que precisam de esclarecimento antes de continuar: {ambiguities}. Por favor, responda para cada um."
+      technical: "ambiguities[] not empty after conversation_content processing"
+      recovery: ask_user_for_clarification
+
+    - code: "LF-E012"
+      name: PRD_PARSE_ERROR
+      severity: blocker
+      phase: PHASE_2
+      agent: prd-analyst
+      user_message: "Não consegui ler o material fornecido. Tente colar o texto diretamente no chat em vez de usar um arquivo."
+      technical: "prd_content could not be parsed into structured format"
+      recovery: fallback_to_text_input
+
+  # ── DESIGN (PHASE_3) ─────────────────────────────────────────
+  design:
+    - code: "LF-E020"
+      name: DESIGN_NOT_APPROVED
+      severity: blocker
+      phase: PHASE_3
+      agent: lib-architect
+      user_message: "O design precisa de aprovação explícita antes de gerar código. Revise as funções propostas e confirme com 'sim', 'aprovado' ou 'pode gerar'."
+      technical: "design_approved flag is false or missing when entering PHASE_4"
+      recovery: re_present_design_to_user
+
+    - code: "LF-E021"
+      name: OPPORTUNITY_WITHOUT_FUNCTION
+      severity: blocker
+      phase: PHASE_3
+      agent: lib-architect
+      user_message: "A oportunidade {opportunity_id} ({opportunity_name}) não tem função correspondente no design. Corrija antes de continuar."
+      technical: "opportunity in opportunities_map has no matching function in lib_design"
+      recovery: add_missing_function_to_design
+
+    - code: "LF-E022"
+      name: FUNCTION_WITHOUT_OPPORTUNITY
+      severity: warning
+      phase: PHASE_3
+      agent: lib-architect
+      user_message: "A função '{function_name}' não corresponde a nenhuma oportunidade mapeada. Remova-a ou mapeie a oportunidade que a originou."
+      technical: "function in lib_design has no matching opportunity in opportunities_map"
+      recovery: remove_function_or_add_opportunity
+
+  # ── GENERATION (PHASE_4) ─────────────────────────────────────
+  generation:
+    - code: "LF-E030"
+      name: FUNCTION_NOT_IN_DESIGN
+      severity: blocker
+      phase: PHASE_4
+      agent: script-writer
+      user_message: "O script contém a função '{function_name}' que não estava no design aprovado. Remova-a ou solicite aprovação do design atualizado."
+      technical: "generated function not present in approved lib_design"
+      recovery: remove_unapproved_function
+
+    - code: "LF-E031"
+      name: MISSING_DOCSTRING
+      severity: blocker
+      phase: PHASE_4
+      agent: script-writer
+      user_message: "A função '{function_name}' está sem docstring. Adicione a documentação antes de enviar para validação."
+      technical: "function missing docstring in generated script"
+      recovery: add_docstring_to_function
+
+    - code: "LF-E032"
+      name: MISSING_TYPE_HINTS
+      severity: warning
+      phase: PHASE_4
+      agent: script-writer
+      user_message: "A função '{function_name}' está sem type hints nos parâmetros ou retorno. Adicione para facilitar o uso da biblioteca."
+      technical: "function params or return missing type annotations"
+      recovery: add_type_hints
+
+  # ── VALIDATION (PHASE_5) ─────────────────────────────────────
+  validation:
+    - code: "LF-E040"
+      name: SCRIPT_BLOCKED
+      severity: blocker
+      phase: PHASE_5
+      agent: lib-validator
+      user_message: "O script '{script_name}' não passou na validação. Problemas encontrados: {issues}. Retornando para correção."
+      technical: "validation_report contains blocker items for script"
+      recovery: return_to_script_writer
+
+    - code: "LF-E041"
+      name: MAX_ITERATIONS_REACHED
+      severity: blocker
+      phase: PHASE_5
+      agent: lib-forge-chief
+      user_message: "O script '{script_name}' foi corrigido {max_iterations} vezes mas ainda tem problemas. Intervenção manual necessária. Veja o relatório completo para detalhes."
+      technical: "validation loop reached max_iterations without all scripts APROVADO"
+      recovery: escalate_to_user_with_report
+
+  # ── DELIVERY (PHASE_6) ───────────────────────────────────────
+  delivery:
+    - code: "LF-E050"
+      name: WRITE_PERMISSION_DENIED
+      severity: blocker
+      phase: PHASE_6
+      agent: lib-forge-chief
+      user_message: "Sem permissão para escrever em '{destination}'. Verifique as permissões da pasta ou escolha outro destino."
+      technical: "EACCES on write to workspace_integration.write_paths"
+      recovery: request_alternative_destination
+
+    - code: "LF-E051"
+      name: DESTINATION_NOT_FOUND
+      severity: blocker
+      phase: PHASE_6
+      agent: lib-forge-chief
+      user_message: "Pasta de destino não encontrada: '{destination}'. Crie a pasta ou informe um caminho válido."
+      technical: "destination path does not exist"
+      recovery: create_directory_or_request_valid_path

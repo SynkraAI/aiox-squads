@@ -1,0 +1,14 @@
+{
+  "version": "1.0.0",
+  "squads": {
+    "official": [],
+    "community": [
+      {
+        "name": "lib-forge",
+        "version": "1.0.0",
+        "description": "Analisa PRDs e conversas de contexto para extrair oportunidades de automação\ne gerar bibliotecas de scripts Python organizadas, prontas para uso em qualquer projeto.\n",
+        "author": "Victor Cruz"
+      }
+    ]
+  }
+}
