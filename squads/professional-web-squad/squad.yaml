@@ -1,0 +1,63 @@
+name: professional-web-squad
+version: 1.0.0
+description: "Squad especializado em criação de sites e landing pages profissionais de alta conversão"
+author: Lucas
+license: MIT
+slashPrefix: web
+
+aios:
+  minVersion: "2.1.0"
+  type: squad
+
+components:
+  agents:
+    - discovery.md
+    - copywriter.md
+    - web-designer.md
+    - seo-specialist.md
+    - ui-ux-expert.md
+  tasks:
+    - discovery-briefing.md
+    - discovery-define-persona.md
+    - discovery-define-value-proposition.md
+    - discovery-competitor-analysis.md
+    - copywriter-write-headline.md
+    - copywriter-write-copy.md
+    - copywriter-create-story.md
+    - copywriter-write-cta.md
+    - web-designer-plan-sections.md
+    - web-designer-create-wireframe.md
+    - web-designer-define-style-guide.md
+    - web-designer-optimize-above-fold.md
+    - seo-keyword-research.md
+    - seo-write-meta.md
+    - seo-audit.md
+    - seo-check-core-web-vitals.md
+    - ui-ux-color-palette.md
+    - ui-ux-typography-scale.md
+    - ui-ux-create-moodboard.md
+    - ui-ux-review.md
+  workflows: []
+  checklists: []
+  templates: []
+  tools: []
+  scripts: []
+
+config:
+  extends: extend
+  coding-standards: config/coding-standards.md
+  tech-stack: config/tech-stack.md
+  source-tree: config/source-tree.md
+
+dependencies:
+  node: []
+  python: []
+  squads: []
+
+tags:
+  - web
+  - landing-page
+  - copy
+  - seo
+  - design
+  - conversion
